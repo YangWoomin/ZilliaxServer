@@ -1,0 +1,32 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "defines": [
+                "_DEBUG",
+                //"UNICODE",
+                //"_UNICODE",
+                "_MSVC_",
+                "_WIN64",
+                "_WIN64_",
+                "_X64"
+            ],
+            "windowsSdkVersion": "10.0.22621.0",
+            "compilerPath": "cl.exe",
+            "cStandard": "c17",
+            "cppStandard": "c++20",
+            "intelliSenseMode": "windows-msvc-x64"
+        }
+    ],
+    "version": 4,
+    "env": {
+        "commonDefaultIncludePath": [
+            "${workspaceFolder}/**",
+            "${workspaceFolder}/common/include",
+            "${workspaceFolder}/db/include"
+        ]
+    }
+}
