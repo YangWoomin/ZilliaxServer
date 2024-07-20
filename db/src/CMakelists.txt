@@ -1,0 +1,44 @@
+
+
+cmake_minimum_required( VERSION 3.8 )
+
+
+set( target "db" )
+
+
+file( GLOB sources
+    "*.cpp"
+    "*.h"
+)
+file( GLOB headers
+    "${dir_proj_include}/db/*.h"
+)
+source_group( "Header Files" FILES ${headers} )
+source_group( "Source Files" FILES ${sources} )
+
+
+add_library( ${target} SHARED ${sources} ${headers} )
+set_target_properties( ${target} PROPERTIES
+    DEBUG_POSTFIX ${postfix_debug}
+    LIBRARY_OUTPUT_DIRECTORY ${dir_output_lib}
+    LIBRARY_OUTPUT_DIRECTORY_DEBUG ${dir_output_lib}
+    LIBRARY_OUTPUT_DIRECTORY_RELEASE ${dir_output_lib}
+    RUNTIME_OUTPUT_DIRECTORY ${dir_output_bin}
+    RUNTIME_OUTPUT_DIRECTORY_DEBUG ${dir_output_bin}
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE ${dir_output_bin}
+    ARCHIVE_OUTPUT_DIRECTORY ${dir_output_lib}
+    ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${dir_output_lib}
+    ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${dir_output_lib}
+)
+
+
+target_include_directories( ${target} PRIVATE . )
+target_include_directories( ${target} PRIVATE ${dir_proj_include} )
+target_include_directories( ${target} PRIVATE ${dir_common_include} )
+
+
+find_package(ODBC REQUIRED)
+target_link_libraries(${target} PRIVATE ${ODBC_LIBRARIES})
+
+
+add_compile_definitions( ZS_EXPORTS )

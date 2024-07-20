@@ -12,11 +12,11 @@ namespace common
 {
     enum LogLevel
     {
-        DEBUG     = 1,
-        INFO      = 2,
-        WARN      = 3,
-        ERROR     = 4,
-        FATAL     = 5,
+        LOGLEVEL_DEBUG     = 1,
+        LOGLEVEL_INFO      = 2,
+        LOGLEVEL_WARN      = 3,
+        LOGLEVEL_ERROR     = 4,
+        LOGLEVEL_FATAL     = 5,
     };
 
     class Logger
@@ -47,15 +47,15 @@ namespace common
 }
 
 #define ZS_LOG_FATAL(category, fmt, ...) do {\
-    zs::common::Logger::Write(#category, __FILE__, __LINE__, zs::common::LogLevel::FATAL, fmt, ##__VA_ARGS__); \
+    zs::common::Logger::Write(#category, __FILE__, __LINE__, zs::common::LogLevel::LOGLEVEL_FATAL, fmt, ##__VA_ARGS__); \
     raise(SIGABRT); \
 } while(0)
-#define ZS_LOG_ERROR(category, fmt, ...)    zs::common::Logger::Write(#category, __FILE__, __LINE__, zs::common::LogLevel::ERROR, fmt, ##__VA_ARGS__)
-#define ZS_LOG_WARN(category, fmt, ...)     zs::common::Logger::Write(#category, __FILE__, __LINE__, zs::common::LogLevel::WARN, fmt, ##__VA_ARGS__)
-#define ZS_LOG_INFO(category, fmt, ...)     zs::common::Logger::Write(#category, __FILE__, __LINE__, zs::common::LogLevel::INFO, fmt, ##__VA_ARGS__)
+#define ZS_LOG_ERROR(category, fmt, ...)    zs::common::Logger::Write(#category, __FILE__, __LINE__, zs::common::LogLevel::LOGLEVEL_ERROR, fmt, ##__VA_ARGS__)
+#define ZS_LOG_WARN(category, fmt, ...)     zs::common::Logger::Write(#category, __FILE__, __LINE__, zs::common::LogLevel::LOGLEVEL_WARN, fmt, ##__VA_ARGS__)
+#define ZS_LOG_INFO(category, fmt, ...)     zs::common::Logger::Write(#category, __FILE__, __LINE__, zs::common::LogLevel::LOGLEVEL_INFO, fmt, ##__VA_ARGS__)
 #ifdef _DEBUG
-#define ZS_LOG_DEBUG(category, fmt, ...)    zs::common::Logger::Write(#category, __FILE__, __LINE__, zs::common::LogLevel::INFO, fmt, ##__VA_ARGS__)
-#elif // _DEBUG
+#define ZS_LOG_DEBUG(category, fmt, ...)    zs::common::Logger::Write(#category, __FILE__, __LINE__, zs::common::LogLevel::LOGLEVEL_DEBUG, fmt, ##__VA_ARGS__)
+#else // _DEBUG
 #define ZS_LOG_DEBUG(category, fmt, ...)
 #endif // _DEBUG
 

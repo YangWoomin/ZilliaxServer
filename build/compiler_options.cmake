@@ -28,6 +28,7 @@ if ( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" )
     add_compile_definitions(_MSVC_)
     add_compile_definitions(_WIN64 _WIN64_)
     add_compile_definitions(_X64)
+    add_compile_definitions(WIN32_LEAN_AND_MEAN)
 
     ############################################
     ### link options
@@ -45,7 +46,7 @@ elseif ( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" ) # CMAKE_CXX_COMPILER_ID
 
     ############################################
     ### compile options
-    add_compile_options(/Wall)
+    add_compile_options(-Wall)
     # options for debug
     add_compile_options($<$<CONFIG:Debug>:-g>)
     add_compile_options($<$<CONFIG:Debug>:-O0>)

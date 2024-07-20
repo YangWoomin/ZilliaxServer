@@ -1,11 +1,10 @@
 
-#include    <sql.h>
-#include    <sqlext.h>
-
 #include    "common/log.h"
 #include    "db/database.h"
 
-void HandleSQLError(SQLHANDLE handle, SQLSMALLINT handleType)
+using namespace zs::db;
+
+void Database::HandleSQLError(SQLHANDLE handle, SQLSMALLINT handleType)
 {
     SQLCHAR sqlState[SQL_SQLSTATE_SIZE + 1] = { 0, };
     SQLINTEGER nativeError = 0;

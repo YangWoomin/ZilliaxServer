@@ -1,10 +1,16 @@
 
-#ifndef __ZS_DATABASE_DATABASE_H__
-#define __ZS_DATABASE_DATABASE_H__
+#ifndef __ZS_DATABASE_WORKER_H__
+#define __ZS_DATABASE_WORKER_H__
 
-#include    <string>
+#ifdef _MSVC_
+#include    <windows.h>
+#endif
+
 #include    <sql.h>
 #include    <sqlext.h>
+#include	<sqltypes.h>
+
+#include    <string>
 
 #include    "common/types.h"
 #include    "common/thread.h"
@@ -55,4 +61,4 @@ namespace db
 }
 }
 
-#endif // __ZS_DATABASE_DATABASE_H__
+#endif // __ZS_DATABASE_WORKER_H__

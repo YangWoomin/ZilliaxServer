@@ -1,10 +1,9 @@
 
 #include    "worker.h"
 #include    "common/log.h"
+#include    "db/database.h"
 
 using namespace zs::db;
-
-extern void HandleSQLError(SQLHANDLE handle, SQLSMALLINT handleType);
 
 bool Worker::Initialize(const Config& config)
 {
@@ -18,7 +17,7 @@ bool Worker::Initialize(const Config& config)
     resCode = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &_hEnv);
     if (!SQL_SUCCEEDED(resCode))
     {
-        HandleSQLError(_hEnv, SQL_HANDLE_ENV);
+        Database::HandleSQLError(_hEnv, SQL_HANDLE_ENV);
         Finalize();
         return false;
     }
@@ -26,7 +25,7 @@ bool Worker::Initialize(const Config& config)
     resCode = SQLSetEnvAttr(_hEnv, SQL_ATTR_ODBC_VERSION, (void*) SQL_OV_ODBC3, 0);
     if (!SQL_SUCCEEDED(resCode))
     {
-        HandleSQLError(_hEnv, SQL_HANDLE_ENV);
+        Database::HandleSQLError(_hEnv, SQL_HANDLE_ENV);
         Finalize();
         return false;
     }
@@ -78,7 +77,7 @@ bool Worker::connect(const Config& config)
     resCode = SQLAllocHandle(SQL_HANDLE_DBC, _hEnv, &_hDbc);
     if (!SQL_SUCCEEDED(resCode))
     {
-        HandleSQLError(_hDbc, SQL_HANDLE_DBC);
+        Database::HandleSQLError(_hDbc, SQL_HANDLE_DBC);
         return false;
     }
 
@@ -86,7 +85,7 @@ bool Worker::connect(const Config& config)
     resCode = SQLSetConnectAttr(_hDbc, SQL_LOGIN_TIMEOUT, (SQLPOINTER)config._connTimeout, 0);
     if (!SQL_SUCCEEDED(resCode))
     {
-        HandleSQLError(_hDbc, SQL_HANDLE_DBC);
+        Database::HandleSQLError(_hDbc, SQL_HANDLE_DBC);
         return false;
     }
 
@@ -94,7 +93,7 @@ bool Worker::connect(const Config& config)
     resCode = SQLSetConnectAttr(_hDbc, SQL_AUTOCOMMIT, (SQLPOINTER)SQL_AUTOCOMMIT_ON, 0);
     if (!SQL_SUCCEEDED(resCode))
     {
-        HandleSQLError(_hDbc, SQL_HANDLE_DBC);
+        Database::HandleSQLError(_hDbc, SQL_HANDLE_DBC);
         return false;
     }
 
@@ -102,21 +101,21 @@ bool Worker::connect(const Config& config)
     resCode = SQLDriverConnect(_hDbc, NULL, (SQLCHAR*)config._dsn.c_str(), SQL_NTS, NULL, 0, NULL, SQL_DRIVER_NOPROMPT);
     if (!SQL_SUCCEEDED(resCode))
     {
-        HandleSQLError(_hDbc, SQL_HANDLE_DBC);
+        Database::HandleSQLError(_hDbc, SQL_HANDLE_DBC);
         return false;
     }
 
     resCode = SQLAllocHandle(SQL_HANDLE_STMT, _hDbc, &_hStmt);
     if (!SQL_SUCCEEDED(resCode))
     {
-        HandleSQLError(_hStmt, SQL_HANDLE_STMT);
+        Database::HandleSQLError(_hStmt, SQL_HANDLE_STMT);
         return false;
     }
 
     resCode = SQLSetStmtAttr(_hStmt, SQL_ATTR_QUERY_TIMEOUT, (SQLPOINTER)config._stmtTimeout, 0);
     if (!SQL_SUCCEEDED(resCode))
     {
-        HandleSQLError(_hStmt, SQL_HANDLE_STMT);
+        Database::HandleSQLError(_hStmt, SQL_HANDLE_STMT);
         return false;
     }
 
@@ -132,7 +131,7 @@ void Worker::disconnect()
         SQLRETURN resCode = SQLDisconnect(_hDbc);
         if (!SQL_SUCCEEDED(resCode))
         {
-            HandleSQLError(_hDbc, SQL_HANDLE_DBC);
+            Database::HandleSQLError(_hDbc, SQL_HANDLE_DBC);
             return;
         }
     }
