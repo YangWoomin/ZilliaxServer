@@ -41,4 +41,4 @@ find_package(ODBC REQUIRED)
 target_link_libraries(${target} PRIVATE ${ODBC_LIBRARIES})
 
 
-add_compile_definitions( ZS_EXPORTS )
+add_compile_definitions( ZS_DB_EXPORTS )

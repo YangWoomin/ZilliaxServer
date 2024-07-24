@@ -1,25 +1,90 @@
 
-#include    "common/log.h"
 #include    "db/database.h"
+#include    "worker.h"
 
+using namespace zs::common;
 using namespace zs::db;
 
-void Database::HandleSQLError(SQLHANDLE handle, SQLSMALLINT handleType)
+bool Database::Initialize(const Config& config, Logger::Messenger msgr)
 {
-    SQLCHAR sqlState[SQL_SQLSTATE_SIZE + 1] = { 0, };
-    SQLINTEGER nativeError = 0;
-    SQLCHAR messageText[SQL_MAX_MESSAGE_LENGTH] = { 0, };
-    SQLSMALLINT textLength = 0;
-    SQLSMALLINT i = 1;
-    SQLRETURN ret;
+    Logger::Messenger& messenger = Logger::GetMessenger();
+    messenger = msgr;
 
-    while (SQL_NO_DATA != (ret = SQLGetDiagRec(handleType, handle, i++, sqlState, &nativeError, messageText, sizeof(messageText), &textLength))) 
+    if (true == _init)
     {
-        if (SQL_SUCCEEDED(ret)) 
+        ZS_LOG_ERROR(db, "db already initialized");
+        return false;
+    }
+
+    if (0 >= config._workerCnt)
+    {
+        ZS_LOG_ERROR(db, "invalid db worker count");
+        return false;
+    }
+
+    for (std::size_t i = 0; i < config._workerCnt; ++i)
+    {
+        WorkerSPtr worker = std::make_shared<Worker>();
+        if (false == worker->Initialize(config))
         {
-            ZS_LOG_ERROR(db, "sql state: %s, native error: %d, message: %s", sqlState, nativeError, messageText);
+            ZS_LOG_ERROR(db, "%lu db worker init failed", i);
+            return false;
         }
+        _workers.push_back(worker);
+    }
+
+    _init = true;
+
+    ZS_LOG_INFO(db, "db initialized");
+
+    return true;
+}
+
+void Database::Finalize()
+{
+    _workers.clear();
+
+    _init = false;
+    
+    ZS_LOG_INFO(db, "db finalized");
+}
+
+bool Database::Start()
+{
+    if (false == _init)
+    {
+        ZS_LOG_ERROR(db, "db initialized not yet");
+        return false;
+    }
+
+    for (std::size_t i = 0; i < _workers.size(); ++i)
+    {
+        if (false == _workers[i]->Start())
+        {
+            ZS_LOG_ERROR(db, "%lu db worker start failed", i);
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void Database::Stop()
+{
+    for (std::size_t i = 0; i < _workers.size(); ++i)
+    {
+         _workers[i]->Stop();
     }
 }
 
+bool Database::Post(std::size_t workerNum, OperationSPtr op)
+{
+    if (false == _init)
+    {
+        ZS_LOG_ERROR(db, "db initialized not yet");
+        return false;
+    }
 
+    std::size_t hash = workerNum % _workers.size();
+    return _workers[hash]->Post(op);
+}

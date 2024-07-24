@@ -1,8 +1,8 @@
 
-#ifndef __ZS_DATABASE_DATABASE_H__
-#define __ZS_DATABASE_DATABASE_H__
+#ifndef __ZS_DB_DATABASE_H__
+#define __ZS_DB_DATABASE_H__
 
-#ifdef _MSVC_
+#if  defined(_MSVC_)
 #include    <windows.h>
 #endif
 
@@ -10,17 +10,38 @@
 #include    <sqlext.h>
 #include	<sqltypes.h>
 
+#include    <vector>
+
+#include    "db/common.h"
+
 namespace zs
 {
 namespace db
 {
-    class Database
+    using namespace zs::common;
+
+    class Worker;
+
+    class __ZS_DB_API Database final
     {
+    public:
+        Database() = default;
+        ~Database() = default;
+
+        bool Initialize(const Config& config, Logger::Messenger msgr);
+        void Finalize();
+
+        bool Start();
+        void Stop();
+
+        bool Post(std::size_t workerNum, OperationSPtr op);
+
     private:
-        static void HandleSQLError(SQLHANDLE handle, SQLSMALLINT handleType);
-    friend class Worker;
+        bool                    _init = false;
+        std::vector<WorkerSPtr> _workers;
+        Logger::Messenger       _msgr = nullptr;
     };
 }
 }
 
-#endif // __ZS_DATABASE_DATABASE_H__
+#endif // __ZS_DB_DATABASE_H__
