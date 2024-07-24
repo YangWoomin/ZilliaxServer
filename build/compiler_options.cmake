@@ -42,6 +42,10 @@ if ( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" )
     ### libraries
     link_libraries(ws2_32 mswsock)
 
+    ############################################
+    ### etc
+    set(TARGET_EXECUTABLE_SUFFIX ".exe")
+
 elseif ( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" ) # CMAKE_CXX_COMPILER_ID
 
     ############################################
@@ -64,6 +68,10 @@ elseif ( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" ) # CMAKE_CXX_COMPILER_ID
     add_link_options($<$<CONFIG:Debug>:-g>)
     # options for release
     add_link_options($<$<CONFIG:Release>:-g>)
+
+    ############################################
+    ### etc
+    set(TARGET_EXECUTABLE_SUFFIX ".out")
 
 else ()
 
