@@ -1,0 +1,23 @@
+
+# reference : https://hub.docker.com/_/mysql
+
+version: '3.7'
+
+services:
+
+  db:
+    container_name: mysql
+    image: mysql:9.0.0 # we use mysql 9.0.0 version
+    restart: always
+    volumes:
+      - mysql-data:/var/lib/mysql # keep mysql data persistent
+    environment:
+      MYSQL_ROOT_PASSWORD: test123 # set your root password
+      MYSQL_DATABASE: testdb # set your database name
+      MYSQL_USER: test # set your mysql user name
+      MYSQL_PASSWORD: test321 # set your mysql user password
+    ports:
+      - "3306:3306" # port forwarding
+
+volumes:
+  mysql-data:

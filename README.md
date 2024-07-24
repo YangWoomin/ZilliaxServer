@@ -1,19 +1,21 @@
 # ZilliaxServer
 
+## Purpose
+* MMO (RPG) Game Server
+
 ## Introduction
-* Online MMO (RPG) Game Server
 * 
 
 ## Features
 * C/C++(20)
-* Cross platform (Windows / Linux)
+* Cross platform (Windows/Linux)
 * Asynchronous network module (IOCP, epoll)
-* ODBC database module
-* 
+* Database module (ODBC connector)
 
 ## Dependencies
+* Make/CMake
+* MSVC/G++
 * ODBC Driver (MySQL)
-* Make / CMake
 
 ## Development Envrionment
 
@@ -23,29 +25,29 @@
 
 ## Build
 
-### Windows prerequisites
+### Windows Prerequisites
 * os : Windows 10 (latest build)
 * Visual Studio 2022 (Community)
-* make : make-3.8.1.exe
-* cmake : cmake-3.30.0-windows-x86_64.msi
-* core utils : coreutils-5.3.0.exe
-* mysql odbc driver : mysql-connector-odbc-9.0.0-win64.msi
+* make : make-3.8.1.exe (in ./setting/build_tool directory)
+* cmake : cmake-3.30.0-windows-x86_64.msi (in ./setting/build_tool directory)
+* core utils : coreutils-5.3.0.exe (in ./setting/build_tool directory)
+* mysql odbc driver : mysql-connector-odbc-9.0.0-win64.msi (in ./setting/database/driver directory)
 
-### Linux (Ubuntu 22.04) prerequisites
+### Linux (Ubuntu 22.04 on wsl2) Prerequisites
 * os : Ubuntu 24.04 LTS
 * make : sudo apt install make
 * cmake : sudo apt install cmake
 * gcc/g++ : sudo apt install build-essential
 * mysql odbc driver
     sudo apt install unixodbc-dev unixodbc
-    sudo dpkg -i mysql-community-client-plugins_9.0.0-1ubuntu22.04_amd64.deb
+    sudo dpkg -i mysql-community-client-plugins_9.0.0-1ubuntu22.04_amd64.deb (in ./setting/database/driver directory)
     sudo apt update
     sudo apt install -f
-    sudo dpkg -i mysql-connector-odbc_9.0.0-1ubuntu22.04_amd64.deb
+    sudo dpkg -i mysql-connector-odbc_9.0.0-1ubuntu22.04_amd64.deb (in ./setting/database/driver directory)
     sudo apt update
     sudo apt install -f
     
-### Build (Windows/Linux)
+### Build ("x64 Native Tools Command Prompt for VS 2022" on Windows or bash shell on Linux)
 * configure : make configure
 * reconfigure : make reconfigure
 * build debug : make build_debug
@@ -54,3 +56,30 @@
 * rebuild debug : make rebuild_release
 * distclean : make distclean
 
+## Database
+* env : Ubuntu 24.04 on wsl2 + docker + docker-compose + MySQL Workbench
+
+### Docker & Docker Compose Installation 
+* docker-ce : https://docs.docker.com/engine/install/ubuntu/
+* docker-compose : https://docs.docker.com/compose/install/standalone/#on-linux
+* sudo usermod -aG docker $USER 
+* newgrp docker
+
+### Run MySQL by Docker
+* move cmd(bash shell) current working directory to ./setting/database/mysql
+* docker-compose up -d
+* docker-compose ps
+
+### Test db module
+#### Apply db scripts in database
+* 
+#### Build db module
+* move cmd current working directory to ./db
+* build db module by "make distclean && make rebuild_debug"
+#### Build db_test
+* move cmd current working directory to ./db_test
+* build db_test by "make rebuild_debug"
+* 
+
+## Server Configuration
+## Server Run
