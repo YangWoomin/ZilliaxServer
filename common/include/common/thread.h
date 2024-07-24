@@ -13,14 +13,14 @@ namespace common
     {
         THREAD_STATUS_STANDBY = 0,
         THREAD_STATUS_RUNNING = 1,
-        THREAD_STATUS_TERMINATED = 1,
+        THREAD_STATUS_TERMINATED = 2,
     };
 
     template <typename Derived>
     class Thread
     {
     public:
-        bool Start(bool detach = false)
+        virtual bool Start(bool detach = false)
         {
             if (THREAD_STATUS_STANDBY != getStatus())
             {
@@ -34,14 +34,22 @@ namespace common
             {
                 _thread.detach();
             }
+
+            return true;
         }
 
-        void Stop()
+        virtual void Stop()
         {
-            if (THREAD_STATUS_RUNNING == getStatus()
-                && true == _thread.joinable())
+            if (THREAD_STATUS_RUNNING == getStatus())
             {
                 setStatus(THREAD_STATUS_TERMINATED);
+            }
+        }
+
+        virtual void Join()
+        {
+            if (true == _thread.joinable())
+            {
                 _thread.join();
             }
         }
@@ -51,23 +59,19 @@ namespace common
         virtual ~Thread()
         {
             Stop();
+            Join();
         }
 
     protected:
         inline void setStatus(ThreadStatus status)
         {
-            _status.store(status, std::memory_order_acquire);
+            _status.store(status, std::memory_order_seq_cst);
         }
 
         inline ThreadStatus getStatus()
         {
             return _status.load(std::memory_order_acquire);
         }
-
-        // inline void yield()
-        // {
-        //     std::this_thread::yield();
-        // }
 
     private:
         std::atomic<ThreadStatus>       _status { THREAD_STATUS_STANDBY };
