@@ -148,13 +148,6 @@ namespace db
     };
 
     template <>
-    struct SQLTypeHinter<char*>
-    {
-        static constexpr int32_t cType          = SQL_C_CHAR;
-        static constexpr int32_t sqlType        = SQL_VARCHAR;
-    };
-
-    template <>
     struct SQLTypeHinter<const char*>
     {
         static constexpr int32_t cType          = SQL_C_CHAR;

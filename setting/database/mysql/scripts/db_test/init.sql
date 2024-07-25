@@ -25,3 +25,13 @@ BEGIN
 END //
 
 DELIMITER ;
+
+-- create select stored procedure2
+DELIMITER //
+
+CREATE PROCEDURE SelectTestData2(IN p_value INT, OUT p_name VARCHAR(255))
+BEGIN
+    SELECT name INTO p_name FROM test_table WHERE value = p_value;
+END //
+
+DELIMITER ;

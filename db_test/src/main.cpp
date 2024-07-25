@@ -98,8 +98,17 @@ int main()
         return 2;
     }
 
-    SimpleInsertSelectOperationSPtr sop = std::make_shared<SimpleInsertSelectOperation>(100);
-    db->Post(100, sop);
+    // SimpleProcCallOperationSPtr so1 = std::make_shared<SimpleProcCallOperation>(100);
+    // db->Post(100, so1);
+
+    // SimpleProcCallOperation2SPtr so2 = std::make_shared<SimpleProcCallOperation2>(101);
+    // db->Post(101, so2);
+
+    SimpleProcCallOperation3SPtr so3 = std::make_shared<SimpleProcCallOperation3>(102);
+    db->Post(100, so3);
+
+    SimpleSelectCallOperationSPtr so4 = std::make_shared<SimpleSelectCallOperation>(103);
+    db->Post(100, so4);
 
     std::this_thread::sleep_for(std::chrono::seconds(5));
 

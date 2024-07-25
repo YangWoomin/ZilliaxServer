@@ -35,22 +35,14 @@ class Params {
 public:
     using TupleType = std::tuple<Args...>;
 
-    // 생성자에서 매개변수 값 저장
     Params(Args... args) : values(args...) {}
 
-    // 타입 검사를 수행하는 가변 인자 템플릿 멤버 함수
-    template<typename... Types>
-    void checkAndProcess(Types... types) {
+    // 가변 인자 템플릿 멤버 함수
+    template<ParamType... Types>
+    void checkAndProcess() {
         static_assert(sizeof...(Args) == sizeof...(Types), "매개변수의 개수가 일치하지 않습니다.");
         static_assert(all_true<is_valid_type_param<Args, Types>::value...>::value, "매개변수 타입이 올바르지 않습니다.");
 
-        // 필요한 동작 수행 (여기서는 단순히 출력)
-        printTuple(values);
-    }
-
-    // 값 설정 및 출력
-    void setParams(Args... args) {
-        values = std::make_tuple(args...);
         // 필요한 동작 수행 (여기서는 단순히 출력)
         printTuple(values);
     }
@@ -67,16 +59,16 @@ private:
     }
 };
 
-int main() {
+void type_and_enum_check_test() {
     // 올바른 타입들로 Params 객체 생성
     Params<int, double, const char*, std::string> obj1(1, 2.5, "Hello", std::string("World"));
 
     // 올바른 타입과 enum 값으로 멤버 함수 호출
-    obj1.checkAndProcess(ParamType::Input, ParamType::Input, ParamType::Input, ParamType::Input);
+    obj1.checkAndProcess<ParamType::Input, ParamType::Input, ParamType::Input, ParamType::Input>();
 
     // 잘못된 타입이 포함된 경우 컴파일 에러 발생
     // Params<int, double, const char*, std::string> obj2(1, 2.5, "Hello", std::string("World"));
-    // obj2.checkAndProcess(ParamType::Input, ParamType::Input, ParamType::Output, ParamType::Input); // 컴파일 에러
+    // obj2.checkAndProcess<ParamType::Input, ParamType::Input, ParamType::Output, ParamType::Input>(); // 컴파일 에러
 
-    return 0;
+    return;
 }

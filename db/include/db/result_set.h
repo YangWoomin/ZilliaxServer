@@ -23,19 +23,23 @@ namespace db
 {
     using namespace zs::common;
 
-    bool __ZS_DB_API BindCols(SQLHSTMT hStmt, std::size_t idx, int32_t cTypeHint, int32_t sqlTypeHint, int8_t& column, SQLLenSPtr& len, contextID cid);
-    bool __ZS_DB_API BindCols(SQLHSTMT hStmt, std::size_t idx, int32_t cTypeHint, int32_t sqlTypeHint, uint8_t& column, SQLLenSPtr& len, contextID cid);
-    bool __ZS_DB_API BindCols(SQLHSTMT hStmt, std::size_t idx, int32_t cTypeHint, int32_t sqlTypeHint, int16_t& column, SQLLenSPtr& len, contextID cid);
-    bool __ZS_DB_API BindCols(SQLHSTMT hStmt, std::size_t idx, int32_t cTypeHint, int32_t sqlTypeHint, uint16_t& column, SQLLenSPtr& len, contextID cid);
-    bool __ZS_DB_API BindCols(SQLHSTMT hStmt, std::size_t idx, int32_t cTypeHint, int32_t sqlTypeHint, int32_t& column, SQLLenSPtr& len, contextID cid);
-    bool __ZS_DB_API BindCols(SQLHSTMT hStmt, std::size_t idx, int32_t cTypeHint, int32_t sqlTypeHint, uint32_t& column, SQLLenSPtr& len, contextID cid);
-    bool __ZS_DB_API BindCols(SQLHSTMT hStmt, std::size_t idx, int32_t cTypeHint, int32_t sqlTypeHint, int64_t& column, SQLLenSPtr& len, contextID cid);
-    bool __ZS_DB_API BindCols(SQLHSTMT hStmt, std::size_t idx, int32_t cTypeHint, int32_t sqlTypeHint, uint64_t& column, SQLLenSPtr& len, contextID cid);
-    bool __ZS_DB_API BindCols(SQLHSTMT hStmt, std::size_t idx, int32_t cTypeHint, int32_t sqlTypeHint, float32_t& column, SQLLenSPtr& len, contextID cid);
-    bool __ZS_DB_API BindCols(SQLHSTMT hStmt, std::size_t idx, int32_t cTypeHint, int32_t sqlTypeHint, float64_t& column, SQLLenSPtr& len, contextID cid);
-    bool __ZS_DB_API BindCols(SQLHSTMT hStmt, std::size_t idx, int32_t cTypeHint, int32_t sqlTypeHint, std::string& column, SQLLenSPtr& len, contextID cid);
-    bool __ZS_DB_API BindCols(SQLHSTMT hStmt, std::size_t idx, int32_t cTypeHint, int32_t sqlTypeHint, bytes_t& column, SQLLenSPtr& len, contextID cid);
-    SQLRETURN __ZS_DB_API Fetch(SQLHSTMT hStmt);
+    class __ZS_DB_API ColBinder
+    {
+    public:
+        static bool BindCol(SQLHSTMT hStmt, std::size_t idx, int32_t cTypeHint, int32_t sqlTypeHint, int8_t& column, SQLLenSPtr& len, contextID cid);
+        static bool BindCol(SQLHSTMT hStmt, std::size_t idx, int32_t cTypeHint, int32_t sqlTypeHint, uint8_t& column, SQLLenSPtr& len, contextID cid);
+        static bool BindCol(SQLHSTMT hStmt, std::size_t idx, int32_t cTypeHint, int32_t sqlTypeHint, int16_t& column, SQLLenSPtr& len, contextID cid);
+        static bool BindCol(SQLHSTMT hStmt, std::size_t idx, int32_t cTypeHint, int32_t sqlTypeHint, uint16_t& column, SQLLenSPtr& len, contextID cid);
+        static bool BindCol(SQLHSTMT hStmt, std::size_t idx, int32_t cTypeHint, int32_t sqlTypeHint, int32_t& column, SQLLenSPtr& len, contextID cid);
+        static bool BindCol(SQLHSTMT hStmt, std::size_t idx, int32_t cTypeHint, int32_t sqlTypeHint, uint32_t& column, SQLLenSPtr& len, contextID cid);
+        static bool BindCol(SQLHSTMT hStmt, std::size_t idx, int32_t cTypeHint, int32_t sqlTypeHint, int64_t& column, SQLLenSPtr& len, contextID cid);
+        static bool BindCol(SQLHSTMT hStmt, std::size_t idx, int32_t cTypeHint, int32_t sqlTypeHint, uint64_t& column, SQLLenSPtr& len, contextID cid);
+        static bool BindCol(SQLHSTMT hStmt, std::size_t idx, int32_t cTypeHint, int32_t sqlTypeHint, float32_t& column, SQLLenSPtr& len, contextID cid);
+        static bool BindCol(SQLHSTMT hStmt, std::size_t idx, int32_t cTypeHint, int32_t sqlTypeHint, float64_t& column, SQLLenSPtr& len, contextID cid);
+        static bool BindCol(SQLHSTMT hStmt, std::size_t idx, int32_t cTypeHint, int32_t sqlTypeHint, std::string& column, SQLLenSPtr& len, contextID cid);
+        static bool BindCol(SQLHSTMT hStmt, std::size_t idx, int32_t cTypeHint, int32_t sqlTypeHint, bytes_t& column, SQLLenSPtr& len, contextID cid);
+        static SQLRETURN Fetch(SQLHSTMT hStmt);
+    };
     
     class IResultSet
     {
@@ -44,7 +48,7 @@ namespace db
 
     private:
         virtual bool bindColumns(SQLHSTMT hStmt, contextID cid) = 0;
-        virtual void resetColmns() = 0;
+        virtual void resetColumns() = 0;
         virtual void fetch(SQLHSTMT hStmt) = 0;
 
     friend class Operation;
@@ -58,6 +62,10 @@ namespace db
             : _cols(std::make_tuple(Args()...))
         {}
 
+        ResultSet(Args... args)
+            : _cols(std::make_tuple(args...))
+        {}
+
         using Result = std::vector<std::tuple<Args...>>;
 
         const Result& GetResult()
@@ -69,13 +77,13 @@ namespace db
         virtual bool bindColumns(SQLHSTMT hStmt, contextID cid) override final
         {
             // bind columns using SQLBindCol
-            auto bindSQLCols = [this, hStmt, cid](std::size_t idx, auto& ele) 
+            auto binder = [this, hStmt, cid](std::size_t idx, auto& ele) 
             {
                 auto cTypeHinter = std::get<SQL_C_TYPE_IDX>(_hinter);
                 auto sqlTypeHinter = std::get<SQL_SQL_TYPE_IDX>(_hinter);
                 SQLLenSPtr len = std::make_shared<SQLLEN>(0);
 
-                if (false == BindCol(
+                if (false == ColBinder::BindCol(
                     hStmt, idx, cTypeHinter[idx], sqlTypeHinter[idx],
                     ele, len, cid
                 ))
@@ -88,7 +96,7 @@ namespace db
                 return true;
             };
 
-            return ApplyTuple(_cols, bindSQLCols);
+            return ApplyTuple(_cols, binder);
         }
 
         virtual void resetColumns() override final
@@ -96,22 +104,12 @@ namespace db
             auto resetCols = [this](std::size_t idx, auto& ele) 
             {
                 auto sqlTypeHinter = std::get<SQL_SQL_TYPE_IDX>(_hinter);
-                if (SQL_VARCHAR == sqlTypeHinter[idx])
+                if (SQL_VARCHAR == sqlTypeHinter[idx]
+                    || SQL_BINARY == sqlTypeHinter[idx])
                 {
                     // we know ele type explicitly
                     std::string& val = (std::string&)ele;
-                    std::fill(val.begin(), val.end(), NULL);
-                }
-                else if (SQL_BINARY == sqlTypeHinter[idx])
-                {
-                    // we know ele type explicitly
-                    bytes_t& bytes = (bytes_t&)ele;
-                    std::fill(bytes.begin(), bytes.end(), NULL);
-                }
-                else
-                {
-                    // others (primitives)
-                    ele = 0;
+                    val.resize(val.size(), NULL);
                 }
 
                 return true;
@@ -122,18 +120,19 @@ namespace db
 
         virtual void fetch(SQLHSTMT hStmt) override final
         {
-            SQLRETURN res = Fetch(hStmt);
+            SQLRETURN res = ColBinder::Fetch(hStmt);
             while (SQL_NO_DATA != res && SQL_SUCCEEDED(res))
             {
                 _rs.push_back(_cols);
                 resetColumns();
+                res = ColBinder::Fetch(hStmt);
             }
         }
 
         std::tuple<Args...>                                         _cols;
         std::vector<SQLLenSPtr>                                     _lens;
         Result                                                      _rs;
-        const decltype(CreateSQLTypeHinter<Args...>())              _hinter;
+        const decltype(CreateSQLTypeHinter<Args...>())              _hinter { CreateSQLTypeHinter<Args...>() };
     };
 }
 }

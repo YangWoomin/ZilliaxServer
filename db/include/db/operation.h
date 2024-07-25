@@ -70,6 +70,7 @@ namespace db
         SQLHSTMT                    _hStmt;
         std::string                 _query;
         std::vector<ParamsSPtr>     _params;
+        ResultSetSPtr               _rs;
         contextID                   _cid;
     };
 

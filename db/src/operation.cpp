@@ -73,6 +73,8 @@ bool Operation::Execute(ResultSetSPtr rs)
             return false;
         }
 
+        _rs = rs;
+
         // fetch
         rs->fetch(_hStmt);
     }
@@ -87,6 +89,8 @@ void Operation::Clear()
     _query = "";
 
     _params.clear();
+
+    _rs.reset();
 
     clearStatement();
 }

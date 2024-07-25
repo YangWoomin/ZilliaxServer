@@ -40,7 +40,7 @@ namespace db
     template<>
     struct is_valid_type_param<const char*, ParamType::OUTPUT> : std::false_type {};
 
-    class __ZS_DB_API Binder
+    class __ZS_DB_API ParamBinder
     {
     public:
         static bool BindParam(SQLHSTMT hStmt, std::size_t idx, ParamType type, int32_t cTypeHint, int32_t sqlTypeHint, int8_t& param, SQLLenSPtr& len, contextID cid);
@@ -53,7 +53,6 @@ namespace db
         static bool BindParam(SQLHSTMT hStmt, std::size_t idx, ParamType type, int32_t cTypeHint, int32_t sqlTypeHint, uint64_t& param, SQLLenSPtr& len, contextID cid);
         static bool BindParam(SQLHSTMT hStmt, std::size_t idx, ParamType type, int32_t cTypeHint, int32_t sqlTypeHint, float32_t& param, SQLLenSPtr& len, contextID cid);
         static bool BindParam(SQLHSTMT hStmt, std::size_t idx, ParamType type, int32_t cTypeHint, int32_t sqlTypeHint, float64_t& param, SQLLenSPtr& len, contextID cid);
-        static bool BindParam(SQLHSTMT hStmt, std::size_t idx, ParamType type, int32_t cTypeHint, int32_t sqlTypeHint, char*& param, SQLLenSPtr& len, contextID cid);
         static bool BindParam(SQLHSTMT hStmt, std::size_t idx, ParamType type, int32_t cTypeHint, int32_t sqlTypeHint, const char*& param, SQLLenSPtr& len, contextID cid);
         static bool BindParam(SQLHSTMT hStmt, std::size_t idx, ParamType type, int32_t cTypeHint, int32_t sqlTypeHint, std::string& param, SQLLenSPtr& len, contextID cid);
         static bool BindParam(SQLHSTMT hStmt, std::size_t idx, ParamType type, int32_t cTypeHint, int32_t sqlTypeHint, bytes_t& param, SQLLenSPtr& len, contextID cid);
@@ -115,7 +114,7 @@ namespace db
                 ParamType type = GetType(idx);
                 SQLLenSPtr len = std::make_shared<SQLLEN>(0);
 
-                if (false == Binder::BindParam(
+                if (false == ParamBinder::BindParam(
                     hStmt, idx, type, cTypeHinter[idx], sqlTypeHinter[idx],
                     ele, len, cid))
                 {
