@@ -70,21 +70,21 @@
 * sudo usermod -aG docker $USER 
 * newgrp docker
 
-### Run MySQL by Docker
+### MySQL on Docker
 * move cmd(bash shell) current working directory to ./setting/database/mysql
 * docker-compose up -d
 * docker-compose ps
 
-### Test db module
-#### Apply db scripts in database
+### "db" Module Test
+#### initial scripts
 * run ./setting/database/mysql/scripts/db_test/init.sql by MySQL Workbench 
-#### Build db module
+#### "db" Module Build
 * move cmd current working directory to ./db
 * build db module by "make distclean && make rebuild_debug"
-#### Build db_test
+#### "db_test" Module Build
 * move cmd current working directory to ./db_test
 * build db_test by "make rebuild_debug"
-#### Run db_test
+#### Test
 * some cases are testable such as simple select, update, delete, stored procedure, transaction
 
 ## Server Configuration
