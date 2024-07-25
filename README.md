@@ -39,7 +39,7 @@
 * cmake : sudo apt install cmake
 * gcc/g++ : sudo apt install build-essential
 * mysql odbc driver
-- sudo apt install unixodbc-dev unixodbc
+1. sudo apt install unixodbc-dev unixodbc
     sudo dpkg -i mysql-community-client-plugins_9.0.0-1ubuntu22.04_amd64.deb (in ./setting/database/driver directory)
     sudo apt update
     sudo apt install -f
