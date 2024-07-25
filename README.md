@@ -9,7 +9,7 @@
 > I used to play Hearthstone, and one of my favorite cards from the game is Zilliax. \
 > The card's abilities are truly impressive! \
 > Inspired by this card, I named my project "ZilliaxServer." \
-> Just like Zilliax's "Magnetic" ability, this project aims to help you build your game server by combining with it seamlessly.\
+> Just like Zilliax's "Magnetic" ability, this project aims to help you build your game server by combining with it seamlessly.
 
 ## Features
 * C/C++(20)
