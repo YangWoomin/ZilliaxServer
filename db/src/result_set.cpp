@@ -25,7 +25,7 @@ bool bindCol<std::string>(SQLHSTMT hStmt, std::size_t idx, int32_t cTypeHint, in
 {
     if (0 == column.size())
     {
-        column.resize(DEFAULT_BUFFER_COLUMN_LEN, NULL);
+        column.resize(DEFAULT_BUFFER_COLUMN_LEN, '\0');
     }
 
     if (SQL_VARCHAR == sqlTypeHint)

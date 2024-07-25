@@ -57,6 +57,14 @@ namespace db
 
     using SQLLenSPtr = std::shared_ptr<SQLLEN>;
 
+    enum class TransIsolLevel
+    {
+        READ_UNCOMMITTED        = SQL_TXN_READ_UNCOMMITTED,
+        READ_COMMITTED          = SQL_TXN_READ_COMMITTED,
+        REPEATABLE_READ         = SQL_TXN_REPEATABLE_READ,
+        SERIALIZABLE            = SQL_TXN_SERIALIZABLE
+    };
+
     struct Config
     {
         std::string     _dsn;
@@ -65,6 +73,7 @@ namespace db
         uint16_t        _stmtTimeout;
         uint32_t        _connTryInterval;
         uint32_t        _connTryCount;
+        TransIsolLevel  _isolLevel = TransIsolLevel::REPEATABLE_READ;
     };
 
     template <typename T>

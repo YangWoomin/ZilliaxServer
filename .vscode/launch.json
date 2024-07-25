@@ -14,6 +14,17 @@
             "cwd": "${workspaceFolder}/output/bin",
             "environment": [],
             "console": "externalTerminal"
+        },
+        {
+            "name": "Launch cpp_test",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/output/bin/cpp_testd.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/output/bin",
+            "environment": [],
+            "console": "externalTerminal"
         }
     ]
 }

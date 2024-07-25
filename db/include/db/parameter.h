@@ -79,6 +79,11 @@ namespace db
             
         }
 
+        void Reset(Args... args)
+        {
+            _params = std::make_tuple(args...);
+        }
+
         template <ParamType... Types>
         void SetParamTypes()
         {

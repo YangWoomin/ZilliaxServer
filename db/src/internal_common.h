@@ -36,12 +36,19 @@ namespace db
         fmt_ += fmt;
         fmt_ += "]";
 
+        bool outputted = false;
         while (SQL_NO_DATA != (ret = SQLGetDiagRec(handleType, handle, i++, sqlState, &nativeError, messageText, sizeof(messageText), &textLength))) 
         {
             if (SQL_SUCCEEDED(ret)) 
             {
                 ZS_LOG_ERROR(db, fmt_.c_str(), sqlState, nativeError, messageText, args...);
+                outputted = true;
             }
+        }
+
+        if (false == outputted)
+        {
+            ZS_LOG_ERROR(db, fmt, args...);
         }
     }
 }

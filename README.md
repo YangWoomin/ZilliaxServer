@@ -72,14 +72,15 @@
 
 ### Test db module
 #### Apply db scripts in database
-* 
+* run ./setting/database/mysql/scripts/db_test/init.sql by MySQL Workbench 
 #### Build db module
 * move cmd current working directory to ./db
 * build db module by "make distclean && make rebuild_debug"
 #### Build db_test
 * move cmd current working directory to ./db_test
 * build db_test by "make rebuild_debug"
-* 
+#### Run db_test
+* some cases are testable such as simple select, update, delete, stored procedure, transaction
 
 ## Server Configuration
 ## Server Run

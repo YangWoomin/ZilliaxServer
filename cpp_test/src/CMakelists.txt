@@ -36,3 +36,6 @@ target_include_directories( ${target} PRIVATE . )
 target_include_directories( ${target} PRIVATE ${dir_proj_include}/cpp_test )
 
 set_target_properties( ${target} PROPERTIES SUFFIX ${TARGET_EXECUTABLE_SUFFIX})
+
+find_package(ODBC REQUIRED)
+target_link_libraries(${target} PRIVATE ${ODBC_LIBRARIES})

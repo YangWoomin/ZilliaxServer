@@ -14,20 +14,20 @@ bool Worker::Initialize(const Config& config)
         return false;
     }
 
-    SQLRETURN resCode;
+    SQLRETURN ret;
 
-    resCode = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &_hEnv);
-    if (!SQL_SUCCEEDED(resCode))
+    ret = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &_hEnv);
+    if (!SQL_SUCCEEDED(ret))
     {
-        HandleSQLError(_hEnv, SQL_HANDLE_ENV, "SQLAllocHandle for hEnv failed");
+        HandleSQLError(_hEnv, SQL_HANDLE_ENV, "SQLAllocHandle for hEnv failed, ret : %d", ret);
         Finalize();
         return false;
     }
 
-    resCode = SQLSetEnvAttr(_hEnv, SQL_ATTR_ODBC_VERSION, (void*) SQL_OV_ODBC3, 0);
-    if (!SQL_SUCCEEDED(resCode))
+    ret = SQLSetEnvAttr(_hEnv, SQL_ATTR_ODBC_VERSION, (void*) SQL_OV_ODBC3, 0);
+    if (!SQL_SUCCEEDED(ret))
     {
-        HandleSQLError(_hEnv, SQL_HANDLE_ENV, "SQLSetEnvAttr for hEnv failed");
+        HandleSQLError(_hEnv, SQL_HANDLE_ENV, "SQLSetEnvAttr for hEnv failed, ret : %d", ret);
         Finalize();
         return false;
     }
@@ -106,50 +106,58 @@ bool Worker::Post(OperationSPtr op)
 
 bool Worker::connect(const Config& config)
 {
-    SQLRETURN resCode;
+    SQLRETURN ret;
 
-    resCode = SQLAllocHandle(SQL_HANDLE_DBC, _hEnv, &_hDbc);
-    if (!SQL_SUCCEEDED(resCode))
+    ret = SQLAllocHandle(SQL_HANDLE_DBC, _hEnv, &_hDbc);
+    if (!SQL_SUCCEEDED(ret))
     {
-        HandleSQLError(_hDbc, SQL_HANDLE_DBC, "SQLAllocHandle for hDbc failed");
+        HandleSQLError(_hDbc, SQL_HANDLE_DBC, "SQLAllocHandle for hDbc failed, ret : %d", ret);
         return false;
     }
 
     // set connection timeout
-    resCode = SQLSetConnectAttr(_hDbc, SQL_LOGIN_TIMEOUT, (SQLPOINTER)config._connTimeout, 0);
-    if (!SQL_SUCCEEDED(resCode))
+    ret = SQLSetConnectAttr(_hDbc, SQL_LOGIN_TIMEOUT, (SQLPOINTER)config._connTimeout, 0);
+    if (!SQL_SUCCEEDED(ret))
     {
-        HandleSQLError(_hDbc, SQL_HANDLE_DBC, "SQLSetConnectAttr for conn timeout failed");
+        HandleSQLError(_hDbc, SQL_HANDLE_DBC, "SQLSetConnectAttr for conn timeout failed, ret : %d", ret);
         return false;
     }
 
     // enable auto commit
-    resCode = SQLSetConnectAttr(_hDbc, SQL_AUTOCOMMIT, (SQLPOINTER)SQL_AUTOCOMMIT_ON, 0);
-    if (!SQL_SUCCEEDED(resCode))
+    ret = SQLSetConnectAttr(_hDbc, SQL_AUTOCOMMIT, (SQLPOINTER)SQL_AUTOCOMMIT_ON, 0);
+    if (!SQL_SUCCEEDED(ret))
     {
-        HandleSQLError(_hDbc, SQL_HANDLE_DBC, "SQLSetConnectAttr for auto commit on failed");
+        HandleSQLError(_hDbc, SQL_HANDLE_DBC, "SQLSetConnectAttr for auto commit on failed, ret : %d", ret);
         return false;
     }
 
     // connect
-    resCode = SQLDriverConnect(_hDbc, NULL, (SQLCHAR*)config._dsn.c_str(), SQL_NTS, NULL, 0, NULL, SQL_DRIVER_NOPROMPT);
-    if (!SQL_SUCCEEDED(resCode))
+    ret = SQLDriverConnect(_hDbc, NULL, (SQLCHAR*)config._dsn.c_str(), SQL_NTS, NULL, 0, NULL, SQL_DRIVER_NOPROMPT);
+    if (!SQL_SUCCEEDED(ret))
     {
-        HandleSQLError(_hDbc, SQL_HANDLE_DBC, "SQLDriverConnect failed, dsn : %s", config._dsn.c_str());
+        HandleSQLError(_hDbc, SQL_HANDLE_DBC, "SQLDriverConnect failed, ret : %d, dsn : %s", ret, config._dsn.c_str());
         return false;
     }
 
-    resCode = SQLAllocHandle(SQL_HANDLE_STMT, _hDbc, &_hStmt);
-    if (!SQL_SUCCEEDED(resCode))
+    // set session transaction isolation level
+    ret = SQLSetConnectAttr(_hDbc, SQL_ATTR_TXN_ISOLATION, (SQLPOINTER)config._isolLevel, 0);
+    if (!SQL_SUCCEEDED(ret))
     {
-        HandleSQLError(_hStmt, SQL_HANDLE_STMT, "SQLAllocHandle for hStmt failed");
+        HandleSQLError(_hDbc, SQL_HANDLE_DBC, "SQLSetConnectAttr for transaction isolation level on failed, ret : %d", ret);
         return false;
     }
 
-    resCode = SQLSetStmtAttr(_hStmt, SQL_ATTR_QUERY_TIMEOUT, (SQLPOINTER)config._stmtTimeout, 0);
-    if (!SQL_SUCCEEDED(resCode))
+    ret = SQLAllocHandle(SQL_HANDLE_STMT, _hDbc, &_hStmt);
+    if (!SQL_SUCCEEDED(ret))
     {
-        HandleSQLError(_hStmt, SQL_HANDLE_STMT, "SQLSetStmtAttr for query timeout failed");
+        HandleSQLError(_hStmt, SQL_HANDLE_STMT, "SQLAllocHandle for hStmt failed, ret : %d", ret);
+        return false;
+    }
+
+    ret = SQLSetStmtAttr(_hStmt, SQL_ATTR_QUERY_TIMEOUT, (SQLPOINTER)config._stmtTimeout, 0);
+    if (!SQL_SUCCEEDED(ret))
+    {
+        HandleSQLError(_hStmt, SQL_HANDLE_STMT, "SQLSetStmtAttr for query timeout failed, ret : %d", ret);
         return false;
     }
 
@@ -162,10 +170,10 @@ void Worker::disconnect()
 {
     if (true == isConnected())
     {
-        SQLRETURN resCode = SQLDisconnect(_hDbc);
-        if (!SQL_SUCCEEDED(resCode))
+        SQLRETURN ret = SQLDisconnect(_hDbc);
+        if (!SQL_SUCCEEDED(ret))
         {
-            HandleSQLError(_hDbc, SQL_HANDLE_DBC, "SQLDisconnect failed");
+            HandleSQLError(_hDbc, SQL_HANDLE_DBC, "SQLDisconnect failed, ret : %d", ret);
             return;
         }
     }
@@ -174,10 +182,10 @@ void Worker::disconnect()
 bool Worker::isConnected()
 {
     SQLINTEGER connectionDead = SQL_CD_FALSE;
-    SQLRETURN resCode = SQLGetConnectAttr(_hDbc, SQL_ATTR_CONNECTION_DEAD, &connectionDead, SQL_IS_INTEGER, NULL);
-    if (!SQL_SUCCEEDED(resCode))
+    SQLRETURN ret = SQLGetConnectAttr(_hDbc, SQL_ATTR_CONNECTION_DEAD, &connectionDead, SQL_IS_INTEGER, NULL);
+    if (!SQL_SUCCEEDED(ret))
     {
-        HandleSQLError(_hDbc, SQL_HANDLE_DBC, "SQLGetConnectAttr for check failed");
+        HandleSQLError(_hDbc, SQL_HANDLE_DBC, "SQLGetConnectAttr for check failed, ret : %d", ret);
         return false;
     }
     return connectionDead == SQL_CD_FALSE;

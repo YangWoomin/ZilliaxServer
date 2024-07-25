@@ -2,6 +2,8 @@
 #include    "db/parameter.h"
 #include    "internal_common.h"
 
+#include    <cstring>
+
 using namespace zs::common;
 using namespace zs::db;
 
@@ -51,7 +53,7 @@ bool bindParam<std::string>(SQLHSTMT hStmt, std::size_t idx, ParamType type, int
 {
     if (0 == param.size())
     {
-        param.resize(DEFAULT_BUFFER_COLUMN_LEN, NULL);
+        param.resize(DEFAULT_BUFFER_COLUMN_LEN, '\0');
     }
 
     if (SQL_VARCHAR == sqlTypeHint)

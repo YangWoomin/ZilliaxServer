@@ -25,9 +25,11 @@ bool Operation::Prepare(const char* query)
 
     _query = query;
 
-    if (!SQL_SUCCEEDED(SQLPrepare(_hStmt, (SQLCHAR*)_query.c_str(), SQL_NTS)))
+    SQLRETURN ret = SQLPrepare(_hStmt, (SQLCHAR*)_query.c_str(), SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
     {
-        HandleSQLError(_hStmt, SQL_HANDLE_STMT, "SQLPrepare failed, cid : %llu, query : %s", _cid, _query.c_str());
+        HandleSQLError(_hStmt, SQL_HANDLE_STMT, "SQLPrepare failed, ret : %d, query : %s, cid : %llu", ret, _query.c_str(), _cid);
         return false;
     }
 
@@ -44,7 +46,7 @@ bool Operation::BindParams(ParamsSPtr params)
     if (false == params->bindParams(_hStmt, _cid))
     {
         // HandleSQLError already called
-        ZS_LOG_ERROR(db, "bindParams failed, cid : %llu, query : %s", _cid, _query.c_str());
+        ZS_LOG_ERROR(db, "bindParams failed, query : %s, cid : %llu", _query.c_str(), _cid);
         return false;
     }
 
@@ -55,11 +57,11 @@ bool Operation::BindParams(ParamsSPtr params)
 
 bool Operation::Execute(ResultSetSPtr rs)
 {
-    SQLRETURN retcode = SQLExecute(_hStmt);
-    //if (!SQL_SUCCEEDED(SQLExecute(_hStmt)))
-    if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO)
+    SQLRETURN ret = SQLExecute(_hStmt);
+
+    if (!SQL_SUCCEEDED(ret))
     {
-        HandleSQLError(_hStmt, SQL_HANDLE_STMT, "SQLExecute failed, cid : %llu, query : %s", _cid, _query.c_str());
+        HandleSQLError(_hStmt, SQL_HANDLE_STMT, "SQLExecute failed, ret : %d, query : %s, cid : %llu", ret, _query.c_str(), _cid);
         return false;
     }
 
@@ -69,7 +71,7 @@ bool Operation::Execute(ResultSetSPtr rs)
         if (false == rs->bindColumns(_hStmt, _cid))
         {
             // HandleSQLError already called
-            ZS_LOG_ERROR(db, "bindColumns failed, cid : %llu, query : %s", _cid, _query.c_str());
+            ZS_LOG_ERROR(db, "bindColumns failed, query : %s, cid : %llu", _query.c_str(), _cid);
             return false;
         }
 
@@ -82,17 +84,6 @@ bool Operation::Execute(ResultSetSPtr rs)
     clearStatement();
 
     return true;
-}
-
-void Operation::Clear()
-{
-    _query = "";
-
-    _params.clear();
-
-    _rs.reset();
-
-    clearStatement();
 }
 
 void Operation::execute(SQLHDBC hDbc, SQLHSTMT hStmt)
@@ -109,35 +100,36 @@ void Operation::execute(SQLHDBC hDbc, SQLHSTMT hStmt)
 
 void Operation::clearStatement()
 {
-    SQLRETURN resCode;
+    SQLRETURN ret;
 
-    resCode = SQLFreeStmt(_hStmt, SQL_CLOSE);
-    if (!SQL_SUCCEEDED(resCode))
+    ret = SQLFreeStmt(_hStmt, SQL_CLOSE);
+    if (!SQL_SUCCEEDED(ret))
     {
-        HandleSQLError(_hStmt, SQL_HANDLE_STMT, "SQLFreeStmt for SQL_CLOSE failed");
+        HandleSQLError(_hStmt, SQL_HANDLE_STMT, "SQLFreeStmt for SQL_CLOSE failed, ret : %d, cid : %llu", ret, _cid);
         return;
     }
 
-    resCode = SQLFreeStmt(_hStmt, SQL_UNBIND);
-    if (!SQL_SUCCEEDED(resCode))
+    ret = SQLFreeStmt(_hStmt, SQL_UNBIND);
+    if (!SQL_SUCCEEDED(ret))
     {
-        HandleSQLError(_hStmt, SQL_HANDLE_STMT, "SQLFreeStmt for SQL_UNBIND failed");
+        HandleSQLError(_hStmt, SQL_HANDLE_STMT, "SQLFreeStmt for SQL_UNBIND failed, ret : %d, cid : %llu", ret, _cid);
         return;
     }
 
-    resCode = SQLFreeStmt(_hStmt, SQL_RESET_PARAMS);
-    if (!SQL_SUCCEEDED(resCode))
+    ret = SQLFreeStmt(_hStmt, SQL_RESET_PARAMS);
+    if (!SQL_SUCCEEDED(ret))
     {
-        HandleSQLError(_hStmt, SQL_HANDLE_STMT, "SQLFreeStmt for SQL_RESET_PARAMS failed");
+        HandleSQLError(_hStmt, SQL_HANDLE_STMT, "SQLFreeStmt for SQL_RESET_PARAMS failed, ret : %d, cid : %llu", ret, _cid);
         return;
     }
 }
 
 void Operation::complete()
 {
-    if (!SQL_SUCCEEDED(SQLSetConnectAttr(_hDbc, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER)SQL_AUTOCOMMIT_ON, 0)))
+    SQLRETURN ret = SQLSetConnectAttr(_hDbc, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER)SQL_AUTOCOMMIT_ON, 0);
+    if (!SQL_SUCCEEDED(ret))
     {
-        HandleSQLError(_hDbc, SQL_HANDLE_DBC, "SQLSetConnectAttr failed in EndTransaction, cid : %llu", _cid);
+        HandleSQLError(_hDbc, SQL_HANDLE_DBC, "SQLSetConnectAttr failed in EndTransaction, ret : %d, cid : %llu", ret, _cid);
     }
 }
 
@@ -149,9 +141,10 @@ TransactionalOperation::TransactionalOperation(contextID cid)
 
 bool TransactionalOperation::BeginTransaction()
 {
-    if (!SQL_SUCCEEDED(SQLSetConnectAttr(_hDbc, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER)SQL_AUTOCOMMIT_OFF, 0)))
+    SQLRETURN ret = SQLSetConnectAttr(_hDbc, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER)SQL_AUTOCOMMIT_OFF, 0);
+    if (!SQL_SUCCEEDED(ret))
     {
-        HandleSQLError(_hDbc, SQL_HANDLE_DBC, "SQLSetConnectAttr failed in BeginTransaction, cid : %llu", _cid);
+        HandleSQLError(_hDbc, SQL_HANDLE_DBC, "SQLSetConnectAttr failed in BeginTransaction, ret : %d, cid : %llu", ret, _cid);
         return false;
     }
 
@@ -160,9 +153,10 @@ bool TransactionalOperation::BeginTransaction()
 
 bool TransactionalOperation::RollbackTransaction()
 {
-    if (!SQL_SUCCEEDED(SQLEndTran(SQL_HANDLE_DBC, _hDbc, SQL_ROLLBACK)))
+    SQLRETURN ret = SQLEndTran(SQL_HANDLE_DBC, _hDbc, SQL_ROLLBACK);
+    if (!SQL_SUCCEEDED(ret))
     {
-        HandleSQLError(_hDbc, SQL_HANDLE_DBC, "SQLEndTran failed in RollbackTransaction, cid : %llu", _cid);
+        HandleSQLError(_hDbc, SQL_HANDLE_DBC, "SQLEndTran failed in RollbackTransaction, ret : %d, cid : %llu", ret, _cid);
         return false;
     }
 
@@ -171,9 +165,10 @@ bool TransactionalOperation::RollbackTransaction()
 
 bool TransactionalOperation::CommitTransaction()
 {
-    if (!SQL_SUCCEEDED(SQLEndTran(SQL_HANDLE_DBC, _hDbc, SQL_COMMIT)))
+    SQLRETURN ret = SQLEndTran(SQL_HANDLE_DBC, _hDbc, SQL_COMMIT);
+    if (!SQL_SUCCEEDED(ret))
     {
-        HandleSQLError(_hDbc, SQL_HANDLE_DBC, "SQLEndTran failed in CommitTransaction, cid : %llu", _cid);
+        HandleSQLError(_hDbc, SQL_HANDLE_DBC, "SQLEndTran failed in CommitTransaction, ret : %d, cid : %llu", ret, _cid);
         return false;
     }
 

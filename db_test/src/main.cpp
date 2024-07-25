@@ -78,11 +78,12 @@ int main()
 
     if (false == db->Initialize(Config {
         "DRIVER={MySQL ODBC 9.0 ANSI Driver};SERVER=localhost;DATABASE=testdb;USER=test;PASSWORD=test321;OPTION=3;",
-        1,     // worker count
+        2,      // worker count
         5,      // connection timeout
         5,      // statement timeout
         5,      // connection try timeout
         5,      // connection try count
+        TransIsolLevel::SERIALIZABLE    // transaction isolation level (test)
     }, msgr))
     {
         ZS_LOG_ERROR(db_test, "db initialization failed");
@@ -98,18 +99,33 @@ int main()
         return 2;
     }
 
+    // simple insert/select/sp test
     // SimpleProcCallOperationSPtr so1 = std::make_shared<SimpleProcCallOperation>(100);
     // db->Post(100, so1);
-
     // SimpleProcCallOperation2SPtr so2 = std::make_shared<SimpleProcCallOperation2>(101);
     // db->Post(101, so2);
+    // SimpleProcCallOperation3SPtr so3 = std::make_shared<SimpleProcCallOperation3>(102);
+    // db->Post(100, so3);
+    // SimpleSelectCallOperationSPtr so4 = std::make_shared<SimpleSelectCallOperation>(103);
+    // db->Post(101, so4);
 
-    SimpleProcCallOperation3SPtr so3 = std::make_shared<SimpleProcCallOperation3>(102);
-    db->Post(100, so3);
+    // transaction deadlock test
+    // SimpleTransactionalOperationSPtr so5 = std::make_shared<SimpleTransactionalOperation>("tran_test1", 345, "tran_test2", 456, 104);
+    // db->Post(100, so5);
+    // SimpleTransactionalOperationSPtr so6 = std::make_shared<SimpleTransactionalOperation>("tran_test3", 1000, "tran_test4", 4000, 105);
+    // db->Post(101, so6);
 
-    SimpleSelectCallOperationSPtr so4 = std::make_shared<SimpleSelectCallOperation>(103);
-    db->Post(100, so4);
+    // transaction test
+    for (int32_t i = 0; i < 100; ++i)
+    {
+        SimpleTransactionalOperation2SPtr sto1 = std::make_shared<SimpleTransactionalOperation2>("tran_test1", i, "tran_test1", float32_t(i) + 0.4, i);
+        db->Post(100, sto1);
 
+        SimpleTransactionalOperation2SPtr sto2 = std::make_shared<SimpleTransactionalOperation2>("tran_test2", i, "tran_test2", float32_t(i) + 0.8, i + 100);
+        db->Post(101, sto2);
+    }
+
+    // wait for db operations
     std::this_thread::sleep_for(std::chrono::seconds(5));
 
     db->Stop();

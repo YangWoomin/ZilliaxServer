@@ -1,9 +1,16 @@
 
--- create table
+-- create table (test_table)
 CREATE TABLE IF NOT EXISTS test_table (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     value INT
+);
+
+-- create table (test_table2)
+CREATE TABLE IF NOT EXISTS test_table2 (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    value FLOAT
 );
 
 -- create insert stored procedure

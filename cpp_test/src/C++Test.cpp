@@ -8,6 +8,7 @@
 #include "tuple_apply_test2.h"
 #include "infer_type_test.h"
 #include "type_and_enum_check.h"
+#include "odbc_test.h"
 
 int main()
 {
@@ -28,7 +29,14 @@ int main()
     // infer_type_test();
     // std::cout << std::endl;
 
-    std::cout << "====================== type and enum check test ======================" << std::endl;
-    type_and_enum_check_test();
-    std::cout << std::endl;
+    // std::cout << "====================== type and enum check test ======================" << std::endl;
+    // type_and_enum_check_test();
+    // std::cout << std::endl;
+
+    std::cout << "====================== odbc test ======================" << std::endl;
+    odbc_test();
+
+
+
+    std::cout << "====================== all test completed ======================" << std::endl;
 }

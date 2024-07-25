@@ -109,7 +109,7 @@ namespace db
                 {
                     // we know ele type explicitly
                     std::string& val = (std::string&)ele;
-                    val.resize(val.size(), NULL);
+                    val.resize(val.size(), '\0');
                 }
 
                 return true;
@@ -120,12 +120,12 @@ namespace db
 
         virtual void fetch(SQLHSTMT hStmt) override final
         {
-            SQLRETURN res = ColBinder::Fetch(hStmt);
-            while (SQL_NO_DATA != res && SQL_SUCCEEDED(res))
+            SQLRETURN ret = ColBinder::Fetch(hStmt);
+            while (SQL_NO_DATA != ret && SQL_SUCCEEDED(ret))
             {
                 _rs.push_back(_cols);
                 resetColumns();
-                res = ColBinder::Fetch(hStmt);
+                ret = ColBinder::Fetch(hStmt);
             }
         }
 

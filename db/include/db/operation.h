@@ -46,7 +46,6 @@ namespace db
         bool Prepare(const char* query);
         bool BindParams(ParamsSPtr params);
         bool Execute(ResultSetSPtr rs = nullptr);
-        void Clear();
         /////////////////////////////////////////////////////
     
     private:
