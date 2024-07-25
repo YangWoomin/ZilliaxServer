@@ -6,10 +6,10 @@
 ## Introduction
 ![zilliax](https://github.com/user-attachments/assets/ee2cae56-2a7d-4f2c-9895-6adb8c0a3f2b)
 
-> I used to play Hearthstone, and one of my favorite cards from the game is Zilliax. 
-> The card's abilities are truly impressive! 
-> Inspired by this card, I named my project "ZilliaxServer." 
-> Just like Zilliax's "Magnetic" ability, this project aims to help you build your game server by combining with it seamlessly.
+> I used to play Hearthstone, and one of my favorite cards from the game is Zilliax. \
+> The card's abilities are truly impressive! \
+> Inspired by this card, I named my project "ZilliaxServer." \
+> Just like Zilliax's "Magnetic" ability, this project aims to help you build your game server by combining with it seamlessly.\
 
 ## Features
 * C/C++(20)
