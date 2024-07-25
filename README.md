@@ -4,7 +4,7 @@
 * MMO (RPG) Game Server
 
 ## Introduction
-![zilliax](https://github.com/user-attachments/assets/ef1c2415-1056-49af-a76b-b7be73e7e7cf)
+![zilliax](https://github.com/user-attachments/assets/ee2cae56-2a7d-4f2c-9895-6adb8c0a3f2b)
 
 
 ## Features
