@@ -81,7 +81,7 @@
 #### "db" Module Build
 * move cmd current working directory to ./db
 * build db module by "make distclean && make rebuild_debug"
-#### "db_test" Module Build
+#### "db_test" Tester Build
 * move cmd current working directory to ./db_test
 * build db_test by "make rebuild_debug"
 #### Test
