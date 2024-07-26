@@ -38,7 +38,7 @@
 * core utils : coreutils-5.3.0.exe (in ./setting/build_tool directory)
 * mysql odbc driver : mysql-connector-odbc-9.0.0-win64.msi (in ./setting/database/driver directory)
 
-### Linux (Ubuntu 22.04 on wsl2) Prerequisites
+### Linux (Ubuntu 24.04 on wsl2) Prerequisites
 * os : Ubuntu 24.04 LTS
 * make : sudo apt install make
 * cmake : sudo apt install cmake
