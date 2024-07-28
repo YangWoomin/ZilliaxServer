@@ -22,6 +22,9 @@
 * MSVC/G++
 * ODBC Driver (MySQL)
 
+## Including Open Sources
+* spdlog-1.14.1 ([https://github.com/gabime/spdlog](https://github.com/gabime/spdlog/tree/v1.14.1))
+
 ## Development Envrionment
 
 ### IDE
