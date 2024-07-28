@@ -17,12 +17,12 @@
 * Asynchronous network module (IOCP, epoll)
 * Database module (ODBC connector)
 
-## Dependencies
+## Tools / Driver
 * Make/CMake
 * MSVC/G++
 * ODBC Driver (MySQL)
 
-## Including Open Sources
+## Dependent Open Sources
 * spdlog-1.14.1 ([https://github.com/gabime/spdlog](https://github.com/gabime/spdlog/tree/v1.14.1))
 
 ## Development Envrionment
