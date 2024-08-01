@@ -3,7 +3,6 @@
 #define __ZS_COMMON_TYPES_H__
 
 #include    <cstdint>
-#include    <memory>
 #include    <string>
 
 namespace zs

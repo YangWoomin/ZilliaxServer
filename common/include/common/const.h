@@ -4,7 +4,10 @@
 
 namespace zs
 {
-
+namespace common
+{
+    
+}
 }
 
 #endif // __ZS_COMMON_CONST_H__

@@ -32,7 +32,7 @@ namespace db
     {
     public:
         Worker() = default;
-        virtual ~Worker() = default;
+        ~Worker() = default;
 
         bool Initialize(const Config& config);
         void Finalize();
