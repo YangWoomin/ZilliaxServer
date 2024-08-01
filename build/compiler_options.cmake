@@ -22,6 +22,9 @@ if ( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" )
     add_compile_options($<$<CONFIG:Release>:/Od>)
     add_compile_options($<$<CONFIG:Release>:/Zi>)
     add_compile_options($<$<CONFIG:Release>:/MD>)
+    # disable some warnings
+    add_compile_options(/wd4820)
+    add_compile_options(/wd5039)
 
     ############################################
     ### definitions
@@ -37,10 +40,6 @@ if ( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" )
     add_link_options(/MANIFEST:NO)
     add_link_options(/INCREMENTAL:NO)
     add_link_options(/DEBUG)
-
-    ############################################
-    ### libraries
-    link_libraries(ws2_32 mswsock)
 
     ############################################
     ### etc

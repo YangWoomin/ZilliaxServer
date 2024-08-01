@@ -26,7 +26,8 @@
         "commonDefaultIncludePath": [
             "${workspaceFolder}/**",
             "${workspaceFolder}/common/include",
-            "${workspaceFolder}/db/include"
+            "${workspaceFolder}/db/include",
+            "${workspaceFolder}/network/include"
         ]
     }
 }

@@ -1,0 +1,94 @@
+
+
+** cube-server의 한계
+
+1. 네트워크 I/O랑 스케줄러가 묶여 있음
+	소켓 자체가 task
+2. dispatcher와 스케줄러 순서가 바뀌어있음
+	worker threads <-> iocp (dispatcher) <-> scheduler
+	worker threads <-> ready queue (dispatcher) <-> scheduler
+												ㄴ epoll
+3. 세션까지 고려함
+	네트워크 레이어에서 세션은 고려할 필요 없음
+		세션은 redis 같은 곳에 저장할거니깐
+		session이라는 모듈을 따로 파는게 나을듯
+
+
+** 네트워크 설계
+
+1. network 모듈의 기능 정의
+	iocp / epoll을 사용한 고성능 비동기 네트워크 I/O
+
+2. network 모듈 인터페이스
+	network/connection 객체로 모든 네트워크 관련 작업을 수행할 수 있음
+		세션 따윈 없음 ㅋㅋ
+			세션은 더 상위 레이어에서 관리
+	network 객체
+		글로벌한 네트워크 작업을 위한 클래스
+		initialize/finalize
+			네트워크 초기화 (윈도우 WSAStartup)
+		start/stop
+			iocp/epoll 초기화
+			worker들 세팅
+		listen/close
+			내부적으로 socket 만들고 listen 수행
+				내부적으로 listen socket들 관리
+				accepted 함수 포인터와 매핑
+				UDP는 그냥 recv 호출하면 될듯
+			accepted 함수 포인터(람다)를 매개변수로 전달 받고 accept 시 콜백 호출
+				내부적으로 connection들 관리를 하고 콜백에도 매개변수로 전달
+				TCP는 accept로 획득한 소켓을 connection과 바인딩
+				UDP는 listen할 때 생성한 소켓을 connection과 바인딩
+					내부적으로 accepted 콜백 호출 후 received 호출도 이어서 해줘야 할듯
+						UDP는 accept가 없고 바로 send/recv가 가능하니깐
+			따라서 TCP/UDP 모두 가능
+		connect
+			내부적으로 socket 만들고 connect 수행
+			connected 함수 포인터(람다)를 매개변수로 전달 받고 connected 시 콜백 호출
+				내부적으로 connection들 관리를 하고 콜백에도 매개변수로 전달
+				UDP는 그냥 만든 소켓이랑 connection 바인딩하고 connected 콜백 호출하면 될듯
+					UDP는 연결 수립 자체가 없으므로..
+			TCP/UDP 모두 가능
+	connection 객체
+		socket을 멤버로 들고 있음
+			TCP, UDP 모두 가능
+			UDP면 글로벌 소켓이 되나? (UDP 소켓은 여러개 필요 없으니깐..?)
+				직접 connection(listener)을 생성하는 경우에만 소켓 생성
+				accepted 과정은 없을 것이고 received 시 기존에 존재하지 않는 connection이면 새로 생성 후 소켓은 공유
+					1개의 connection(listener)으로부터 received로 생성된 connection들은 모두 1개 소켓(listener 것) 공유
+		network 모듈 내부/외부에서 공유하는 자원
+		send, recv, close 인터페이스 지원
+			isClosed 필드 필요
+		received, excepted (closed, sending error, exception, ...) 등의 callback (asynchronous by multithreaded) 지원
+			pure virtual이고 사용하는 쪽에서 구현해야 콜백 받을 수 있음
+	connection lifecycle
+		자동 생성
+			listen 후 accepted 되었을 때
+			connect 후 connected 되었을 때
+		삭제
+			shared_ptr에 의해 자동 삭제
+				스케줄러 큐에 들어가있을 수 있으니
+			소켓 닫힘이 발생하면 network 모듈의 connection 관리 리스트에서 제거
+				외부에서 알아서 소멸되게 유도
+				UDP 소켓은 0 바이트 수신하면 닫는 걸로?
+		소켓 닫힘
+			atomic flag 멤버 변수(isClosed)로 판단
+			이 멤버 변수로 송수신 작업을 더이상 진행할지말지 판단
+	 packet send 설계
+		std::async 사용해서 비동기로 전송
+			소켓 자체가 비동기이고 WSASend 같은 함수를 사용하면 어차피 비동기 모드이긴 함
+				그래서 비동기의 비동기를 굳이 할 이유가..?
+				비동기의 비동기면 에러 처리가 더 복잡해짐
+		std::async 사용하지 않고 비동기 소켓으로 송신
+			소켓이 비동기 모드이면 무조건 비동기로 처리되니 blocking 될 일이 없다고 함
+			실패 또는 오류 발생하면 적당히 로그 남기면 될듯?
+	 packet recv 설계
+		received와 closed가 콜백으로 호출됨
+		UDP는 어차피 메시지 단위로 송수신되기 때문에 한번의 recv 호출로 하나의 메시지 수신이 가능
+		TCP는 스트림이니깐.. 적당한 메시지 포맷을 정해야 함
+			메시지 크기 필드를 2바이트로? -> 메시지 최대 크기는 64K(2^16 = 65536)가 됨
+			그 다음 메시지 크기만큼 버퍼링하고 다 받으면 콜백 호출
+			엉뚱한 데이터가 껴서 오면 어쩔거?
+				어차피 TLS 단까지 뚫기는 어려울거고 클라를 조작하거나 클라가 해킹당한거면 어쩔수 없음
+				조작하는 클라나 해킹 당한 클라까지 서비스를 잘 해줘야 하나?
+	

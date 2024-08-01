@@ -76,6 +76,9 @@ namespace common
     private:
         std::atomic<ThreadStatus>       _status { THREAD_STATUS_STANDBY };
         std::thread                     _thread;
+
+        Thread(const Thread&) = delete;
+        Thread& operator=(const Thread&) = delete;
     };
 }
 }
