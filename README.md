@@ -14,8 +14,9 @@
 ## Features
 * C/C++(20)
 * Cross platform (Windows/Linux)
-* Asynchronous network module (IOCP, epoll)
 * Database module (ODBC connector)
+* Asynchronous network module (IOCP, epoll) ===> in progress
+* Seamless open world framework (geographical separating shards synchronized by inter-server, which means technologically distributed system) ===> after Asynchronous network module
 
 ## Build Tool / Driver
 * Make/CMake
