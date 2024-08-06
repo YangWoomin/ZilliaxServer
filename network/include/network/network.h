@@ -7,8 +7,6 @@
 
 #include    "network/common.h"
 
-#include    <functional>
-
 namespace zs
 {
 namespace network
@@ -18,20 +16,25 @@ namespace network
     class __ZS_NETWORK_API Network
     {
     public:
+        // these functions should be called by only one(main) thread when program start or end time
         static bool Initialize(Logger::Messenger msgr);
         static void Finalize();
-
-        static bool Start(std::size_t workerCount = 0);
+        static bool Start(std::size_t asyncSendWorkerCount, std::size_t dispatcherWorkerCount = 0);
         static void Stop();
 
+        // these functions should be called by one thread for one socket
+        // DO NOT call these functions simultaneously for one socket
+        // these functions are available for simultaneous call for different sockets
         static bool Bind(IPVer ipVer, Protocol protocol, int32_t port, SocketID& sockID);
-        static bool Connect(IPVer ipVer, Protocol protocol, int32_t port);
-        static void Close(SocketID sID);
+        static bool Listen(SocketID sockID, int32_t backlog, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived);
+        static bool Close(SocketID sockID);
+        static bool Connect(IPVer ipVer, Protocol protocol, std::string host, int32_t port, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived);
 
     private:
-        static const std::size_t        MAX_WORKER_COUNT = 1024;
+        static const std::size_t        MAX_WORKER_COUNT = 128;
         static const int32_t            AVAILABLE_MINIMUM_PORT = 1024;
         static const int32_t            AVAILABLE_MAXIMUM_PORT = 65535;
+        static const int32_t            MAX_BACKLOG_SIZE = 1024;
 
         Network() = delete;
         ~Network() = delete;

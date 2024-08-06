@@ -45,6 +45,8 @@ bool Network::Initialize(Logger::Messenger msgr)
 
 void Network::Finalize()
 {
+    Network::Stop();
+
     if (nullptr != manager)
     {
         delete manager;
@@ -58,7 +60,7 @@ void Network::Finalize()
     ZS_LOG_INFO(network, "network module finalized");
 }
 
-bool Network::Start(std::size_t workerCount)
+bool Network::Start(std::size_t asyncSendWorkerCount, std::size_t dispatcherWorkerCount)
 {
     if (nullptr == manager)
     {
@@ -66,13 +68,14 @@ bool Network::Start(std::size_t workerCount)
         return false;
     }
 
-    if (false == manager->Start(workerCount))
+    if (false == manager->Start(asyncSendWorkerCount, dispatcherWorkerCount))
     {
         ZS_LOG_ERROR(network, "network manager start failed");
         return false;
     }
 
-    ZS_LOG_INFO(network, "network module started");
+    ZS_LOG_INFO(network, "network module started, async send worker count : %llu, dispatcher worker count : %d",
+        asyncSendWorkerCount, dispatcherWorkerCount);
 
     return true;
 }
@@ -88,6 +91,82 @@ void Network::Stop()
 }
 
 bool Network::Bind(IPVer ipVer, Protocol protocol, int32_t port, SocketID& sockID)
+{
+    if (nullptr == manager)
+    {
+        ZS_LOG_ERROR(network, "network module is not initialized");
+        return false;
+    }
+
+    if (IPVer::IP_V4 != ipVer && IPVer::IP_V6 != ipVer)
+    {
+        ZS_LOG_ERROR(network, "invalid IP version for bind, ip ver : %d",
+            ipVer);
+        return false;
+    }
+
+    if (Protocol::TCP != protocol && Protocol::UDP != protocol)
+    {
+        ZS_LOG_ERROR(network, "invalid protocol for bind, protocol : %d",
+            protocol);
+        return false;
+    }
+
+    if (AVAILABLE_MINIMUM_PORT > port || AVAILABLE_MAXIMUM_PORT < port)
+    {
+        ZS_LOG_ERROR(network, "invalid port for bind, available port range : %d ~ %d",
+            AVAILABLE_MINIMUM_PORT, AVAILABLE_MAXIMUM_PORT);
+        return false;
+    }
+
+    if (false == manager->Bind(ipVer, protocol, port, sockID))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool Network::Listen(SocketID sockID, int32_t backlog, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived)
+{
+    if (nullptr == manager)
+    {
+        ZS_LOG_ERROR(network, "network module is not initialized");
+        return false;
+    }
+
+    if (0 >= backlog || MAX_BACKLOG_SIZE < backlog)
+    {
+        ZS_LOG_ERROR(network, "invalid backlog for listen, available backlog range : %d ~ %d",
+            0, MAX_BACKLOG_SIZE);
+        return false;
+    }
+
+    if (false == manager->Listen(sockID, backlog, onConnected, onReceived))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool Network::Close(SocketID sockID)
+{
+    if (nullptr == manager)
+    {
+        ZS_LOG_ERROR(network, "network module is not initialized");
+        return false;
+    }
+
+    if (false == manager->Close(sockID))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool Network::Connect(IPVer ipVer, Protocol protocol, std::string host, int32_t port, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived)
 {
     if (nullptr == manager)
     {
@@ -114,25 +193,10 @@ bool Network::Bind(IPVer ipVer, Protocol protocol, int32_t port, SocketID& sockI
         return false;
     }
 
-    if (false == manager->Bind(ipVer, protocol, port, sockID))
+    if (false == manager->Connect(ipVer, protocol, host, port, onConnected, onReceived))
     {
-        ZS_LOG_ERROR(network, "binding failed");
         return false;
     }
 
     return true;
 }
-
-bool Network::Connect(IPVer ipVer, Protocol protocol, int32_t port)
-{
-    
-
-    return true;
-}
-
-void Network::Close(SocketID sID)
-{
-
-}
-
-

@@ -9,7 +9,7 @@
 	worker threads <-> ready queue (dispatcher) <-> scheduler
 												ㄴ epoll
 3. 세션까지 고려함
-	네트워크 레이어에서 세션은 고려할 필요 없음
+	네트워크 모듈 레이어에서 세션은 고려할 필요 없음
 		세션은 redis 같은 곳에 저장할거니깐
 		session이라는 모듈을 따로 파는게 나을듯
 
@@ -19,10 +19,12 @@
 1. network 모듈의 기능 정의
 	iocp / epoll을 사용한 고성능 비동기 네트워크 I/O
 
-2. network 모듈 인터페이스
+2. network 모듈 설계
 	network/connection 객체로 모든 네트워크 관련 작업을 수행할 수 있음
-		세션 따윈 없음 ㅋㅋ
+		세션 없음
 			세션은 더 상위 레이어에서 관리
+		패킷 처리가 여러 worker들에 의해 동시에 처리됨
+			비동기 처리라는 뜻
 	network 객체
 		글로벌한 네트워크 작업을 위한 클래스
 		initialize/finalize
@@ -30,41 +32,69 @@
 		start/stop
 			iocp/epoll 초기화
 			worker들 세팅
-		listen/close
-			내부적으로 socket 만들고 listen 수행
+		bind/listen/close
+			내부적으로 socket 만들고 bind 수행
 				내부적으로 listen socket들 관리
-				accepted 함수 포인터와 매핑
-				UDP는 그냥 recv 호출하면 될듯
-			accepted 함수 포인터(람다)를 매개변수로 전달 받고 accept 시 콜백 호출
-				내부적으로 connection들 관리를 하고 콜백에도 매개변수로 전달
-				TCP는 accept로 획득한 소켓을 connection과 바인딩
-				UDP는 listen할 때 생성한 소켓을 connection과 바인딩
-					내부적으로 accepted 콜백 호출 후 received 호출도 이어서 해줘야 할듯
-						UDP는 accept가 없고 바로 send/recv가 가능하니깐
+				bind 호출 후 iocp/epoll 객체와도 bind
+				socket id 반환
+			전달받은 socket id로 listen 수행
+				listen 시 onConnected/onReceived 함수 포인터(람다)를 매개변수로 전달 받고 accept/recv 시 콜백 호출
+					TCP는 accept 시 생성된 소켓을 connection과 바인딩 후 onConnected 콜백 매개변수로 전달하며 콜백 호출
+						onConnected 호출 후 바로 recv 개시
+					UDP는 바로 recv 수행 (UDP는 listen 과정이 없으니깐)
+						UDP는 첫 패킷 수신 시 listen 소켓을 connection과 바인딩 후 onConnected 콜백 매개변수로 전달하며 콜백 호출
+						이어서 onReceived 콜백 함수도 같이 호출
+			close로 socket id를 전달받으며 listen 소켓 종료 가능
+				UDP는 어차피 socket id를 통해 접근 못함
 			따라서 TCP/UDP 모두 가능
 		connect
+			onConnected 함수 포인터(람다)를 매개변수로 전달 받고 connected 시 콜백 호출
 			내부적으로 socket 만들고 connect 수행
-			connected 함수 포인터(람다)를 매개변수로 전달 받고 connected 시 콜백 호출
-				내부적으로 connection들 관리를 하고 콜백에도 매개변수로 전달
-				UDP는 그냥 만든 소켓이랑 connection 바인딩하고 connected 콜백 호출하면 될듯
-					UDP는 연결 수립 자체가 없으므로..
-			TCP/UDP 모두 가능
+				UDP도 connected UDP를 사용해서 상대 주소 및 포트를 지정할 수 있도록 준비
+			connected 시 connection 객체와 함께 onConnected 콜백 호출
+				UDP는 connect 결과를 기다릴 필요 없이 connect 수행 후 바로 콜백 호출
+		예외 처리
+			인터페이스를 호출했을 때 제외하고 내부적으로 발생하는 에러는 그냥 로깅 (콜백 x)
+				콜백이 필요한가..?
 	connection 객체
 		socket을 멤버로 들고 있음
-			TCP, UDP 모두 가능
+			TCP, UDP 데이터 송수신 모두 가능
 			UDP면 글로벌 소켓이 되나? (UDP 소켓은 여러개 필요 없으니깐..?)
-				직접 connection(listener)을 생성하는 경우에만 소켓 생성
-				accepted 과정은 없을 것이고 received 시 기존에 존재하지 않는 connection이면 새로 생성 후 소켓은 공유
+				직접 connection(listener)을 생성하는 경우에만 UDP 소켓 생성
+				accept 과정은 없고 received 시 기존에 존재하지 않는 connection(주소)이면 새로 생성 후 소켓은 공유
 					1개의 connection(listener)으로부터 received로 생성된 connection들은 모두 1개 소켓(listener 것) 공유
 		network 모듈 내부/외부에서 공유하는 자원
-		send, recv, close 인터페이스 지원
-			isClosed 필드 필요
-		received, excepted (closed, sending error, exception, ...) 등의 callback (asynchronous by multithreaded) 지원
-			pure virtual이고 사용하는 쪽에서 구현해야 콜백 받을 수 있음
+			lock 필요?
+				아마도?
+		send, close 인터페이스 지원
+			isClosed 필드 사용
+			send 고도화 필요
+				async(non-blocking)하게 send 해보고 pending io가 아니면 스케줄러(큐)에게 전달해서 대신 보내도록 지원
+				원격 수신 버퍼가 가득 차면 결국 보내는 쪽도 병목이 걸리게 됨
+				송신 버퍼가 어느 정도 차면 소켓 닫아버리고 소켓 연결 종료 처리 필요
+			epoll은 async send할 때 어느 송신이 완료되었는지 알 수 없는 문제가 있음
+				제일 사용해볼만한 방법으로 별도의 스레드(풀)가 async send를 지속적으로 수행
+				전달받은 버퍼(메시지)만큼 다 보냈으면 그 다음 버퍼를 계속 전송
+				그러다가 버퍼가 가득 차게 되면 해당 소켓에 보내는 async send를 중지(대기)
+				epoll로부터 송신 버퍼에 여유가 생기면 시그널 받고 깨어나서 다시 async send 수행
+					그 소켓에 계속 대기하고 있어야 하나?
+					다른 소켓으로 넘어가서 send하면 순서 보장이 안되긴 함
+						(서버에서) 나중에 처리한 패킷이 (클라에게) 먼저 도착할 수 있음
+					근데 어차피 서버에서 송신하는 패킷이면 수신하는 패킷보다 순서가 덜 중요하긴 함
+						왜냐면 이미 결정된 내용을 전달하는 통지용이 대부분이라..
+					그리고 클라에서 퍼포먼스 안나와서 못받는걸 서버에서 그것도 고려해줘야하나?
+					그래서 대기가 필요 없다는 뜻?
+			iocp도 소켓 버퍼가 가득차면 WOULDBLOCK 또는 EAGAIN 에러 등이 발생
+				epoll처럼 async send 메커니즘 사용
+		콜백 지원
+			onReceieved 콜백 : 메시지(버퍼) 매개변수와 함께 전달
+				자세한 내용은 "packet recv 설계" 참고
+			onClosed 콜백 : (원격 호스트로부터) 연결 종료
+				그냥 콜백 함수 호출만 해주면 될듯?
 	connection lifecycle
 		자동 생성
-			listen 후 accepted 되었을 때
-			connect 후 connected 되었을 때
+			listen 후 accepted 되었을 때 (onConnected)
+			connect 후 connected 되었을 때 (onConnected)
 		삭제
 			shared_ptr에 의해 자동 삭제
 				스케줄러 큐에 들어가있을 수 있으니
@@ -82,13 +112,13 @@
 		std::async 사용하지 않고 비동기 소켓으로 송신
 			소켓이 비동기 모드이면 무조건 비동기로 처리되니 blocking 될 일이 없다고 함
 			실패 또는 오류 발생하면 적당히 로그 남기면 될듯?
+				-> 전송용 스케줄러(큐) 지원
 	 packet recv 설계
-		received와 closed가 콜백으로 호출됨
 		UDP는 어차피 메시지 단위로 송수신되기 때문에 한번의 recv 호출로 하나의 메시지 수신이 가능
 		TCP는 스트림이니깐.. 적당한 메시지 포맷을 정해야 함
 			메시지 크기 필드를 2바이트로? -> 메시지 최대 크기는 64K(2^16 = 65536)가 됨
 			그 다음 메시지 크기만큼 버퍼링하고 다 받으면 콜백 호출
 			엉뚱한 데이터가 껴서 오면 어쩔거?
 				어차피 TLS 단까지 뚫기는 어려울거고 클라를 조작하거나 클라가 해킹당한거면 어쩔수 없음
-				조작하는 클라나 해킹 당한 클라까지 서비스를 잘 해줘야 하나?
+				조작하는 클라나 해킹 당한 클라까지 서비스를 잘 해줘야 하나 의문
 	

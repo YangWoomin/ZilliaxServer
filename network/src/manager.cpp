@@ -4,15 +4,17 @@
 #include    "common/log.h"
 
 #include    "network/network.h"
+#include    "helper.h"
 #include    "dispatcher.h"
 #include    "worker.h"
+#include    "socket.h"
 
 #include    <cstring>
 
 using namespace zs::common;
 using namespace zs::network;
 
-bool Manager::Start(std::size_t workerCount)
+bool Manager::Start(std::size_t asyncSendWorkerCount, std::size_t& dispatcherWorkerCount)
 {
     if (nullptr != _dispatcher)
     {
@@ -20,25 +22,33 @@ bool Manager::Start(std::size_t workerCount)
         return false;
     }
 
+    if (false == Helper::Initialize())
+    {
+        ZS_LOG_ERROR(network, "helper init failed");
+        return false;
+    }
+
+    if (0 == dispatcherWorkerCount)
+    {
+        dispatcherWorkerCount = std::thread::hardware_concurrency();
+    }
+    else if (Network::MAX_WORKER_COUNT < dispatcherWorkerCount)
+    {
+        ZS_LOG_ERROR(network, "invalid worker count, count : %lu, max : %lu", 
+            dispatcherWorkerCount, Network::MAX_WORKER_COUNT);
+        return false;
+    }
+
+    // dispatcher
     _dispatcher = std::make_shared<Dispatcher>();
-    if (false == _dispatcher->Initialize(workerCount))
+    if (false == _dispatcher->Initialize(dispatcherWorkerCount))
     {
         ZS_LOG_ERROR(network, "dispatcher init failed");
         return false;
     }
 
-    if (0 == workerCount)
-    {
-        workerCount = std::thread::hardware_concurrency();
-    }
-    else if (Network::MAX_WORKER_COUNT < workerCount)
-    {
-        ZS_LOG_ERROR(network, "invalid worker count, count : %lu, max : %lu", 
-            workerCount, Network::MAX_WORKER_COUNT);
-        return false;
-    }
-
-    for (std::size_t i = 0; i < workerCount; ++i)
+    // dispatcher workers
+    for (std::size_t i = 0; i < dispatcherWorkerCount; ++i)
     {
         WorkerSPtr worker = std::make_shared<Worker>(_dispatcher, i);
         if (false == worker->Start())
@@ -47,16 +57,18 @@ bool Manager::Start(std::size_t workerCount)
             return false;
         }
 
-#if not defined(_MSVC_)
+#if defined(__GNUC__) || defined(__clang__)
         if (false == worker->OwnDispatcher())
         {
             ZS_LOG_ERROR(network, "worker failed to own dispatcher, worker id : %lu", i);
             return false;
         }
-#endif // not _MSVC_
+#endif // defined(__GNUC__) || defined(__clang__)
 
-        _workers.push_back(worker);
+        _dispatcherWorkers.push_back(worker);
     }
+
+    // async send workers
 
     return true;
 }
@@ -65,16 +77,16 @@ void Manager::Stop()
 {
     if (nullptr != _dispatcher)
     {
-        for (std::size_t i = 0; i < _workers.size(); ++i)
+        for (std::size_t i = 0; i < _dispatcherWorkers.size(); ++i)
         {
-            _workers[i]->Stop();
+            _dispatcherWorkers[i]->Stop();
         }
 
-        _dispatcher->Close(_workers.size());
+        _dispatcher->Stop(_dispatcherWorkers.size());
 
-        for (std::size_t i = 0; i < _workers.size(); ++i)
+        for (std::size_t i = 0; i < _dispatcherWorkers.size(); ++i)
         {
-            _workers[i]->Join();
+            _dispatcherWorkers[i]->Join();
         }
 
         _dispatcher->Finalize();
@@ -89,201 +101,180 @@ bool Manager::Bind(IPVer ipVer, Protocol protocol, int32_t port, SocketID& sockI
         return false;
     }
 
-    // create a socket
-#if defined(_MSVC_)
-    Socket sock = WSASocket(
-        Manager::GetIPVerValue(ipVer), 
-        Manager::GetSocketTypeValue(protocol), 
-        Manager::GetProtocolValue(protocol), 
-        NULL, 0, WSA_FLAG_OVERLAPPED);
-#else // _MSVC_
-    Socket sock = socket(
-        Manager::GetIPVerValue(ipVer), 
-        Manager::GetSocketTypeValue(protocol), 
-        Manager::GetProtocolValue(protocol));
-#endif // _MSVC_
-    if (INVALID_SOCKET == sock)
+    SocketSPtr sock = SocketGenerator::CreateSocket(++_sockIDGen, SocketType::ACCEPTER, ipVer, protocol);
+    if (nullptr == sock)
     {
-        ZS_LOG_ERROR(network, "socket failed, ip ver : %d, protocol : %d, err : %d", 
-            ipVer, protocol, errno);
+        ZS_LOG_ERROR(network, "creating listen socket failed, sock id : %llu, ip ver : %d, protocol : %d, port : %d",
+            sock->GetID(), ipVer, protocol, port);
         return false;
     }
 
-    // set socket reuse option
-    int reuse = 1;
-    if (SOCKET_ERROR == setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&reuse, sizeof(reuse)))
+    if (false == sock->Bind(port))
     {
-        ZS_LOG_ERROR(network, "setsockopt for reuse failed, ip ver : %d, protocol : %d, err : %d", 
-            ipVer, protocol, errno);
-        CloseSocket(sock);
+        ZS_LOG_ERROR(network, "binding listen socket failed, sock id : %llu, ip ver : %d, protocol : %d, port : %d",
+            sock->GetID(), ipVer, protocol, port);
         return false;
     }
 
-    // bind the socket
-    std::string name;
-    void* addr = nullptr;
-    int len = 0;
-    sockaddr_in addrV4;
-    sockaddr_in6 addrV6;
-    if (IPVer::IP_V4 == ipVer)
+    if (false == InsertSocket(sock))
     {
-        Manager::GetSockAddrIn(port, addrV4, name);
-        addr = &addrV4;
-        len = sizeof(addrV4);
-    }
-    else // IPVer::IP_V6 == ipVer
-    {
-        Manager::GetSockAddrIn(port, addrV6, name);
-        addr = &addrV6;
-        len = sizeof(addrV6);
-    }
-    if (SOCKET_ERROR == bind(sock, (struct sockaddr*)addr, len))
-    {
-        ZS_LOG_ERROR(network, "socket binding failed, ip ver : %d, protocol : %d, err : %d", 
-            ipVer, protocol, errno);
-        CloseSocket(sock);
-        return false;
-    }
-
-    // add socket context to listeners
-    SocketContext* sCtx = new SocketContext();
-    if (false == insertSocketContext(sCtx, sockID))
-    {
-        ZS_LOG_ERROR(network, "inserting socket context failed, ip ver : %d, protocol : %d",
-            ipVer, protocol);
-        CloseSocket(sock);
-        delete sCtx;
+        ZS_LOG_ERROR(network, "inserting listen socket failed, sock id : %llu, socket name : %s, ip ver : %d, protocol : %d",
+            sock->GetID(), sock->GetName(), ipVer, protocol);
         return false;
     }
 
     // bind the socket on dispatcher
-    name += (":" + std::to_string(port));
-    std::strncpy(sCtx->_name, name.c_str(), sizeof(sCtx->_name));
-    sCtx->_sock = sock;
-    sCtx->_sockType = SocketType::ACCEPTER;
-#if not defined(_MSVC_)
-    sCtx->_bindType = BindType::BIND;
-    sCtx->_eventType = EventType::INBOUND;
-    std::size_t workerID = _allocator++ % _workers.size();
-    if (false == _dispatcher->Bind(workerID, sCtx))
-#else // not _MSVC_
-    if (false == _dispatcher->Bind(sCtx))
-#endif // _MSVC_
+#if defined(__GNUC__) || defined(__clang__)
+    std::size_t workerID = 0;
+    workerID = _workerAllocator++ % _dispatcherWorkers.size();
+    if (false == _dispatcher->Bind(workerID, sock.get(), BindType::BIND, EventType::INBOUND))
+#elif defined(_MSVC_)
+    if (false == _dispatcher->Bind(sock.get()))
+#endif // defined(__GNUC__) || defined(__clang__)
     {
-        ZS_LOG_ERROR(network, "socket binding on dispatcher failed, ip ver : %d, protocol : %d",
-            ipVer, protocol);
-        removeSocketContext(sockID);
-        CloseSocket(sock);
-        delete sCtx;
+        ZS_LOG_ERROR(network, "binding listen socket on dispatcher failed, sock id : %llu, socket name : %s, ip ver : %d, protocol : %d",
+            sock->GetID(), sock->GetName(), ipVer, protocol);
+        RemoveSocket(sock->GetID()); // not bound yet
         return false;
     }
+
+    sockID = sock->GetID();
+
+    ZS_LOG_INFO(network, "binding listen socket succeeded, sock id : %llu, socket name : %s, ip ver : %d, protocol : %d",
+        sock->GetID(), sock->GetName(), ipVer, protocol);
 
     return true;
 }
 
-bool Manager::insertSocketContext(SocketContext* sCtx, SocketID& sockID)
+bool Manager::Listen(SocketID sockID, int32_t backlog, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived)
 {
-    std::lock_guard<std::mutex> locker(_lock);
-
-    auto res = _listeners.insert(std::make_pair(++_sockID, sCtx));
-    if (false == res.second)
+    if (nullptr == _dispatcher)
     {
+        ZS_LOG_ERROR(network, "network manager not started");
         return false;
     }
-    else
+
+    SocketSPtr sock = GetSocket(sockID);
+    if (nullptr == sock)
     {
-        sockID = res.first->first;
-        return true;
+        ZS_LOG_ERROR(network, "invalid socket id for listen, socket id : %llu", 
+            sockID);
+        return false;
     }
+
+    if (false == sock->Listen(backlog, onConnected, onReceived))
+    {
+        ZS_LOG_ERROR(network, "listen failed, socket id : %llu, socket name : %s", 
+            sockID, sock->GetName());
+        sock->Close();
+        return false;
+    }
+
+    ZS_LOG_INFO(network, "listen succeeded, sock id : %llu, socket name : %s",
+        sock->GetID(), sock->GetName());
+
+    return true;
 }
 
-void Manager::removeSocketContext(SocketID sockID)
+bool Manager::Close(SocketID sockID)
+{
+    SocketSPtr sock = GetSocket(sockID);
+    if (nullptr == sock)
+    {
+        ZS_LOG_WARN(network, "invalid socket id for close, socket id : %llu", 
+            sockID);
+        return false;
+    }
+
+    sock->Close();
+
+    return true;
+}
+
+bool Manager::Connect(IPVer ipVer, Protocol protocol, const std::string& host, int32_t port, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived)
+{
+    if (nullptr == _dispatcher)
+    {
+        ZS_LOG_ERROR(network, "network manager not started");
+        return false;
+    }
+
+    SocketSPtr sock = SocketGenerator::CreateSocket(++_sockIDGen, SocketType::CONNECTOR, ipVer, protocol, true/*nonBlocking*/);
+    if (nullptr == sock)
+    {
+        ZS_LOG_ERROR(network, "creating listen socket failed, sock id : %llu, ip ver : %d, protocol : %d, port : %d",
+            sock->GetID(), ipVer, protocol, port);
+        return false;
+    }
+
+    if (false == InsertSocket(sock))
+    {
+        ZS_LOG_ERROR(network, "inserting connect socket failed, sock id : %llu, ip ver : %d, protocol : %d, host : %s, port : %d",
+            sock->GetID(), sock->GetName(), ipVer, protocol, host.c_str(), port);
+        return false;
+    }
+
+    if (false == sock->Bind(0))
+    {
+        ZS_LOG_ERROR(network, "binding connect socket failed, sock id : %llu, ip ver : %d, protocol : %d, host : %s, port : %d",
+            sock->GetID(), sock->GetName(), ipVer, protocol, host.c_str(), port);
+        RemoveSocket(sock->GetID()); // not bound yet
+        return false;
+    }
+
+    // bind the socket on dispatcher
+#if defined(__GNUC__) || defined(__clang__)
+    std::size_t workerID = 0;
+    workerID = _workerAllocator++ % _dispatcherWorkers.size();
+    if (false == _dispatcher->Bind(workerID, sock.get(), BindType::BIND, EventType::OUTBOUND))
+#elif defined(_MSVC_)
+    if (false == _dispatcher->Bind(sock.get()))
+#endif // defined(__GNUC__) || defined(__clang__)
+    {
+        ZS_LOG_ERROR(network, "binding connect socket on dispatcher failed, sock id : %llu, socket name : %s, ip ver : %d, protocol : %d, host : %s, port : %d",
+            sock->GetID(), sock->GetName(), ipVer, protocol, host.c_str(), port);
+        RemoveSocket(sock->GetID()); // not bound yet
+        return false;
+    }
+
+    // connect
+    if (false == sock->Connect(host, port, onConnected, onReceived))
+    {
+        ZS_LOG_ERROR(network, "inserting connect socket failed, sock id : %llu, ip ver : %d, protocol : %d, host : %s, port : %d",
+            sock->GetID(), sock->GetName(), ipVer, protocol);
+        sock->Close();
+        return false;
+    }
+
+    ZS_LOG_INFO(network, "connecting succeeded, sock id : %llu, ip ver : %d, protocol : %d, host : %s, port : %d",
+        sock->GetID(), sock->GetName(), ipVer, protocol, host.c_str(), port);
+
+    return true;
+}
+
+bool Manager::InsertSocket(SocketSPtr sockBase)
 {
     std::lock_guard<std::mutex> locker(_lock);
 
-    _listeners.erase(sockID);
+    auto res = _sockets.insert(std::make_pair(sockBase->GetID(), sockBase));
+    return res.second;
 }
 
-int32_t Manager::GetIPVerValue(IPVer ipVer)
+void Manager::RemoveSocket(SocketID sockID)
 {
-    switch (ipVer)
-    {
-    case IPVer::IP_V4:
-    {
-        return AF_INET;
-    }
-    case IPVer::IP_V6:
-    {
-        return AF_INET6;
-    }
-    default:
-    {
-        ZS_LOG_FATAL(network, "invalid ip version, ip version : %d", ipVer);
-        return AF_INET;
-    }
-    }
+    std::lock_guard<std::mutex> locker(_lock);
+
+    _sockets.erase(sockID);
 }
 
-int32_t Manager::GetProtocolValue(Protocol protocol)
+SocketSPtr Manager::GetSocket(SocketID sockID)
 {
-    switch (protocol)
-    {
-    case Protocol::TCP:
-    {
-        return IPPROTO_TCP;
-    }
-    case Protocol::UDP:
-    {
-        return IPPROTO_UDP;
-    }
-    default:
-    {
-        ZS_LOG_FATAL(network, "invalid protocol, protocol : %d", protocol);
-        return IPPROTO_TCP;
-    }
-    }
-}
+    std::lock_guard<std::mutex> locker(_lock);
 
-int32_t Manager::GetSocketTypeValue(Protocol protocol)
-{
-    switch (protocol)
+    auto finder = _sockets.find(sockID);
+    if (_sockets.end() != finder)
     {
-    case Protocol::TCP:
-    {
-        return SOCK_STREAM;
+        return finder->second;
     }
-    case Protocol::UDP:
-    {
-        return SOCK_DGRAM;
-    }
-    default:
-    {
-        ZS_LOG_FATAL(network, "invalid protocol, protocol : %d", protocol);
-        return SOCK_STREAM;
-    }
-    }
-}
-
-void Manager::GetSockAddrIn(int32_t port, sockaddr_in& addr, std::string& host)
-{
-    std::memset(&addr, 0, sizeof(addr));
-
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(port);
-    addr.sin_addr.s_addr = htonl(INADDR_ANY);
-
-    host.resize(INET_ADDRSTRLEN);
-    inet_ntop(AF_INET, &addr, host.data(), INET_ADDRSTRLEN);
-}
-
-void Manager::GetSockAddrIn(int32_t port, sockaddr_in6& addr, std::string& host)
-{
-    memset(&addr, 0, sizeof(addr));
-
-    addr.sin6_family = AF_INET6;
-    addr.sin6_port = htons(port);
-    addr.sin6_addr = in6addr_any;
-
-    host.resize(INET6_ADDRSTRLEN);
-    inet_ntop(AF_INET6, &addr, host.data(), INET6_ADDRSTRLEN);
+    return nullptr;
 }

@@ -25,6 +25,9 @@ if ( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" )
     # disable some warnings
     add_compile_options(/wd4820)
     add_compile_options(/wd5039)
+    add_compile_options(/wd4996) # 'WSASocketA': Use WSASocketW() instead or define _WINSOCK_DEPRECATED_NO_WARNINGS to disable deprecated API warnings
+    add_compile_options(/wd4710) # 함수를 인라인하지 못했습니다.
+
 
     ############################################
     ### definitions

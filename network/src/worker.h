@@ -18,9 +18,9 @@ namespace network
         Worker(DispatcherSPtr dispatcher, std::size_t workerID);
         ~Worker() = default;
 
-#if not defined(_MSVC_)
+#if defined(__GNUC__) || defined(__clang__)
         bool OwnDispatcher();
-#endif // not _MSVC_
+#endif // defined(__GNUC__) || defined(__clang__)
 
     private:
         void threadMain();

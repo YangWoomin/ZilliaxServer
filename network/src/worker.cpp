@@ -13,18 +13,18 @@ Worker::Worker(DispatcherSPtr dispatcher, std::size_t workerID)
 
 }
 
-#if not defined(_MSVC_)
+#if defined(__GNUC__) || defined(__clang__)
 bool Worker::OwnDispatcher()
 {
     if (nullptr != _dispatcher)
     {
-        _dispatcher->SetOwner(_workerID, std::this_thread::get_id());
+        _dispatcher->SetOwner(_workerID);
         return true;
     }
 
     return false;
 }
-#endif // not _MSVC_
+#endif // defined(__GNUC__) || defined(__clang__)
 
 void Worker::threadMain()
 {

@@ -2,15 +2,11 @@
 #ifndef __ZS_NETWORK_MANAGER_H__
 #define __ZS_NETWORK_MANAGER_H__
 
-#include    "network/common.h"
 #include    "internal_common.h"
 
 #include    <unordered_map>
 #include    <mutex>
-
-#if not defined(_MSVC_)
 #include    <atomic>
-#endif // not _MSVC_
 
 namespace zs
 {
@@ -22,34 +18,32 @@ namespace network
         Manager() = default;
         ~Manager() = default;
 
-        // thread unsafe functions
-        bool Start(std::size_t workerCount);
+        bool Start(std::size_t asyncSendWorkerCount, std::size_t& dispatcherWorkerCount);
         void Stop();
 
-        // thread safe functions
         bool Bind(IPVer ipVer, Protocol protocol, int32_t port, SocketID& sockID);
+        bool Listen(SocketID sockID, int32_t backlog, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived);
+        bool Close(SocketID sockID);
+        bool Connect(IPVer ipVer, Protocol protocol, const std::string& host, int32_t port, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived);
 
-    private:
-        bool insertSocketContext(SocketContext* sCtx, SocketID& sockID);
-        void removeSocketContext(SocketID sockID);
-    
-    public:
-        static int32_t GetIPVerValue(IPVer ipVer);
-        static int32_t GetProtocolValue(Protocol protocol);
-        static int32_t GetSocketTypeValue(Protocol protocol);
-        static void GetSockAddrIn(int32_t port, sockaddr_in& addr, std::string& host);
-        static void GetSockAddrIn(int32_t port, sockaddr_in6& addr, std::string& host);
+        bool InsertSocket(SocketSPtr sockBase);
+        void RemoveSocket(SocketID sockID);
+        SocketSPtr GetSocket(SocketID sockID);
 
     private:
         DispatcherSPtr                                  _dispatcher;
-        Workers                                         _workers;
+        Workers                                         _dispatcherWorkers;
+        
         std::mutex                                      _lock;
-        std::unordered_map<SocketID, SocketContext*>    _listeners;
-        SocketID                                        _sockID = 0;
+        std::unordered_map<SocketID, SocketSPtr>        _sockets;
+        std::atomic<SocketID>                           _sockIDGen = 0;
 
-#if not defined(_MSVC_)
-        std::atomic<std::size_t>        _allocator { 0 };
-#endif // not _MSVC_
+#if defined(__GNUC__) || defined(__clang__)
+        std::atomic<std::size_t>                        _workerAllocator { 0 };
+#endif // defined(__GNUC__) || defined(__clang__)
+
+        Manager(const Manager&) = delete;
+        Manager& operator=(const Manager&) = delete;
     };
 }
 }
