@@ -1,0 +1,47 @@
+
+#ifndef __ZS_NETWORK_SOCKET_TCP_ACCEPTER_H__
+#define __ZS_NETWORK_SOCKET_TCP_ACCEPTER_H__
+
+#include    "socket.h"
+
+namespace zs
+{
+namespace network
+{
+    class Manager;
+    
+    class SocketTCPAceepter : public ISocket
+    {
+    public:
+        // bind a socket by calling "bind"
+        // bind the socket to dispatcher for accepted event
+        virtual bool Bind(int32_t port) override;
+
+        // make the socket listening by calling "listen"
+        // if in windows initiate async accept for the next accepted socket
+        virtual bool Listen(int32_t backlog) override;
+
+        virtual bool PreAccept() override;
+
+#if defined(__GNUC__) || defined(__clang__)
+        virtual bool OnAccepted() override;
+#endif // defined(__GNUC__) || defined(__clang__)
+
+        virtual bool PostAccept(std::string& name, std::string& peer) override;
+
+        virtual ~SocketTCPAceepter();
+
+    private:
+        SocketTCPAceepter(Manager& manager, SocketID sockID, IPVer ipVer, bool nonBlocking);
+        SocketTCPAceepter(Manager& manager, SocketID sockID, Socket sock, const std::string& name, const std::string& peer, IPVer ipVer);
+
+        SocketTCPAceepter(const SocketTCPAceepter&) = delete;
+        SocketTCPAceepter(const SocketTCPAceepter&&) = delete;
+        SocketTCPAceepter& operator=(const SocketTCPAceepter&) = delete;
+
+        friend class SocketGenerator;
+    };
+}
+}
+
+#endif // __ZS_NETWORK_SOCKET_TCP_ACCEPTER_H__

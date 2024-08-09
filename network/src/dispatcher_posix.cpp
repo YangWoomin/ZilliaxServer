@@ -5,8 +5,6 @@
 
 #include    "socket.h"
 
-#include    <cstring>
-
 using namespace zs::common;
 using namespace zs::network;
 
@@ -88,7 +86,14 @@ bool Epoll::Bind(ISocket* sock, BindType bindType, EventType eventType)
     
     struct epoll_event event;
     std::memset(&event, 0, sizeof(event));
-    event.events |= eventType;
+    if (BindType::BIND == bindType)
+    {
+        event.events |= eventType;
+    }
+    else if (BindType::MODIFY == bindType)
+    {
+        event.events = eventType;
+    }
     event.data.ptr = sock;
     if (INVALID_RESULT == epoll_ctl(_epoll, bindType, sock->GetSocket(), 
         BindType::UNBIND == bindType ? NULL : &event))
@@ -98,10 +103,10 @@ bool Epoll::Bind(ISocket* sock, BindType bindType, EventType eventType)
         return false;   
     }
 
-    // if (BindType::BIND == ctx->_bindType)
-    // {
-    //     ctx->_workerID = _workerID;
-    // }
+    if (BindType::BIND == bindType)
+    {
+        sock->SetWorkerID(_workerID);
+    }
 
     ZS_LOG_INFO(network, "binding socket on dispatcher succeeded, bind type : %d, event Type : %d, socket name : %s", 
         bindType, eventType, sock->GetName());
@@ -109,7 +114,7 @@ bool Epoll::Bind(ISocket* sock, BindType bindType, EventType eventType)
     return true;
 }
 
-bool Epoll::Dequeue(std::queue<ResultItem>& items)
+bool Epoll::Dequeue(std::queue<IOResult>& resList)
 {
     if (INVALID_FD_VALUE == _epoll)
     {
@@ -127,7 +132,7 @@ bool Epoll::Dequeue(std::queue<ResultItem>& items)
 
     for (auto i = 0; i < count; ++i)
     {
-        ResultItem item;
+        IOResult res;
 
         if (_notiFd == _events[i].data.fd)
         {
@@ -145,8 +150,6 @@ bool Epoll::Dequeue(std::queue<ResultItem>& items)
             {
                 // closing noti event
                 ZS_LOG_WARN(network, "epoll is being closed");
-                item._res._stop = true;
-                items.push(item);
                 return false;
             }
 
@@ -154,37 +157,67 @@ bool Epoll::Dequeue(std::queue<ResultItem>& items)
         }
 
         ISocket* sock = static_cast<ISocket*>(_events[i].data.ptr);
-        item._sock = sock;
+        res._sock = sock->GetSPtr();
+
+        if (_events[i].events & (EPOLLERR | EPOLLHUP | EPOLLRDHUP))
+        {
+            ZS_LOG_WARN(network, "epoll error occurred, events : %d, socket name : %s",
+                _events[i].events, sock->GetName());
+            
+            // unbind this socket from epoll object
+            epoll_ctl(_epoll, BindType::UNBIND, sock->GetSocket(), NULL);
+
+            res._release = true;
+        }
         
         if (0 != (EPOLLIN & _events[i].events))
         {
+            res._eventType = EventType::INBOUND;
+
             if (SocketType::ACCEPTER == sock->GetType())
             {
-                // accept
-                AcceptContext* aCtx = new AcceptContext();
-                item._iCtx = aCtx;
-                aCtx->_len = sizeof(sockaddr_storage);
-                aCtx->_sock = accept(sock->GetSocket(), (struct sockaddr*)aCtx->_addr, &aCtx->_len);
-                if (INVALID_SOCKET == aCtx->_sock)
+                if (Protocol::TCP == sock->GetProtocol())
                 {
-                    ZS_LOG_ERROR(network, "accept failed, socket name : %s, err : %d", 
-                        sock->GetName(), errno);
-                    item._res._release = true;
+                    if (false == sock->OnAccepted())
+                    {
+                        sock->Close();
+                        continue;
+                    }
+                }
+                else
+                {
+                    ZS_LOG_ERROR(network, "unknown protocol in handling accepter, socket name : %s, protocol : %d", 
+                        sock->GetName(), sock->GetProtocol());
+                    continue;
                 }
             }
             else if (SocketType::MESSENGER == sock->GetType())
             {
+                bool later = false;
+                if (false == sock->OnReceived(later))
+                {
+                    sock->Close();
+                    continue;
+                }
+                if (true == later)
+                {
+                    if (true != res._release)
+                    {
+                        continue; // retry later
+                    }
+                }
+
                 // recv
                 SendRecvContext* srCtx = new SendRecvContext();
-                item._iCtx = srCtx;
+                res._iCtx = srCtx;
                 if (Protocol::TCP == sock->GetProtocol())
                 {
-                    item._res._bytes = recv(sock->GetSocket(), srCtx->_buf, BUFFER_SIZE, 0);
+                    srCtx->_bytes = recv(sock->GetSocket(), srCtx->_buf, BUFFER_SIZE, 0);
                 }
                 else if (Protocol::UDP == sock->GetProtocol())
                 {
                     srCtx->_addrInfo._len = sizeof(sockaddr_storage);
-                    item._res._bytes = recvfrom(sock->GetSocket(), srCtx->_buf, BUFFER_SIZE, 0, (struct sockaddr*)srCtx->_addrInfo._addr, (socklen_t*)&srCtx->_addrInfo._len);
+                    srCtx->_bytes = recvfrom(sock->GetSocket(), srCtx->_buf, BUFFER_SIZE, 0, (struct sockaddr*)srCtx->_addrInfo._addr, (socklen_t*)&srCtx->_addrInfo._len);
                 }
                 else
                 {
@@ -195,7 +228,7 @@ bool Epoll::Dequeue(std::queue<ResultItem>& items)
                 }
 
                 int err = errno;
-                if (SOCKET_ERROR == item._res._bytes)
+                if (SOCKET_ERROR == srCtx->_bytes)
                 {
                     if (EAGAIN == err || EWOULDBLOCK == err)
                     {
@@ -207,13 +240,13 @@ bool Epoll::Dequeue(std::queue<ResultItem>& items)
 
                     ZS_LOG_ERROR(network, "recv failed, socket name : %s, err : %d", 
                         sock->GetName(), err);
-                    item._res._release = true;
+                    res._release = true;
                 }
-                else if (0 == item._res._bytes)
+                else if (0 == srCtx->_bytes)
                 {
                     ZS_LOG_WARN(network, "socket closed, socket name : %s", 
                         sock->GetName());
-                    item._res._release = true;
+                    res._release = true;
                 }
             }
             else
@@ -222,51 +255,17 @@ bool Epoll::Dequeue(std::queue<ResultItem>& items)
                     sock->GetName(), sock->GetType());
                 continue;
             }
+
+            resList.push(res);
+            res.Reset();
         }
 
         if (0 != (EPOLLOUT & _events[i].events))
         {
-            if (SocketType::CONNECTOR == sock->GetType())
-            {
-                item._iCtx = sock->GetContext();
-                // int32_t err = 0;
-                // socklen_t len = sizeof(err);
-                // if (SOCKET_ERROR == getsockopt(sock->GetSocket(), SOL_SOCKET, SO_ERROR, &err, &len))
-                // {
-                //     ZS_LOG_ERROR(network, "getsockopt for connect failed, err : %d, socket name : %s",
-                //         errno, sock->GetName());
-                //     item._res._release = true;
-                // }
-                // if (0 != err)
-                // {
-                //     ZS_LOG_ERROR(network, "connect failed, socket name : %s, err : %d",
-                //         sock->GetName(), errno);
-                //     item._res._release = true;
-                // }
-            }
-            else if (SocketType::MESSENGER == sock->GetType())
-            {
-                // notify sending buffer is available
-                SendRecvContext* srCtx = new SendRecvContext();
-                item._iCtx = srCtx;
-                srCtx->_isRecv = false;
-            }
-            else
-            {
-                ZS_LOG_WARN(network, "unknown socket type on EPOLLOUT, socket name : %s, socket type : %d", 
-                    sock->GetName(), sock->GetType());
-                continue;
-            }
+            res._eventType = EventType::OUTBOUND;
+            resList.push(res);
+            res.Reset();
         }
-
-        if (_events[i].events & (EPOLLERR | EPOLLHUP | EPOLLRDHUP))
-        {
-            ZS_LOG_WARN(network, "epoll error occurred, events : %d, socket name : %s",
-                _events[i].events, sock->GetName());
-            item._res._release = true;
-        }
-
-        items.push(item);
     }
 
     return true;
@@ -352,7 +351,7 @@ bool Dispatcher::Bind(std::size_t workerID, ISocket* sock, BindType bindType, Ev
     return true;
 }
 
-bool Dispatcher::Dequeue(std::size_t workerID, std::queue<ResultItem>& items)
+bool Dispatcher::Dequeue(std::size_t workerID, std::queue<ResultItem>& resList)
 {
     if (_epolls.size() <= workerID)
     {
@@ -361,7 +360,7 @@ bool Dispatcher::Dequeue(std::size_t workerID, std::queue<ResultItem>& items)
         return false;
     }
 
-    return _epolls[workerID]->Dequeue(items);
+    return _epolls[workerID]->Dequeue(resList);
 }
 
 #endif // defined(__GNUC__) || defined(__clang__)

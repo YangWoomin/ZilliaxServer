@@ -3,14 +3,13 @@
 
 #include    "common/log.h"
 
-#include    <cstring>
-
 using namespace zs::common;
 using namespace zs::network;
 
 #if defined(_MSVC_)
-LPFN_ACCEPTEX Helper::_lpfnAcceptEx = nullptr;
-LPFN_CONNECTEX Helper::_lpfnConnectEx = nullptr;
+LPFN_ACCEPTEX               Helper::_lpfnAcceptEx = nullptr;
+LPFN_CONNECTEX              Helper::_lpfnConnectEx = nullptr;
+LPFN_GETACCEPTEXSOCKADDRS   Helper::_lpfnGetAcceptExSockAddr = nullptr;
 #endif // defined(_MSVC_)
 
 bool Helper::Initialize()
@@ -30,6 +29,16 @@ bool Helper::Initialize()
         &_lpfnAcceptEx, sizeof(_lpfnAcceptEx), &bytesReturned, NULL, NULL))
     {
         ZS_LOG_ERROR(network, "preparing acceptex failed, err : %d", 
+            errno);
+        return false;
+    }
+
+    GUID getAcceptExSockAddrsGuid = WSAID_GETACCEPTEXSOCKADDRS;
+    bytesReturned = 0;
+    if (SOCKET_ERROR == WSAIoctl(sock, SIO_GET_EXTENSION_FUNCTION_POINTER, &getAcceptExSockAddrsGuid, sizeof(getAcceptExSockAddrsGuid),
+        &_lpfnGetAcceptExSockAddr, sizeof(_lpfnGetAcceptExSockAddr), &bytesReturned, NULL, NULL))
+    {
+        ZS_LOG_ERROR(network, "preparing getacceptexsockaddr failed, err : %d", 
             errno);
         return false;
     }
@@ -76,21 +85,10 @@ Socket Helper::CreateSocket(IPVer ipVer, Protocol protocol, bool isNonBlocking)
     }
     if (true == isNonBlocking)
     {
-        int flags, s;
-        flags = fcntl(sock, F_GETFL, 0);
-        if (SOCKET_ERROR == flags) 
+        if (false == Helper::MakeSocketNonBlocking(sock))
         {
-            ZS_LOG_ERROR(network, "fcntl for F_GETFL in creating socket failed, err  : %d",
-                errno);
-            CloseSocket(sock);
-            return INVALID_SOCKET;
-        }
-        flags |= O_NONBLOCK;
-        s = fcntl(sock, F_SETFL, flags);
-        if (s == -1) 
-        {
-            ZS_LOG_ERROR(network, "fcntl for F_SETFL in creating socket failed, err  : %d",
-                errno);
+            ZS_LOG_ERROR(network, "making socket non-blocking failed, socket : %d, ip ver : %d, protocol : %d",
+                sock, ipVer, protocol);
             CloseSocket(sock);
             return INVALID_SOCKET;
         }
@@ -98,6 +96,30 @@ Socket Helper::CreateSocket(IPVer ipVer, Protocol protocol, bool isNonBlocking)
 #endif // _MSVC_
     return sock;
 }
+
+#if defined(__GNUC__) || defined(__clang__)
+bool Helper::MakeSocketNonBlocking(Socket sock)
+{
+    int flags, s;
+    flags = fcntl(sock, F_GETFL, 0);
+    if (SOCKET_ERROR == flags) 
+    {
+        ZS_LOG_ERROR(network, "fcntl for F_GETFL failed, socket : %d, err : %d",
+            sock, errno);
+        return false;
+    }
+    flags |= O_NONBLOCK;
+    s = fcntl(sock, F_SETFL, flags);
+    if (s == -1) 
+    {
+        ZS_LOG_ERROR(network, "fcntl for F_SETFL failed, socket : %d, err : %d",
+            sock, errno);
+        return false;
+    }
+
+    return true;
+}
+#endif // defined(__GNUC__) || defined(__clang__)
 
 int32_t Helper::GetIPVerValue(IPVer ipVer)
 {
@@ -208,6 +230,76 @@ void Helper::GenSockAddr(IPVer ipVer, const char* ip, int32_t port, sockaddr_sto
     }
 }
 
+void Helper::GetSockAddr(sockaddr* addr, std::string& host, int32_t& port)
+{
+    if (AF_INET == addr->sa_family)
+    {
+        sockaddr_in* addr4 = (sockaddr_in*)addr;
+        inet_ntop(AF_INET, addr4, host.data(), INET_ADDRSTRLEN);
+        port = ntohs(addr4->sin_port);
+    }
+    else if (AF_INET6 == addr->sa_family)
+    {
+        sockaddr_in6* addr6 = (sockaddr_in6*)addr;
+        inet_ntop(AF_INET6, addr6, host.data(), INET6_ADDRSTRLEN);
+        port = ntohs(addr6->sin6_port);
+    }
+}
+
+void Helper::GetSockLocalAddr(Socket sock, IPVer ipVer, std::string& host, int32_t& port)
+{
+    if (IPVer::IP_V4 == ipVer)
+    {
+        sockaddr_in addr4;
+        socklen_t len = sizeof(sockaddr_in);
+        if (SOCKET_ERROR == getsockname(sock, (sockaddr*)&addr4, &len))
+        {
+            return;
+        }
+        host.resize(INET_ADDRSTRLEN);
+        inet_ntop(AF_INET, &(addr4.sin_addr), host.data(), host.size());
+        port = ntohs(addr4.sin_port);
+    }
+    else if (IPVer::IP_V6 == ipVer)
+    {
+        sockaddr_in6 addr6;
+        socklen_t len = sizeof(sockaddr_in6);
+        if (SOCKET_ERROR == getsockname(sock, (sockaddr*)&addr6, &len))
+        {
+            return;
+        }
+        host.resize(INET6_ADDRSTRLEN);
+        inet_ntop(AF_INET6, &(addr6.sin6_addr), host.data(), host.size());
+    }
+}
+
+void Helper::GetSockRemoteAddr(Socket sock, IPVer ipVer, std::string& host, int32_t& port)
+{
+    if (IPVer::IP_V4 == ipVer)
+    {
+        sockaddr_in addr4;
+        socklen_t len = sizeof(sockaddr_in);
+        if (SOCKET_ERROR == getpeername(sock, (sockaddr*)&addr4, &len))
+        {
+            return;
+        }
+        host.resize(INET_ADDRSTRLEN);
+        inet_ntop(AF_INET, &(addr4.sin_addr), host.data(), host.size());
+        port = ntohs(addr4.sin_port);
+    }
+    else if (IPVer::IP_V6 == ipVer)
+    {
+        sockaddr_in6 addr6;
+        socklen_t len = sizeof(sockaddr_in6);
+        if (SOCKET_ERROR == getpeername(sock, (sockaddr*)&addr6, &len))
+        {
+            return;
+        }
+        host.resize(INET6_ADDRSTRLEN);
+        inet_ntop(AF_INET6, &(addr6.sin6_addr), host.data(), host.size());
+    }
+}
+
 bool Helper::IsValidIP(const char* ip, IPVer ipVer)
 {
     if (IPVer::IP_V4 == ipVer)
@@ -263,30 +355,3 @@ void Helper::ConvertAddrInfoToSockAdddr(addrinfo* in, int32_t port, sockaddr_sto
         std::memcpy(out, ipv6, len);
     }
 }
-
-// void Helper::GetSockAddr(IPVer ipVer, sockaddr_storage& addr, std::string& host, int32_t& port)
-// {
-//     // if (IPVer::IP_V4 == ipVer)
-//     // {
-//     //     sockaddr_in* addr4 = (sockaddr_in*)&addr;
-//     //     addr4->sin_family = AF_INET;
-//     //     addr4->sin_addr.s_addr = INADDR_ANY;
-//     //     addr4->sin_port = htons(port);
-//     //     len = sizeof(addr4);
-//     //     host.resize(INET_ADDRSTRLEN);
-//     //     port = 
-//     //     inet_ntop(AF_INET, &addr4, host.data(), INET_ADDRSTRLEN);
-//     // }
-//     // else // IPVer::IP_V6 == ipVer
-//     // {
-//     //     sockaddr_in6* addr6 = (sockaddr_in6*)&addr;
-//     //     addr6->sin6_family = AF_INET6;
-//     //     addr6->sin6_addr = in6addr_any;
-//     //     addr6->sin6_port = htons(port);
-//     //     len = sizeof(addr6);
-//     //     host.resize(INET6_ADDRSTRLEN);
-//     //     inet_ntop(AF_INET6, &addr6, host.data(), INET6_ADDRSTRLEN);
-//     // }
-// }
-
-

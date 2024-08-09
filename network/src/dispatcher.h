@@ -28,7 +28,7 @@ namespace network
 
         void SetOwner(std::size_t workerID);
         bool Bind(ISocket* sock, BindType bindType, EventType eventType);
-        bool Dequeue(std::queue<ResultItem>& items);
+        bool Dequeue(std::queue<IOResult>& resList);
 
     private:
         int32_t                 _epoll = INVALID_FD_VALUE;
@@ -54,7 +54,7 @@ namespace network
         void Stop(std::size_t workerCount);
         void Finalize();
         
-        bool Dequeue(std::size_t workerID, std::queue<ResultItem>& items);
+        bool Dequeue(std::size_t workerID, std::queue<IOResult>& resList);
 
 #if defined(_MSVC_)
     public:

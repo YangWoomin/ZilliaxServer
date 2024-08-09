@@ -75,7 +75,7 @@ bool Dispatcher::Bind(ISocket* sock)
     return true;
 }
 
-bool Dispatcher::Dequeue(std::size_t, std::queue<ResultItem>& items)
+bool Dispatcher::Dequeue(std::size_t, std::queue<IOResult>& resList)
 {
     if (INVALID_HANDLE_VALUE == _iocp)
     {
@@ -83,67 +83,85 @@ bool Dispatcher::Dequeue(std::size_t, std::queue<ResultItem>& items)
         return false;
     }
 
-    ResultItem item;
+    IOResult res;
 
-    item._res._bytes = 0;
+    DWORD bytes = 0;
     DWORD err = 0;
     ULONG_PTR key = NULL;
+    LPOVERLAPPED pOl = NULL;
     
-    if (FALSE == GetQueuedCompletionStatus(_iocp, &(item._res._bytes), &key, (LPOVERLAPPED*)&item._iCtx, INFINITE))
+    if (FALSE == GetQueuedCompletionStatus(_iocp, &bytes, &key, (LPOVERLAPPED*)&pOl, INFINITE))
     {
         err = GetLastError();
 
         if (NULL != key) 
         {
-            item._sock = (ISocket*)key;
+            ISocket* sock = (ISocket*)key;
+            res._sock = sock->GetSPtr();
         }
 
         // error
-        if (NULL == item._iCtx)
+        if (NULL == pOl)
         {
             if (ERROR_ABANDONED_WAIT_0 == err)
             {
                 ZS_LOG_ERROR(network, "iocp closed, socket name : %s",
-                    item._sock ? item._sock->GetName() : "unknown");
-                item._res._stop = true;
+                    res._sock ? res._sock->GetName() : "unknown");
+                return false;
             }
             else
             {
-                ZS_LOG_ERROR(network, "iocp  error, socket name : %s, error : %lu", 
-                    item._sock ? item._sock->GetName() : "unknown", err);
-                item._res._release = true;
+                ZS_LOG_ERROR(network, "iocp error, socket name : %s, error : %lu", 
+                    res._sock ? res._sock->GetName() : "unknown", err);
+                res._release = true;
             }
 
-            return false;
+            resList.push(res);
+            return true;
         }
 
         // when using ConnectEx
         if (ERROR_CONNECTION_REFUSED == err)
         {
             ZS_LOG_ERROR(network, "connection refused, socket name : %s",
-                item._sock ? item._sock->GetName() : "unknown");
+                res._sock ? res._sock->GetName() : "unknown");
         }
         else
         {
             ZS_LOG_ERROR(network, "GetQueuedCompletionStatus for dequeue failed, socket name : %s, err : %lu",
-                item._sock ? item._sock->GetName() : "unknown", err);
+                res._sock ? res._sock->GetName() : "unknown", err);
         }
 
-        item._res._release = true;
-        return false;
+        res._release = true;
+        resList.push(res);
+        return true;
     }
 
     // normal close
     if (NULL == key)
     {
-        ZS_LOG_WARN(network, "iocp is being closed fron dequeue");
-        item._res._stop = true;
+        ZS_LOG_WARN(network, "iocp is being closed from dequeue");
         return false;
     }
 
-    item._sock = (ISocket*)key;
+    ISocket* sock = (ISocket*)key;
+    res._sock = sock->GetSPtr();
 
-    items.push(item);
+    SendRecvContext* sCtx = sock->GetSendContext();
+    if (nullptr != sCtx && pOl == &(sCtx->_ol))
+    {
+        res._eventType = EventType::OUTBOUND;
+        sCtx->_bytes = bytes;
+    }
+
+    SendRecvContext* rCtx = sock->GetRecvContext();
+    if (nullptr != rCtx && pOl == &(rCtx->_ol))
+    {
+        res._eventType = EventType::INBOUND;
+        rCtx->_bytes = bytes;
+    }
+
+    resList.push(res);
 
     return true;
 }

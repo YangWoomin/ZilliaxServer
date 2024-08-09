@@ -13,22 +13,23 @@ namespace network
 {
     using namespace zs::common;
     
-    class __ZS_NETWORK_API Network
+    class __ZS_NETWORK_API Network final
     {
     public:
         // these functions should be called by only one(main) thread when program start or end time
         static bool Initialize(Logger::Messenger msgr);
         static void Finalize();
-        static bool Start(std::size_t asyncSendWorkerCount, std::size_t dispatcherWorkerCount = 0);
+        static bool Start(std::size_t assitantWorkerCount, std::size_t dispatcherWorkerCount = 0);
         static void Stop();
 
         // these functions should be called by one thread for one socket
         // DO NOT call these functions simultaneously for one socket
         // these functions are available for simultaneous call for different sockets
         static bool Bind(IPVer ipVer, Protocol protocol, int32_t port, SocketID& sockID);
-        static bool Listen(SocketID sockID, int32_t backlog, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived);
+        static bool Listen(SocketID sockID, int32_t backlog, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived, OnClosedSPtr onClosed);
         static bool Close(SocketID sockID);
-        static bool Connect(IPVer ipVer, Protocol protocol, std::string host, int32_t port, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived);
+        static bool ConnectTCP(IPVer ipVer, std::string host, int32_t port, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived, OnClosedSPtr onClosed);
+        static ConnectionWPtr ConnectUDP(IPVer ipVer, std::string host, int32_t port, OnReceivedSPtr onReceived);
 
     private:
         static const std::size_t        MAX_WORKER_COUNT = 128;

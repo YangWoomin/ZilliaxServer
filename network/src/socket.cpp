@@ -4,32 +4,176 @@
 #include    "common/log.h"
 
 #include    "helper.h"
+#include    "manager.h"
+#include    "socket_tcp_accepter.h"
+#include    "socket_tcp_connector.h"
 
 using namespace zs::common;
 using namespace zs::network;
 
 /////////////////////////////////////////////////////////////////////////////
 // ISocket
-ISocket::ISocket(SocketID sockID, SocketType type, IPVer ipVer, Protocol protocol, bool nonBlocking)
-    : _sockID(sockID), _type(type), _ipVer(ipVer), _protocol(protocol)
+ISocket::ISocket(Manager& manager, SocketID sockID, SocketType type, IPVer ipVer, Protocol protocol, bool nonBlocking)
+    : _manager(manager), _sockID(sockID), _type(type), _ipVer(ipVer), _protocol(protocol)
 {
     _sock = Helper::CreateSocket(_ipVer, _protocol, nonBlocking);
 }
 
+ISocket::ISocket(Manager& manager, SocketID sockID, Socket sock, const std::string& name, const std::string& peer, SocketType type, IPVer ipVer, Protocol protocol)
+    : _manager(manager), _sockID(sockID), _sock(sock), _type(type), _ipVer(ipVer), _protocol(protocol), _name(name), _peer(peer)
+{
+
+}
+
+ISocket::~ISocket()
+{
+    if (nullptr != _aCtx)
+    {
+        delete _aCtx;
+        _aCtx = nullptr;
+    }
+
+    if (nullptr != _cCtx)
+    {
+        delete _cCtx;
+        _cCtx = nullptr;
+    }
+
+    if (nullptr != _sCtx)
+    {
+        delete _sCtx;
+        _sCtx = nullptr;
+    }
+
+    if (nullptr != _rCtx)
+    {
+        delete _rCtx;
+        _rCtx = nullptr;
+    }
+}
+
 void ISocket::Close()
 {
-    if (INVALID_SOCKET != _sock)
+    ConnectionSPtr conn = _manager.RemoveConnection(_connID);
     {
-        CloseSocket(_sock);
-        _sock = INVALID_SOCKET;
+        std::lock_guard<std::mutex> locker(_lock);
+
+        if (INVALID_SOCKET != _sock)
+        {
+            CloseSocket(_sock);
+            _sock = INVALID_SOCKET;
+        }
+
+        _isClosing = true;
+    }
+
+    // invoke onClosed
+    if (nullptr != _onClosed && nullptr != conn)
+    {
+        (*_onClosed)(conn);
     }
 
     ZS_LOG_WARN(network, "socket is being closed, sock id : %llu, name : %s",
         _sockID, GetName());
 }
 
+bool ISocket::Bind(int32_t port)
+{
+    ZS_LOG_FATAL(network, "binding on this socket is not implemented, sock id : %llu, name : %s", 
+        _sockID, _name.c_str());
+
+    return false;
+}
+
+bool ISocket::Listen(int32_t backlog)
+{
+    ZS_LOG_FATAL(network, "listening on this socket is not implemented, sock id : %llu, name : %s", 
+        _sockID, _name.c_str());
+
+    return false;
+}
+bool ISocket::PreAccept()
+{
+    ZS_LOG_FATAL(network, "pre accepting on this socket is not implemented, sock id : %llu, name : %s", 
+        _sockID, _name.c_str());
+
+    return false;
+}
+
+bool ISocket::Connect(const std::string& host, int32_t port)
+{
+    ZS_LOG_FATAL(network, "connecting on this socket is not implemented, sock id : %llu, name : %s", 
+        _sockID, _name.c_str());
+
+    return false;
+}
+
+bool ISocket::PreConnect(std::size_t idx)
+{
+    ZS_LOG_FATAL(network, "pre connecting on this socket is not implemented, sock id : %llu, name : %s", 
+        _sockID, _name.c_str());
+
+    return false;
+}
+
+bool ISocket::PreRecv(bool& isReceived)
+{
+    ZS_LOG_FATAL(network, "pre receiving on this socket is not implemented, sock id : %llu, name : %s", 
+        _sockID, _name.c_str());
+
+    return false;
+}
+
+bool ISocket::PostAccept(std::string& name, std::string& peer)
+{
+    ZS_LOG_FATAL(network, "post accepting on this socket is not implemented, sock id : %llu, name : %s", 
+        _sockID, _name.c_str());
+
+    return false;
+}
+
+bool ISocket::PostConnect(bool& retry)
+{
+    ZS_LOG_FATAL(network, "post connecting on this socket is not implemented, sock id : %llu, name : %s", 
+        _sockID, _name.c_str());
+
+    return false;
+}
+
+#if defined(__GNUC__) || defined(__clang__)
+bool ISocket::OnAccepted()
+{
+    ZS_LOG_FATAL(network, "being accepted on this socket is not implemented, sock id : %llu, name : %s", 
+        _sockID, _name.c_str());
+
+    return false;
+}
+
+bool ISocket::OnReceived(bool& later)
+{
+    ZS_LOG_FATAL(network, "being received on this socket is not implemented, sock id : %llu, name : %s", 
+        _sockID, _name.c_str());
+
+    return false;
+}
+#endif // defined(__GNUC__) || defined(__clang__)
+
+void ISocket::SetCallback(OnConnectedSPtr onConnected, OnReceivedSPtr onReceived, OnClosedSPtr onClosed)
+{
+    _onConnected = onConnected;
+    _onReceived = onReceived;
+    _onClosed = onClosed;
+}
+
 bool ISocket::bind(int32_t port)
 {
+    if (INVALID_SOCKET == _sock)
+    {
+        ZS_LOG_ERROR(network, "binding socket failed, sock id : %llu, socket name : %s", 
+            _sockID, GetName());
+        return false;
+    }
+
     // bind the socket
     std::string name;
     sockaddr_storage addr;
@@ -37,7 +181,7 @@ bool ISocket::bind(int32_t port)
     Helper::GenSockAddr(_ipVer, port, addr, len, name);
     if (SOCKET_ERROR == ::bind(_sock, (struct sockaddr*)&addr, (int32_t)len))
     {
-        ZS_LOG_ERROR(network, "binding socket failed, socket id : %llu, err : %d", 
+        ZS_LOG_ERROR(network, "bind failed, socket id : %llu, err : %d", 
             _sockID, errno);
         return false;
     }
@@ -50,171 +194,104 @@ bool ISocket::bind(int32_t port)
 
 /////////////////////////////////////////////////////////////////////////////
 // SocketGenerator
-SocketSPtr SocketGenerator::CreateSocket(SocketID sockID, SocketType type, IPVer ipVer, Protocol protocol, bool nonBlocking)
+SocketSPtr SocketGenerator::CreateSocket(Manager& manager, SocketID sockID, SocketType type, IPVer ipVer, Protocol protocol, bool nonBlocking)
 {
     if (Protocol::TCP == protocol)
     {
         if (SocketType::ACCEPTER == type)
         {
-            return SocketSPtr(new SocketTCPListener(sockID, ipVer, nonBlocking));
+            return SocketSPtr(new SocketTCPAceepter(manager, sockID, ipVer, nonBlocking));
         }
         else if (SocketType::CONNECTOR == type)
         {
-            return SocketSPtr(new SocketTCPConnector(sockID, ipVer, nonBlocking));
+            return SocketSPtr(new SocketTCPConnector(manager, sockID, ipVer, nonBlocking));
+        }
+        else if (SocketType::MESSENGER == type)
+        {
+            return SocketSPtr(new SocketTCPMessenger(manager, sockID, ipVer, nonBlocking));
+        }
+        else
+        {
+            ZS_LOG_ERROR(network, "invalid socket type, socket id : %llu, protocol : %d, type : %d", 
+                sockID, protocol, type);
         }
     }
     else if (Protocol::UDP == protocol)
     {
-
+        if (SocketType::ACCEPTER == type)
+        {
+            return nullptr;
+        }
+        else if (SocketType::CONNECTOR == type)
+        {
+            return nullptr;
+        }
+        else if (SocketType::MESSENGER == type)
+        {
+            return nullptr;
+        }
+        else
+        {
+            ZS_LOG_ERROR(network, "invalid socket type, socket id : %llu, protocol : %d, type : %d", 
+                sockID, protocol, type);
+        }
+    }
+    else
+    {
+        ZS_LOG_ERROR(network, "invalid protocol, socket id : %llu, protocol : %d", 
+            sockID, protocol);
     }
 
     return nullptr;
 }
 
-/////////////////////////////////////////////////////////////////////////////
-// SocketTCPListener
-bool SocketTCPListener::Bind(int32_t port)
+SocketSPtr SocketGenerator::CreateSocket(Manager& manager, SocketID sockID, Socket sock, const std::string& name, const std::string& peer, SocketType type, IPVer ipVer, Protocol protocol)
 {
-    if (INVALID_SOCKET == _sock)
+    if (Protocol::TCP == protocol)
     {
-        ZS_LOG_ERROR(network, "invalid listen socket, name : %s", 
-            GetName());
-        return false;
-    }
-
-    // set socket reuse option
-    int reuse = 1;
-    if (SOCKET_ERROR == setsockopt(_sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&reuse, sizeof(reuse)))
-    {
-        ZS_LOG_ERROR(network, "setsockopt reuse for listen socket failed, socket id : %llu, err : %d", 
-            _sockID, errno);
-        return false;
-    }
-
-    if (false == this->bind(port))
-    {
-        ZS_LOG_ERROR(network, "binding listen socket failed, socket id : %llu", 
-            _sockID);
-        return false;
-    }
-
-    ZS_LOG_INFO(network, "binding listen socket succeeded, socket id : %llu, name : %s", 
-        _sockID, GetName());
-
-    return true;
-}
-
-bool SocketTCPListener::Connect(const std::string& host, int32_t port, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived)
-{
-    ZS_LOG_FATAL(network, "connecting listen socket is not supported, sock id : %llu, name : %s", 
-        _sockID, _name.c_str());
-
-    return false;
-}
-
-SocketTCPListener::SocketTCPListener(SocketID sockID, IPVer ipVer, bool nonBlocking)
-    : ISocket(sockID, SocketType::ACCEPTER, ipVer, Protocol::TCP, nonBlocking)
-{
-
-}
-
-SocketTCPListener::~SocketTCPListener()
-{
-    Close();
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// SocketTCPConnector
-bool SocketTCPConnector::Bind(int32_t)
-{
-    if (INVALID_SOCKET == _sock)
-    {
-        ZS_LOG_ERROR(network, "invalid connect socket, name : %s", 
-            GetName());
-        return false;
-    }
-
-    if (false == this->bind(0))
-    {
-        ZS_LOG_ERROR(network, "binding connect socket failed, socket id : %llu", 
-            _sockID, GetName());
-        return false;
-    }
-
-    ZS_LOG_INFO(network, "binding connect socket succeeded, socket id : %llu, socket name : %s", 
-        _sockID, GetName());
-
-    return true;
-}
-
-bool SocketTCPConnector::Listen(int32_t backlog, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived)
-{
-    ZS_LOG_FATAL(network, "listening connector socket is not supported, sock id : %llu, name : %s", 
-        _sockID, _name.c_str());
-
-    return false;
-}
-
-SocketTCPConnector::SocketTCPConnector(SocketID sockID, IPVer ipVer, bool nonBlocking)
-    : ISocket(sockID, SocketType::CONNECTOR, ipVer, Protocol::TCP, nonBlocking)
-{
-
-}
-
-SocketTCPConnector::~SocketTCPConnector()
-{
-    Close();
-}
-
-ConnectContext* SocketTCPConnector::prepare(const std::string& host, int32_t port)
-{
-    if (INVALID_SOCKET == _sock)
-    {
-        ZS_LOG_ERROR(network, "invalid connect socket created, socket name : %s", 
-            GetName());
-        return nullptr;
-    }
-
-    ConnectContext* cCtx = new ConnectContext();
-    
-    if (false == Helper::IsValidIP(host.c_str(), _ipVer))
-    {
-        // if host is passed as domain name
-        // convert it to ip(s) and try to connect by the ip(s)
-        struct addrinfo hints, *res;
-
-        Helper::GenAddrInfo(_protocol, hints);
-
-        // this could be blocked
-        if (0 != getaddrinfo(host.c_str(), NULL, &hints, &res))
+        if (SocketType::ACCEPTER == type)
         {
-            ZS_LOG_ERROR(network, "getaddrinfo for connect failed, socket name : %s, err : %d",
-                GetName(), errno);
-            delete cCtx;
+            return SocketSPtr(new SocketTCPAceepter(manager, sockID, sock, name, peer, ipVer));
+        }
+        else if (SocketType::CONNECTOR == type)
+        {
+            return SocketSPtr(new SocketTCPConnector(manager, sockID, sock, name, peer, ipVer));
+        }
+        else if (SocketType::MESSENGER == type)
+        {
+            return SocketSPtr(new SocketTCPMessenger(manager, sockID, sock, name, peer, ipVer));
+        }
+        else
+        {
+            ZS_LOG_ERROR(network, "invalid socket type, socket id : %llu, protocol : %d, type : %d", 
+                sockID, protocol, type);
+        }
+    }
+    else if (Protocol::UDP == protocol)
+    {
+        if (SocketType::ACCEPTER == type)
+        {
             return nullptr;
         }
-
-        for (auto p = res; NULL != p; p = p->ai_next)
+        else if (SocketType::CONNECTOR == type)
         {
-            AddrInfo addrInfo;
-            Helper::ConvertAddrInfoToSockAdddr(p, port, (sockaddr_storage*)addrInfo._addr, addrInfo._len);
-            cCtx->_addrs.push_back(addrInfo);
+            return nullptr;
+        }
+        else if (SocketType::MESSENGER == type)
+        {
+            return nullptr;
+        }
+        else
+        {
+            ZS_LOG_ERROR(network, "invalid socket type, socket id : %llu, protocol : %d, type : %d", 
+                sockID, protocol, type);
         }
     }
     else
     {
-        AddrInfo addrInfo;
-        Helper::GenSockAddr(_ipVer, host.c_str(), port, (sockaddr_storage*)addrInfo._addr, addrInfo._len);
-        cCtx->_addrs.push_back(addrInfo);
+        ZS_LOG_ERROR(network, "invalid protocol, socket id : %llu, protocol : %d", 
+            sockID, protocol);
     }
 
-    if (0 >= cCtx->_addrs.size())
-    {
-        ZS_LOG_ERROR(network, "getting ip from hostname failed, name : %s", 
-            GetName());
-        delete cCtx;
-        return nullptr;
-    }
-
-    return cCtx;
+    return nullptr;
 }

@@ -121,4 +121,30 @@
 			엉뚱한 데이터가 껴서 오면 어쩔거?
 				어차피 TLS 단까지 뚫기는 어려울거고 클라를 조작하거나 클라가 해킹당한거면 어쩔수 없음
 				조작하는 클라나 해킹 당한 클라까지 서비스를 잘 해줘야 하나 의문
-	
+
+** 끄적끄적
+
+connection이든 assistant worker든 socket을 weak ptr로 참조
+	소켓은 언제든 정리될 수 있음 (close에 의해)
+	iocp 같은 경우 send/recv 처리 도중에 close 처리도 같이 진행될 수 있음
+	close 처리 시 manager에서 socket 정리했을 때 send/recv 처리도 안전하게 진행 가능
+		왜냐면 weak ptr에서 shared ptr 얻어서 진행했기 때문에 참조가 증가하기 때문
+		반대로 send/recv 처리를 안하고 있을 때면 바로 정리가 되기 때문에 간편함
+	따라서 socket을 참조하고 있는 다른 녀석들은 언제든 정리될 수 있는 socket을 안전하게 사용 가능
+
+connection도 사용자에게 weak ptr 참조를 전달
+	connection도 네트워크 모듈에서 언제든 정리할 수 있기 때문에
+	어차피 sock이 정리되면 connection은 껍데기만 남기 때문에 아무것도 못하고 자기도 그냥 정리될 수 있음 (간편)
+
+udp 소켓은 needInbound를 false로..
+	accepter의 udp 소켓은 모든 messenger들이 공유하니깐 두번 바인딩할 필요가 없음
+	-> ㄴㄴ 저 필드 없애고 udp accepter는 없앨거임 udp messenger만 존재
+	-> udp accepter와 connector 구분 필요? 
+		ㄴㄴ 그냥 1개 소켓 공유하면서 새로운 연결 들어오면 socket이랑 connection 만들어서 제공
+		connector는 원래 논리적으로 여러 connection을 제공하지 않고 1개 connection만 제공해야 함
+		그럼 accepter와 connector 차이를 만들면 됨
+		accepter는 tcp처럼 새로운 주소로부터 데이터를 수신하면 그 주소에 해당하는 새로운 connection을 만들어 주면 됨
+		connector는 지정한 주소로부터 수신되는 데이터만 처리하고 나머지는 무시
+
+socket close될 때 onClosed 콜백 호출?
+	이 때가 제일 타당해보이긴 함

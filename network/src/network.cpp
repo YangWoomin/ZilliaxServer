@@ -5,8 +5,6 @@
 
 #include    "internal_common.h"
 #include    "manager.h"
-#include    "dispatcher.h"
-#include    "worker.h"
 
 using namespace zs::common;
 using namespace zs::network;
@@ -60,7 +58,7 @@ void Network::Finalize()
     ZS_LOG_INFO(network, "network module finalized");
 }
 
-bool Network::Start(std::size_t asyncSendWorkerCount, std::size_t dispatcherWorkerCount)
+bool Network::Start(std::size_t assitantWorkerCount, std::size_t dispatcherWorkerCount)
 {
     if (nullptr == manager)
     {
@@ -68,14 +66,14 @@ bool Network::Start(std::size_t asyncSendWorkerCount, std::size_t dispatcherWork
         return false;
     }
 
-    if (false == manager->Start(asyncSendWorkerCount, dispatcherWorkerCount))
+    if (false == manager->Start(assitantWorkerCount, dispatcherWorkerCount))
     {
         ZS_LOG_ERROR(network, "network manager start failed");
         return false;
     }
 
-    ZS_LOG_INFO(network, "network module started, async send worker count : %llu, dispatcher worker count : %d",
-        asyncSendWorkerCount, dispatcherWorkerCount);
+    ZS_LOG_INFO(network, "network module started, assistant worker count : %llu, dispatcher worker count : %d",
+        assitantWorkerCount, dispatcherWorkerCount);
 
     return true;
 }
@@ -127,7 +125,7 @@ bool Network::Bind(IPVer ipVer, Protocol protocol, int32_t port, SocketID& sockI
     return true;
 }
 
-bool Network::Listen(SocketID sockID, int32_t backlog, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived)
+bool Network::Listen(SocketID sockID, int32_t backlog, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived, OnClosedSPtr onClosed)
 {
     if (nullptr == manager)
     {
@@ -142,7 +140,7 @@ bool Network::Listen(SocketID sockID, int32_t backlog, OnConnectedSPtr onConnect
         return false;
     }
 
-    if (false == manager->Listen(sockID, backlog, onConnected, onReceived))
+    if (false == manager->Listen(sockID, backlog, onConnected, onReceived, onClosed))
     {
         return false;
     }
@@ -166,7 +164,7 @@ bool Network::Close(SocketID sockID)
     return true;
 }
 
-bool Network::Connect(IPVer ipVer, Protocol protocol, std::string host, int32_t port, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived)
+bool Network::ConnectTCP(IPVer ipVer, std::string host, int32_t port, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived, OnClosedSPtr onClosed)
 {
     if (nullptr == manager)
     {
@@ -180,12 +178,6 @@ bool Network::Connect(IPVer ipVer, Protocol protocol, std::string host, int32_t 
         return false;
     }
 
-    if (Protocol::TCP != protocol && Protocol::UDP != protocol)
-    {
-        ZS_LOG_ERROR(network, "invalid protocol for bind");
-        return false;
-    }
-
     if (AVAILABLE_MINIMUM_PORT > port || AVAILABLE_MAXIMUM_PORT < port)
     {
         ZS_LOG_ERROR(network, "invalid port for bind, available port range : %d ~ %d",
@@ -193,10 +185,15 @@ bool Network::Connect(IPVer ipVer, Protocol protocol, std::string host, int32_t 
         return false;
     }
 
-    if (false == manager->Connect(ipVer, protocol, host, port, onConnected, onReceived))
+    if (false == manager->Connect(ipVer, Protocol::TCP, host, port, onConnected, onReceived, onClosed))
     {
         return false;
     }
 
     return true;
+}
+
+ConnectionWPtr ConnectUDP(IPVer ipVer, std::string host, int32_t port, OnReceivedSPtr onReceived)
+{
+    return ConnectionSPtr(nullptr);
 }

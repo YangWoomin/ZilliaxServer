@@ -31,25 +31,29 @@
 
 #include    "network/common.h"
 
-#include    <memory>
 #include    <vector>
 #include    <string>
 #include    <thread>
 #include    <atomic>
+#include    <cstring>
+#include    <mutex>
 
 namespace zs
 {
 namespace network
 {
-    class Worker;
-    using WorkerSPtr = std::shared_ptr<Worker>;
-    using Workers = std::vector<WorkerSPtr>;
+    class DispatcherWorker;
+    using DispatcherWorkerSPtr = std::shared_ptr<DispatcherWorker>;
+    using DispatcherWorkers = std::vector<DispatcherWorkerSPtr>;
 
     class Dispatcher;
     using DispatcherSPtr = std::shared_ptr<Dispatcher>;
 
     static const std::size_t SOCKET_NAME_SIZE = 128;
-    static const std::size_t BUFFER_SIZE = 1024;
+
+#define NO_SOCKET_ERROR         0
+#define SUCCESS_RESULT          0
+#define INVALID_RESULT          -1
 
 #if defined(__GNUC__) || defined(__clang__)
     enum BindType : int32_t
@@ -67,8 +71,11 @@ namespace network
 
 #define INVALID_FD_VALUE        -1
 #define INVALID_SOCKET          -1
-#define INVALID_RESULT          -1
 #define SOCKET_ERROR            -1
+#define CONN_REFUSED            ECONNREFUSED 
+#define CONN_TIMEOUT            ETIMEDOUT
+#define CONN_HOSTUNREACH        EHOSTUNREACH
+#define CONN_NETUNREACH         ENETUNREACH
 #define INFINITE                -1
 #define CloseSocket             close
 
@@ -79,15 +86,22 @@ namespace network
 #if defined(errno)
 #undef errno
 #endif // defined(errno)
+#define CONN_REFUSED            WSAECONNREFUSED 
+#define CONN_TIMEOUT            WSAETIMEDOUT
+#define CONN_HOSTUNREACH        WSAEHOSTUNREACH
+#define CONN_NETUNREACH         WSAENETUNREACH
 #define errno                   WSAGetLastError()
 #define CloseSocket             closesocket
 
     using Socket = SOCKET;
 
-#endif // defined(__GNUC__) || defined(__clang__)
+    enum EventType
+    {
+        INBOUND         = 0,
+        OUTBOUND        = 1,
+    };
 
-    class ISocket;
-    using SocketSPtr = std::shared_ptr<ISocket>;
+#endif // defined(__GNUC__) || defined(__clang__)
 
     enum SocketType
     {
@@ -99,19 +113,28 @@ namespace network
     struct IOContext
     {
 #if defined(_MSVC_)
-        OVERLAPPED      _ol;        
+        OVERLAPPED      _ol;
 #endif // _MSVC_
     };
 
     struct AcceptContext : public IOContext
     {
         Socket          _sock;
+
         char            _addr[(sizeof(sockaddr_storage) + 16) * 2] = { 0, };
 #if defined(_MSVC_)
         DWORD           _len = 0; // addr len
 #elif defined(__GNUC__) || defined(__clang__)
         socklen_t       _len = 0; // addr len
 #endif // _MSVC_
+        
+        // receiving buffer for udp
+        char            _buf[BUFFER_SIZE] = { 0, };
+        
+        void Reset()
+        {
+            std::memset(this, 0, sizeof(AcceptContext));
+        }
     };
 
     struct AddrInfo
@@ -124,36 +147,46 @@ namespace network
     {
         std::vector<AddrInfo>   _addrs;
         std::size_t             _idx = 0;
+
+        void Reset()
+        {
+            _addrs.clear();
+            _idx = 0;
+        }
     };
 
     struct SendRecvContext : public IOContext
     {
-        // whether this context is for recv or send
-        bool            _isRecv = true;
-
         // send/recv buffer
         char            _buf[BUFFER_SIZE] = { 0, };
 
+        #if defined(_MSVC_)
+        DWORD           _bytes = 0; // send/recv size
+#elif defined(__GNUC__) || defined(__clang__)
+        int32_t         _bytes = 0; // send/recv size
+#endif // _MSVC_
+
         // socket address for udp
         AddrInfo        _addrInfo;
+
+        void Reset()
+        {
+            std::memset(this, 0, sizeof(SendRecvContext));
+        }
     };
 
-    struct Result
+    struct IOResult
     {
-        bool            _stop = false;
         bool            _release = false;
-#if defined(_MSVC_)
-        DWORD           _bytes = 0; // io result size
-#elif defined(__GNUC__) || defined(__clang__)
-        int32_t         _bytes = 0; // io result size
-#endif // _MSVC_
-    };
+        EventType       _eventType = EventType::INBOUND;
+        SocketSPtr      _sock { nullptr };
 
-    struct ResultItem final
-    {
-        Result          _res;
-        ISocket*        _sock = nullptr;
-        IOContext*      _iCtx = nullptr;
+        void Reset()
+        {
+            _release = false;
+            _eventType = EventType::INBOUND;
+            _sock.reset();
+        }
     };
 }
 }
