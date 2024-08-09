@@ -6,15 +6,15 @@
 using namespace zs::common;
 using namespace zs::network;
 
-#if defined(_MSVC_)
+#if defined(_WIN64_)
 LPFN_ACCEPTEX               Helper::_lpfnAcceptEx = nullptr;
 LPFN_CONNECTEX              Helper::_lpfnConnectEx = nullptr;
 LPFN_GETACCEPTEXSOCKADDRS   Helper::_lpfnGetAcceptExSockAddr = nullptr;
-#endif // defined(_MSVC_)
+#endif // defined(_WIN64_)
 
 bool Helper::Initialize()
 {
-#if defined(_MSVC_)
+#if defined(_WIN64_)
     // prepare pre accept
     Socket sock = Helper::CreateSocket(IPVer::IP_V4, Protocol::TCP);
     if (INVALID_SOCKET == sock)
@@ -53,14 +53,14 @@ bool Helper::Initialize()
             errno);
         return false;
     }
-#endif // _MSVC_
+#endif // _WIN64_
 
     return true;
 }
 
 Socket Helper::CreateSocket(IPVer ipVer, Protocol protocol, bool isNonBlocking)
 {
-#if defined(_MSVC_)
+#if defined(_WIN64_)
     Socket sock = WSASocket(
         Helper::GetIPVerValue(ipVer), 
         Helper::GetSocketTypeValue(protocol), 
@@ -72,7 +72,7 @@ Socket Helper::CreateSocket(IPVer ipVer, Protocol protocol, bool isNonBlocking)
             errno);
         return INVALID_SOCKET;
     }
-#elif defined(__GNUC__) || defined(__clang__)
+#elif defined(_LINUX_) 
     Socket sock = socket(
         Helper::GetIPVerValue(ipVer), 
         Helper::GetSocketTypeValue(protocol), 
@@ -93,11 +93,11 @@ Socket Helper::CreateSocket(IPVer ipVer, Protocol protocol, bool isNonBlocking)
             return INVALID_SOCKET;
         }
     }
-#endif // _MSVC_
+#endif // _WIN64_
     return sock;
 }
 
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(_LINUX_) 
 bool Helper::MakeSocketNonBlocking(Socket sock)
 {
     int flags, s;
@@ -119,7 +119,7 @@ bool Helper::MakeSocketNonBlocking(Socket sock)
 
     return true;
 }
-#endif // defined(__GNUC__) || defined(__clang__)
+#endif // defined(_LINUX_) 
 
 int32_t Helper::GetIPVerValue(IPVer ipVer)
 {

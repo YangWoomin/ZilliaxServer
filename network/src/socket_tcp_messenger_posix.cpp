@@ -9,7 +9,7 @@
 using namespace zs::common;
 using namespace zs::network;
 
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(_LINUX_) 
 
 bool SocketTCPMessenger::PreRecv(bool& isReceived)
 {
@@ -18,4 +18,4 @@ bool SocketTCPMessenger::PreRecv(bool& isReceived)
     return true;
 }
 
-#endif // defined(__GNUC__) || defined(__clang__)
+#endif // defined(_LINUX_) 

@@ -4,9 +4,9 @@
 
 #include    "internal_common.h"
 
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(_LINUX_) 
 #include    <vector>
-#endif // defined(__GNUC__) || defined(__clang__)
+#endif // defined(_LINUX_) 
 #include    <queue>
 
 namespace zs
@@ -15,7 +15,7 @@ namespace network
 {
     class ISocket;
     
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(_LINUX_) 
     class Epoll final
     {
     public:
@@ -42,7 +42,7 @@ namespace network
     };
     using EpollSPtr = std::shared_ptr<Epoll>;
 
-#endif // defined(__GNUC__) || defined(__clang__)
+#endif // defined(_LINUX_) 
 
     class Dispatcher final
     {
@@ -56,14 +56,14 @@ namespace network
         
         bool Dequeue(std::size_t workerID, std::queue<IOResult>& resList);
 
-#if defined(_MSVC_)
+#if defined(_WIN64_)
     public:
         bool Bind(ISocket* sock);
 
     private:
         HANDLE                  _iocp = INVALID_HANDLE_VALUE;
 
-#elif defined(__GNUC__) || defined(__clang__)
+#elif defined(_LINUX_) 
     public:
         void SetOwner(std::size_t workerID);
         bool Bind(std::size_t workerID, ISocket* sock, BindType bindType, EventType eventType);
@@ -71,7 +71,7 @@ namespace network
     private:
         std::vector<EpollSPtr>  _epolls;
 
-#endif // _MSVC_
+#endif // _WIN64_
     };
 }
 }

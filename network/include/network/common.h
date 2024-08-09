@@ -2,7 +2,7 @@
 #ifndef __ZS_NETWORK_COMMON_H__
 #define __ZS_NETWORK_COMMON_H__
 
-#if defined(_MSVC_)
+#if defined(_WIN64_)
 
 #ifdef ZS_NETWORK_EXPORTS
 #define __ZS_NETWORK_API __declspec(dllexport)
@@ -10,7 +10,7 @@
 #define __ZS_NETWORK_API __declspec(dllimport)
 #endif
 
-#elif defined(__GNUC__) || defined(__clang__)
+#elif defined(_LINUX_) 
 
 #ifdef ZS_NETWORK_EXPORTS
 #define __ZS_NETWORK_API __attribute__((visibility ("default")))
@@ -18,7 +18,7 @@
 #define __ZS_NETWORK_API 
 #endif
 
-#endif // _MSVC_
+#endif // _WIN64_
 
 
 #include    <memory>

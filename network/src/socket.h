@@ -26,10 +26,10 @@ namespace network
         virtual bool Send() { return true; }; // todo
         virtual bool PreRecv(bool& isReceived);
 
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(_LINUX_) 
         virtual bool OnAccepted();
         virtual bool OnReceived(bool& later);
-#endif // defined(__GNUC__) || defined(__clang__)
+#endif // defined(_LINUX_) 
 
         virtual bool PostAccept(std::string& name, std::string& peer);   
         virtual bool PostConnect(bool& retry);

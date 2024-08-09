@@ -9,7 +9,7 @@
 using namespace zs::common;
 using namespace zs::network;
 
-#if defined(_MSVC_)
+#if defined(_WIN64_)
 
 bool SocketTCPAceepter::PreAccept()
 {
@@ -112,5 +112,5 @@ bool SocketTCPAceepter::PostAccept(std::string& name, std::string& peer)
     return true;
 }
 
-#endif // _MSVC_
+#endif // _WIN64_
 

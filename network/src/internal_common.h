@@ -2,7 +2,7 @@
 #ifndef __ZS_NETWORK_INTERNAL_COMMON_H__
 #define __ZS_NETWORK_INTERNAL_COMMON_H__
 
-#if defined(_MSVC_)
+#if defined(_WIN64_)
 
 #include    <WinSock2.h>
 #include    <mswsock.h>
@@ -11,7 +11,7 @@
 #include    <ws2ipdef.h>
 #include    <ws2tcpip.h>
 
-#elif defined(__GNUC__) || defined(__clang__)
+#elif defined(_LINUX_) 
 
 #include    <unistd.h>
 #include    <errno.h>
@@ -26,7 +26,7 @@
 
 #include    <limits>
 
-#endif // _MSVC_
+#endif // _WIN64_
 
 
 #include    "network/common.h"
@@ -55,7 +55,7 @@ namespace network
 #define SUCCESS_RESULT          0
 #define INVALID_RESULT          -1
 
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(_LINUX_) 
     enum BindType : int32_t
     {
         BIND            = EPOLL_CTL_ADD,
@@ -81,7 +81,7 @@ namespace network
 
     using Socket = int32_t;
 
-#elif defined(_MSVC_)
+#elif defined(_WIN64_)
 
 #if defined(errno)
 #undef errno
@@ -101,7 +101,7 @@ namespace network
         OUTBOUND        = 1,
     };
 
-#endif // defined(__GNUC__) || defined(__clang__)
+#endif // defined(_LINUX_) 
 
     enum SocketType
     {
@@ -112,9 +112,17 @@ namespace network
 
     struct IOContext
     {
-#if defined(_MSVC_)
+#if defined(_WIN64_)
         OVERLAPPED      _ol;
-#endif // _MSVC_
+
+        void Reset()
+        {
+            std::memset(&_ol, 0, sizeof(_ol));
+        }
+#elif defined(_LINUX_)
+        void Reset()
+        {}
+#endif // _WIN64_
     };
 
     struct AcceptContext : public IOContext
@@ -122,18 +130,22 @@ namespace network
         Socket          _sock;
 
         char            _addr[(sizeof(sockaddr_storage) + 16) * 2] = { 0, };
-#if defined(_MSVC_)
+#if defined(_WIN64_)
         DWORD           _len = 0; // addr len
-#elif defined(__GNUC__) || defined(__clang__)
+#elif defined(_LINUX_) 
         socklen_t       _len = 0; // addr len
-#endif // _MSVC_
+#endif // _WIN64_
         
         // receiving buffer for udp
         char            _buf[BUFFER_SIZE] = { 0, };
         
         void Reset()
         {
-            std::memset(this, 0, sizeof(AcceptContext));
+            IOContext::Reset();
+            _sock = INVALID_SOCKET;
+            std::memset(_addr, 0, sizeof(_addr));
+            _len = 0;
+            std::memset(_buf, 0, sizeof(_buf));
         }
     };
 
@@ -141,6 +153,12 @@ namespace network
     {
         char            _addr[sizeof(sockaddr_storage)] = { 0, };
         size_t          _len = 0; // addr len
+
+        void Reset()
+        {
+            std::memset(_addr, 0, sizeof(_addr));
+            _len = 0;
+        }
     };
 
     struct ConnectContext : public IOContext
@@ -150,6 +168,7 @@ namespace network
 
         void Reset()
         {
+            IOContext::Reset();
             _addrs.clear();
             _idx = 0;
         }
@@ -160,18 +179,21 @@ namespace network
         // send/recv buffer
         char            _buf[BUFFER_SIZE] = { 0, };
 
-        #if defined(_MSVC_)
+#if defined(_WIN64_)
         DWORD           _bytes = 0; // send/recv size
-#elif defined(__GNUC__) || defined(__clang__)
+#elif defined(_LINUX_) 
         int32_t         _bytes = 0; // send/recv size
-#endif // _MSVC_
+#endif // _WIN64_
 
         // socket address for udp
         AddrInfo        _addrInfo;
 
         void Reset()
         {
-            std::memset(this, 0, sizeof(SendRecvContext));
+            IOContext::Reset();
+            std::memset(_buf, 0, sizeof(_buf));
+            _bytes = 0;
+            _addrInfo.Reset();
         }
     };
 

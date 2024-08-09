@@ -148,3 +148,8 @@ udp 소켓은 needInbound를 false로..
 
 socket close될 때 onClosed 콜백 호출?
 	이 때가 제일 타당해보이긴 함
+
+socket 정리 부분 정리
+	언제 어떻게 release해줄 것인가
+	지금은 소켓 close로 유도하고 있음
+	post 부분도 close로 유도하도록 변경 필요 (지금 몇몇 군데에서 RemoveSocket 이용하고 있는데 이 부분을 소켓 close로 변경 필요)

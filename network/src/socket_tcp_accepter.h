@@ -23,9 +23,9 @@ namespace network
 
         virtual bool PreAccept() override;
 
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(_LINUX_) 
         virtual bool OnAccepted() override;
-#endif // defined(__GNUC__) || defined(__clang__)
+#endif // defined(_LINUX_) 
 
         virtual bool PostAccept(std::string& name, std::string& peer) override;
 

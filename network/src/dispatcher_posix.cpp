@@ -8,7 +8,7 @@
 using namespace zs::common;
 using namespace zs::network;
 
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(_LINUX_) 
 
 bool Epoll::Initialize()
 {
@@ -207,47 +207,47 @@ bool Epoll::Dequeue(std::queue<IOResult>& resList)
                     }
                 }
 
-                // recv
-                SendRecvContext* srCtx = new SendRecvContext();
-                res._iCtx = srCtx;
-                if (Protocol::TCP == sock->GetProtocol())
-                {
-                    srCtx->_bytes = recv(sock->GetSocket(), srCtx->_buf, BUFFER_SIZE, 0);
-                }
-                else if (Protocol::UDP == sock->GetProtocol())
-                {
-                    srCtx->_addrInfo._len = sizeof(sockaddr_storage);
-                    srCtx->_bytes = recvfrom(sock->GetSocket(), srCtx->_buf, BUFFER_SIZE, 0, (struct sockaddr*)srCtx->_addrInfo._addr, (socklen_t*)&srCtx->_addrInfo._len);
-                }
-                else
-                {
-                    ZS_LOG_WARN(network, "unknown protocol, socket name : %s, protocol : %d", 
-                        sock->GetName(), sock->GetProtocol());
-                    delete srCtx;
-                    continue;
-                }
+                // // recv
+                // SendRecvContext* srCtx = new SendRecvContext();
+                // res._iCtx = srCtx;
+                // if (Protocol::TCP == sock->GetProtocol())
+                // {
+                //     srCtx->_bytes = recv(sock->GetSocket(), srCtx->_buf, BUFFER_SIZE, 0);
+                // }
+                // else if (Protocol::UDP == sock->GetProtocol())
+                // {
+                //     srCtx->_addrInfo._len = sizeof(sockaddr_storage);
+                //     srCtx->_bytes = recvfrom(sock->GetSocket(), srCtx->_buf, BUFFER_SIZE, 0, (struct sockaddr*)srCtx->_addrInfo._addr, (socklen_t*)&srCtx->_addrInfo._len);
+                // }
+                // else
+                // {
+                //     ZS_LOG_WARN(network, "unknown protocol, socket name : %s, protocol : %d", 
+                //         sock->GetName(), sock->GetProtocol());
+                //     delete srCtx;
+                //     continue;
+                // }
 
-                int err = errno;
-                if (SOCKET_ERROR == srCtx->_bytes)
-                {
-                    if (EAGAIN == err || EWOULDBLOCK == err)
-                    {
-                        ZS_LOG_WARN(network, "no data for recv, socket name : %s", 
-                            sock->GetName());
-                        delete srCtx;
-                        continue;
-                    }
+                // int err = errno;
+                // if (SOCKET_ERROR == srCtx->_bytes)
+                // {
+                //     if (EAGAIN == err || EWOULDBLOCK == err)
+                //     {
+                //         ZS_LOG_WARN(network, "no data for recv, socket name : %s", 
+                //             sock->GetName());
+                //         delete srCtx;
+                //         continue;
+                //     }
 
-                    ZS_LOG_ERROR(network, "recv failed, socket name : %s, err : %d", 
-                        sock->GetName(), err);
-                    res._release = true;
-                }
-                else if (0 == srCtx->_bytes)
-                {
-                    ZS_LOG_WARN(network, "socket closed, socket name : %s", 
-                        sock->GetName());
-                    res._release = true;
-                }
+                //     ZS_LOG_ERROR(network, "recv failed, socket name : %s, err : %d", 
+                //         sock->GetName(), err);
+                //     res._release = true;
+                // }
+                // else if (0 == srCtx->_bytes)
+                // {
+                //     ZS_LOG_WARN(network, "socket closed, socket name : %s", 
+                //         sock->GetName());
+                //     res._release = true;
+                // }
             }
             else
             {
@@ -351,7 +351,7 @@ bool Dispatcher::Bind(std::size_t workerID, ISocket* sock, BindType bindType, Ev
     return true;
 }
 
-bool Dispatcher::Dequeue(std::size_t workerID, std::queue<ResultItem>& resList)
+bool Dispatcher::Dequeue(std::size_t workerID, std::queue<IOResult>& resList)
 {
     if (_epolls.size() <= workerID)
     {
@@ -363,4 +363,4 @@ bool Dispatcher::Dequeue(std::size_t workerID, std::queue<ResultItem>& resList)
     return _epolls[workerID]->Dequeue(resList);
 }
 
-#endif // defined(__GNUC__) || defined(__clang__)
+#endif // defined(_LINUX_) 

@@ -49,9 +49,9 @@ namespace network
         std::unordered_map<ConnectionID, ConnectionSPtr>    _connections;
         std::atomic<ConnectionID>                           _connIDGen { 0 };
 
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(_LINUX_) 
         std::atomic<std::size_t>                        _workerAllocator { 0 };
-#endif // defined(__GNUC__) || defined(__clang__)
+#endif // defined(_LINUX_) 
 
         Manager(const Manager&) = delete;
         Manager& operator=(const Manager&) = delete;

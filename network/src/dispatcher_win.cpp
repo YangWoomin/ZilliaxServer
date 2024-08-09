@@ -8,7 +8,7 @@
 using namespace zs::common;
 using namespace zs::network;
 
-#if defined(_MSVC_)
+#if defined(_WIN64_)
 
 bool Dispatcher::Initialize(std::size_t workerCount)
 {
@@ -166,4 +166,4 @@ bool Dispatcher::Dequeue(std::size_t, std::queue<IOResult>& resList)
     return true;
 }
 
-#endif // _MSVC_
+#endif // _WIN64_

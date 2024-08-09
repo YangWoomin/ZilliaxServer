@@ -22,7 +22,7 @@ bool Network::Initialize(Logger::Messenger msgr)
     Logger::Messenger& messenger = Logger::GetMessenger();
     messenger = msgr;
 
-#if defined(_MSVC_)
+#if defined(_WIN64_)
     int         err = 0;
     WSADATA     wsaData;
 
@@ -32,7 +32,7 @@ bool Network::Initialize(Logger::Messenger msgr)
         ZS_LOG_ERROR(network, "WSAStartup failed, err : %d", err);
         return false;
     }
-#endif // _MSVC_
+#endif // _WIN64_
 
     manager = new Manager();
 
@@ -51,9 +51,9 @@ void Network::Finalize()
         manager = nullptr;
     }
 
-#if defined(_MSVC_)  
+#if defined(_WIN64_)  
     WSACleanup();
-#endif // _MSVC_
+#endif // _WIN64_
 
     ZS_LOG_INFO(network, "network module finalized");
 }

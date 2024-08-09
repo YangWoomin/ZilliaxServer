@@ -12,16 +12,16 @@ namespace network
     {
     public:
         static bool Initialize();
-#if defined(_MSVC_)
+#if defined(_WIN64_)
         static LPFN_ACCEPTEX                _lpfnAcceptEx;
         static LPFN_CONNECTEX               _lpfnConnectEx;
         static LPFN_GETACCEPTEXSOCKADDRS    _lpfnGetAcceptExSockAddr;
-#endif // defined(_MSVC_)
+#endif // defined(_WIN64_)
         
         static Socket CreateSocket(IPVer ipVer, Protocol protocol, bool isNonBlocking = false);
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(_LINUX_) 
         static bool MakeSocketNonBlocking(Socket sock);
-#endif // defined(__GNUC__) || defined(__clang__)
+#endif // defined(_LINUX_) 
         static int32_t GetIPVerValue(IPVer ipVer);
         static int32_t GetProtocolValue(Protocol protocol);
         static int32_t GetSocketTypeValue(Protocol protocol);

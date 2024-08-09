@@ -14,9 +14,9 @@ DispatcherWorker::DispatcherWorker(Manager& manager, DispatcherSPtr dispatcher, 
     , _dispatcher(dispatcher)
     , _workerID(workerID)
 {
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(_LINUX_) 
     _dispatcher->SetOwner(_workerID);
-#endif // defined(__GNUC__) || defined(__clang__)
+#endif // defined(_LINUX_) 
 }
 
 void DispatcherWorker::threadMain()

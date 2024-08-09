@@ -9,7 +9,7 @@
 using namespace zs::common;
 using namespace zs::network;
 
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(_LINUX_) 
 
 bool SocketTCPAceepter::PreAccept()
 {
@@ -80,10 +80,10 @@ bool SocketTCPAceepter::PostAccept(std::string& name, std::string& peer)
     name += (":" + std::to_string(localPort));
 
     int32_t remotePort = 0;
-    Helper::GetSockAddr(_aCtx->_addr, peer, remotePort);
+    Helper::GetSockAddr((sockaddr*)_aCtx->_addr, peer, remotePort);
     peer += (":" + std::to_string(remotePort));
     
     return true;
 }
 
-#endif // defined(__GNUC__) || defined(__clang__)
+#endif // defined(_LINUX_) 

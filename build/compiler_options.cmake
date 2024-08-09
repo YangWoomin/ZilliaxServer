@@ -27,6 +27,7 @@ if ( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" )
     add_compile_options(/wd5039)
     add_compile_options(/wd4996) # 'WSASocketA': Use WSASocketW() instead or define _WINSOCK_DEPRECATED_NO_WARNINGS to disable deprecated API warnings
     add_compile_options(/wd4710) # 함수를 인라인하지 못했습니다.
+    add_compile_options(/wd4061) # 열거자는 case 레이블에 의해 명시적으로 처리되지 않습니다.
 
 
     ############################################

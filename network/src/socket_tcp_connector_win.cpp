@@ -9,7 +9,7 @@
 using namespace zs::common;
 using namespace zs::network;
 
-#if defined(_MSVC_)
+#if defined(_WIN64_)
 
 bool SocketTCPConnector::Connect(const std::string& host, int32_t port)
 {
@@ -97,5 +97,5 @@ bool SocketTCPConnector::postConnect()
     return true;
 }
 
-#endif // _MSVC_
+#endif // _WIN64_
 

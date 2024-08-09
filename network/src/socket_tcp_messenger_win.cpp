@@ -9,7 +9,7 @@
 using namespace zs::common;
 using namespace zs::network;
 
-#if defined(_MSVC_)
+#if defined(_WIN64_)
 
 bool SocketTCPMessenger::PreRecv(bool& isReceived)
 {
@@ -50,4 +50,4 @@ bool SocketTCPMessenger::PreRecv(bool& isReceived)
     return true;
 }
 
-#endif // _MSVC_
+#endif // _WIN64_

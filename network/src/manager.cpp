@@ -117,13 +117,13 @@ bool Manager::Bind(IPVer ipVer, Protocol protocol, int32_t port, SocketID& sockI
     }
 
     // bind the socket on dispatcher
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(_LINUX_) 
     std::size_t workerID = 0;
     workerID = _workerAllocator++ % _dispatcherWorkers.size();
     if (false == _dispatcher->Bind(workerID, sock.get(), BindType::BIND, EventType::INBOUND))
-#elif defined(_MSVC_)
+#elif defined(_WIN64_)
     if (false == _dispatcher->Bind(sock.get()))
-#endif // defined(__GNUC__) || defined(__clang__)
+#endif // defined(_LINUX_) 
     {
         ZS_LOG_ERROR(network, "binding listen socket on dispatcher failed, sock id : %llu, socket name : %s, ip ver : %d, protocol : %d",
             sock->GetID(), sock->GetName(), ipVer, protocol);
@@ -218,13 +218,13 @@ bool Manager::Connect(IPVer ipVer, Protocol protocol, const std::string& host, i
     }
 
     // bind the socket on dispatcher
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(_LINUX_) 
     std::size_t workerID = 0;
     workerID = _workerAllocator++ % _dispatcherWorkers.size();
     if (false == _dispatcher->Bind(workerID, sock.get(), BindType::BIND, EventType::OUTBOUND))
-#elif defined(_MSVC_)
+#elif defined(_WIN64_)
     if (false == _dispatcher->Bind(sock.get()))
-#endif // defined(__GNUC__) || defined(__clang__)
+#endif // defined(_LINUX_) 
     {
         ZS_LOG_ERROR(network, "binding connect socket on dispatcher failed, sock id : %llu, socket name : %s, ip ver : %d, protocol : %d, host : %s, port : %d",
             sock->GetID(), sock->GetName(), ipVer, protocol, host.c_str(), port);
@@ -292,13 +292,13 @@ void Manager::HandleAccepted(SocketSPtr sock)
     }
 
     // bind the accepted socket to dispatcher for data received event
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(_LINUX_) 
     std::size_t workerID = 0;
     workerID = _workerAllocator++ % _dispatcherWorkers.size();
     if (false == _dispatcher->Bind(workerID, newSock.get(), BindType::BIND, EventType::INBOUND))
-#elif defined(_MSVC_)
+#elif defined(_WIN64_)
     if (false == _dispatcher->Bind(newSock.get()))
-#endif // defined(__GNUC__) || defined(__clang__)
+#endif // defined(_LINUX_) 
     {
         ZS_LOG_ERROR(network, "binding messenger socket on dispatcher failed, sock id : %llu, socket name : %s, peer : %s",
             newSock->GetID(), newSock->GetName(), newSock->GetPeer());
@@ -367,15 +367,15 @@ void Manager::HandleConnected(SocketSPtr sock)
     // only in linux
     // unbind the connected socket from dispatcher for connected event
     // bind the connected socket to dispatcher for data received event
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(_LINUX_) 
     if (false == _dispatcher->Bind(sock->GetWorkerID(), sock.get(), BindType::MODIFY, EventType::INBOUND))
     {
         ZS_LOG_ERROR(network, "binding connector socket on dispatcher failed, sock id : %llu, socket name : %s, peer : %s",
             sock->GetID(), sock->GetName(), sock->GetPeer());
         sock->Close();
-        return false;
+        return;
     }
-#endif // defined(__GNUC__) || defined(__clang__)
+#endif // defined(_LINUX_) 
 
     // change the socket type from connector to messenger
     sock->ChangeType(SocketType::MESSENGER);

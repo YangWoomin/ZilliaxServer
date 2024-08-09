@@ -20,7 +20,7 @@ ISocket::ISocket(Manager& manager, SocketID sockID, SocketType type, IPVer ipVer
 }
 
 ISocket::ISocket(Manager& manager, SocketID sockID, Socket sock, const std::string& name, const std::string& peer, SocketType type, IPVer ipVer, Protocol protocol)
-    : _manager(manager), _sockID(sockID), _sock(sock), _type(type), _ipVer(ipVer), _protocol(protocol), _name(name), _peer(peer)
+    : _manager(manager), _sockID(sockID), _type(type), _sock(sock), _ipVer(ipVer), _protocol(protocol), _name(name), _peer(peer)
 {
 
 }
@@ -140,7 +140,7 @@ bool ISocket::PostConnect(bool& retry)
     return false;
 }
 
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(_LINUX_) 
 bool ISocket::OnAccepted()
 {
     ZS_LOG_FATAL(network, "being accepted on this socket is not implemented, sock id : %llu, name : %s", 
@@ -156,7 +156,7 @@ bool ISocket::OnReceived(bool& later)
 
     return false;
 }
-#endif // defined(__GNUC__) || defined(__clang__)
+#endif // defined(_LINUX_) 
 
 void ISocket::SetCallback(OnConnectedSPtr onConnected, OnReceivedSPtr onReceived, OnClosedSPtr onClosed)
 {
