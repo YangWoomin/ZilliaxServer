@@ -2,7 +2,7 @@
 #ifndef __ZS_DB_INTERNAL_COMMON_H__
 #define __ZS_DB_INTERNAL_COMMON_H__
 
-#if  defined(_MSVC_)
+#if  defined(_WIN64_)
 #include    <windows.h>
 #endif
 

@@ -2,7 +2,7 @@
 #ifndef __ZS_DB_COMMON_H__
 #define __ZS_DB_COMMON_H__
 
-#if defined(_MSVC_)
+#if defined(_WIN64_)
 
 #ifdef ZS_DB_EXPORTS
 #define __ZS_DB_API __declspec(dllexport)
@@ -10,7 +10,7 @@
 #define __ZS_DB_API __declspec(dllimport)
 #endif
 
-#elif defined(__GNUC__) || defined(__clang__)
+#elif defined(_LINUX_)
 
 #ifdef ZS_DB_EXPORTS
 #define __ZS_DB_API __attribute__((visibility ("default")))
@@ -20,7 +20,7 @@
 
 #endif // _MSVC_
 
-#if  defined(_MSVC_)
+#if  defined(_WIN64_)
 #include    <windows.h>
 #endif
 
