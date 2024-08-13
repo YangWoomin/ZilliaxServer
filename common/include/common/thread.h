@@ -55,12 +55,7 @@ namespace common
         }
 
         Thread() = default;
-        
-        virtual ~Thread()
-        {
-            Stop();
-            Join();
-        }
+        virtual ~Thread() = default;
 
     protected:
         inline void setStatus(ThreadStatus status)

@@ -11,9 +11,9 @@ using namespace zs::network;
 
 #if defined(_LINUX_) 
 
-bool SocketTCPAceepter::PreAccept()
+bool SocketTCPAceepter::InitAccept()
 {
-    // no pre accept in linux
+    // no async accept in linux
 
     if (nullptr == _aCtx)
     {
@@ -52,7 +52,7 @@ bool SocketTCPAceepter::OnAccepted()
     return true;
 }
 
-bool SocketTCPAceepter::PostAccept(std::string& name, std::string& peer)
+bool SocketTCPAceepter::postAccept(std::string& name, std::string& peer)
 {
     if (nullptr == _aCtx)
     {
@@ -77,10 +77,12 @@ bool SocketTCPAceepter::PostAccept(std::string& name, std::string& peer)
 
     int32_t localPort = 0;
     Helper::GetSockLocalAddr(_aCtx->_sock, _ipVer, name, localPort);
+    name = name.c_str();
     name += (":" + std::to_string(localPort));
 
     int32_t remotePort = 0;
     Helper::GetSockAddr((sockaddr*)_aCtx->_addr, peer, remotePort);
+    peer = peer.c_str();
     peer += (":" + std::to_string(remotePort));
     
     return true;

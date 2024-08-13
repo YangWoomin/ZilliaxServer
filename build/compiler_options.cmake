@@ -12,7 +12,7 @@ if ( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" )
 
     ############################################
     ### compile options
-    add_compile_options(/Wall)
+    add_compile_options(/W3)
     add_compile_options(/source-charset:utf-8)
     # options for debug
     add_compile_options($<$<CONFIG:Debug>:/Od>)
@@ -28,6 +28,7 @@ if ( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" )
     add_compile_options(/wd4996) # 'WSASocketA': Use WSASocketW() instead or define _WINSOCK_DEPRECATED_NO_WARNINGS to disable deprecated API warnings
     add_compile_options(/wd4710) # 함수를 인라인하지 못했습니다.
     add_compile_options(/wd4061) # 열거자는 case 레이블에 의해 명시적으로 처리되지 않습니다.
+    add_compile_options(/wd4582) # 생성자가 암시적으로 호출되었습니다.
 
 
     ############################################
@@ -64,6 +65,7 @@ elseif ( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" ) # CMAKE_CXX_COMPILER_ID
     ############################################
     ### definitions
     add_compile_definitions(_X64 __x86_64__)
+    add_compile_definitions(_LINUX_)
 
     ############################################
     ### link options

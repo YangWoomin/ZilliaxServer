@@ -19,7 +19,7 @@ namespace network
         // these functions should be called by only one(main) thread when program start or end time
         static bool Initialize(Logger::Messenger msgr);
         static void Finalize();
-        static bool Start(std::size_t assitantWorkerCount, std::size_t dispatcherWorkerCount = 0);
+        static bool Start(std::size_t dispatcherWorkerCount = 0);
         static void Stop();
 
         // these functions should be called by one thread for one socket
@@ -28,14 +28,19 @@ namespace network
         static bool Bind(IPVer ipVer, Protocol protocol, int32_t port, SocketID& sockID);
         static bool Listen(SocketID sockID, int32_t backlog, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived, OnClosedSPtr onClosed);
         static bool Close(SocketID sockID);
+        
         static bool ConnectTCP(IPVer ipVer, std::string host, int32_t port, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived, OnClosedSPtr onClosed);
         static ConnectionWPtr ConnectUDP(IPVer ipVer, std::string host, int32_t port, OnReceivedSPtr onReceived);
 
-    private:
         static const std::size_t        MAX_WORKER_COUNT = 128;
         static const int32_t            AVAILABLE_MINIMUM_PORT = 1024;
         static const int32_t            AVAILABLE_MAXIMUM_PORT = 65535;
         static const int32_t            MAX_BACKLOG_SIZE = 1024;
+
+        static const uint32_t           DEFAULT_TCP_SENDING_BUFFER_SIZE = 4000; // 4KiB (approximately)
+        static const uint32_t           DEFAULT_TCP_SENDING_BUFFER_COUNT = 64; // maximum 4KiB * DEFAULT_TCP_SENDING_BUFFER_COUNT
+    
+    private:
 
         Network() = delete;
         ~Network() = delete;

@@ -33,8 +33,7 @@ namespace network
         static bool IsValidIP(const char* ip, IPVer ipVer);
         static void GenAddrInfo(Protocol protocol, addrinfo& hints);
         static void ConvertAddrInfoToSockAdddr(addrinfo* in, int32_t port, sockaddr_storage* out, size_t& len);
-        //static void GetSockAddr(IPVer ipVer, sockaddr_storage& addr, std::string& host, int32_t& port);
-    };
+     };
 }
 }
 

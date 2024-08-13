@@ -17,79 +17,80 @@ namespace network
         ISocket(Manager& manager, SocketID sockID, Socket sock, const std::string& name, const std::string& peer, SocketType type, IPVer ipVer, Protocol protocol);
         virtual ~ISocket();
 
-        virtual bool Bind(int32_t port);
-        virtual bool Listen(int32_t backlog);
-        virtual bool PreAccept();
-                void Close();
-        virtual bool Connect(const std::string& host, int32_t port);
-        virtual bool PreConnect(std::size_t idx);
-        virtual bool Send() { return true; }; // todo
-        virtual bool PreRecv(bool& isReceived);
+        virtual bool        Bind(int32_t port);
+        virtual bool        Listen(int32_t backlog);
+        virtual bool        InitAccept();
+                void        Close();
+        virtual bool        InitConnect(const std::string& host, int32_t port);
+        virtual bool        InitSend(std::string&& buf);
+        virtual bool        ContinueSend();
+        virtual bool        InitReceive();
 
 #if defined(_LINUX_) 
-        virtual bool OnAccepted();
-        virtual bool OnReceived(bool& later);
+        virtual bool        OnAccepted();
+        virtual bool        OnReceived(bool& later);
 #endif // defined(_LINUX_) 
 
-        virtual bool PostAccept(std::string& name, std::string& peer);   
-        virtual bool PostConnect(bool& retry);
+        virtual SocketSPtr  PostAccept();   
+        virtual bool        PostConnect(bool& retry);
+        virtual bool        PostSend();
+        virtual bool        PostReceive();
 
-        SocketSPtr  GetSPtr()                   { return shared_from_this(); }
-        SocketID    GetID()         const       { return _sockID; }
-        SocketType  GetType()       const       { return _type; }
-        void        ChangeType(SocketType type) { _type = type; }
-        Socket      GetSocket()     const       { return _sock; }
-        IPVer       GetIPVer()      const       { return _ipVer; }
-        Protocol    GetProtocol()   const       { return _protocol; }
-        int32_t     GetPort()       const       { return _port; }
-        std::size_t GetWorkerID()   const       { return _workerID; }
-        void        SetWorkerID(std::size_t id) { _workerID = id; }
-        const char* GetName()       const       { return _name.c_str(); }
-        const char* GetPeer()       const       { return _peer.c_str(); }
+        SocketSPtr          GetSPtr()                           { return shared_from_this(); }
+        SocketID            GetID()             const           { return _sockID; }
+        SocketType          GetType()           const           { return _type; }
+        void                ChangeType(SocketType type)         { _type = type; }
+        Socket              GetSocket()         const           { return _sock; }
+        IPVer               GetIPVer()          const           { return _ipVer; }
+        Protocol            GetProtocol()       const           { return _protocol; }
+        int32_t             GetPort()           const           { return _port; }
+        std::size_t         GetWorkerID()       const           { return _workerID; }
+        void                SetWorkerID(std::size_t id)         { _workerID = id; }
+        const char*         GetName()           const           { return _name.c_str(); }
+        const char*         GetPeer()           const           { return _peer.c_str(); }
 
-        AcceptContext*      GetAcceptContext()  { return _aCtx; }
-        ConnectContext*     GetConnectContext() { return _cCtx; }
-        SendRecvContext*    GetSendContext()    { return _sCtx; }
-        SendRecvContext*    GetRecvContext()    { return _rCtx; }
+        AcceptContext*      GetAcceptContext()                  { return _aCtx; }
+        ConnectContext*     GetConnectContext()                 { return _cCtx; }
+        SendRecvContext*    GetSendContext()                    { return _sCtx; }
+        SendRecvContext*    GetRecvContext()                    { return _rCtx; }
 
         void SetCallback(OnConnectedSPtr onConnected, OnReceivedSPtr onReceived, OnClosedSPtr onClosed);
-        OnConnectedSPtr GetOnConnected()        { return _onConnected; }
-        OnReceivedSPtr  GetOnReceived()         { return _onReceived; }
-        OnClosedSPtr    GetOnClosed()           { return _onClosed; }
-        bool            IsClosing()     const   { return _isClosing; }
-
-        void SetConnectionID(ConnectionID connID) { _connID = connID; }
+        OnConnectedSPtr     GetOnConnected()                    { return _onConnected; }
+        OnReceivedSPtr      GetOnReceived()                     { return _onReceived; }
+        OnClosedSPtr        GetOnClosed()                       { return _onClosed; }
+        void                SetConnection(ConnectionSPtr conn)  { _conn = conn; }
 
     protected:
-        bool        bind(int32_t port);
+        bool                bind(int32_t port);
 
-        Manager&                        _manager;
-        SocketID                        _sockID;
-        SocketType                      _type;
-        Socket                          _sock = INVALID_SOCKET;
-        IPVer                           _ipVer;
-        Protocol                        _protocol;
-        int32_t                         _port = 0;
-        std::size_t                     _workerID = 0;
-        std::string                     _name;
-        std::string                     _peer;
-        std::mutex                      _lock;
+        Manager&            _manager;
+        SocketID            _sockID;
+        SocketType          _type;
+        Socket              _sock = INVALID_SOCKET;
+        IPVer               _ipVer;
+        Protocol            _protocol;
+        int32_t             _port = 0;
+        std::size_t         _workerID = 0;
+        std::string         _name;
+        std::string         _peer;
+        std::mutex          _lock;
         
-        AcceptContext*                  _aCtx = nullptr;
-        ConnectContext*                 _cCtx = nullptr;
-        SendRecvContext*                _sCtx = nullptr;
-        SendRecvContext*                _rCtx = nullptr;
+        AcceptContext*      _aCtx = nullptr;
+        ConnectContext*     _cCtx = nullptr;
+        SendRecvContext*    _sCtx = nullptr;
+        SendRecvContext*    _rCtx = nullptr;
 
-        OnConnectedSPtr                 _onConnected { nullptr };
-        OnReceivedSPtr                  _onReceived { nullptr };
-        OnClosedSPtr                    _onClosed { nullptr };
+        OnConnectedSPtr     _onConnected { nullptr };
+        OnReceivedSPtr      _onReceived { nullptr };
+        OnClosedSPtr        _onClosed { nullptr };
 
-        bool                            _isClosing = false;
-        ConnectionID                    _connID = 0;
+        ConnectionSPtr      _conn { nullptr };
 
         ISocket(const ISocket&) = delete;
         ISocket(const ISocket&&) = delete;
         ISocket& operator=(const ISocket&) = delete;
+
+        static std::atomic<ConnectionID>    _connIDGen;
     };
 
     ////////////////////////////////////////////////////////////////////////
@@ -120,13 +121,13 @@ namespace network
         // immediately invoke onConnected callback with a new connection which has the connected socket
         // bind the socket to dispatcher for data received event
         // if the socket receives data invoke onReceived
-        virtual bool Connect(const std::string& host, int32_t port) override;
+        virtual bool InitConnect(const std::string& host, int32_t port) override;
 
         // send is available after the socket connected
-        virtual bool Send() override;
+        virtual bool InitSend(std::string&& buf) override;
 
         // recv is available after the socket connected
-        virtual bool PreRecv(bool& isReceived) override;
+        virtual bool InitReceive() override;
 
     private:
         SocketUDP(SocketID sockID, IPVer ipVer, bool nonBlocking);

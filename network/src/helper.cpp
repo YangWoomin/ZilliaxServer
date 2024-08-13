@@ -15,7 +15,7 @@ LPFN_GETACCEPTEXSOCKADDRS   Helper::_lpfnGetAcceptExSockAddr = nullptr;
 bool Helper::Initialize()
 {
 #if defined(_WIN64_)
-    // prepare pre accept
+    // prepare accept
     Socket sock = Helper::CreateSocket(IPVer::IP_V4, Protocol::TCP);
     if (INVALID_SOCKET == sock)
     {
@@ -191,9 +191,9 @@ void Helper::GenSockAddr(IPVer ipVer, int32_t port, sockaddr_storage& addr, size
         addr4->sin_family = AF_INET;
         addr4->sin_addr.s_addr = INADDR_ANY;
         addr4->sin_port = htons((uint16_t)port);
-        len = sizeof(addr4);
+        len = sizeof(sockaddr_in);
         host.resize(INET_ADDRSTRLEN);
-        inet_ntop(AF_INET, &addr4, host.data(), INET_ADDRSTRLEN);
+        inet_ntop(AF_INET, addr4, host.data(), INET_ADDRSTRLEN);
     }
     else if (IPVer::IP_V6 == ipVer)
     {
@@ -201,9 +201,9 @@ void Helper::GenSockAddr(IPVer ipVer, int32_t port, sockaddr_storage& addr, size
         addr6->sin6_family = AF_INET6;
         addr6->sin6_addr = in6addr_any;
         addr6->sin6_port = htons((uint16_t)port);
-        len = sizeof(addr6);
+        len = sizeof(sockaddr_in6);
         host.resize(INET6_ADDRSTRLEN);
-        inet_ntop(AF_INET6, &addr6, host.data(), INET6_ADDRSTRLEN);
+        inet_ntop(AF_INET6, addr6, host.data(), INET6_ADDRSTRLEN);
     }
 }
 
@@ -235,12 +235,14 @@ void Helper::GetSockAddr(sockaddr* addr, std::string& host, int32_t& port)
     if (AF_INET == addr->sa_family)
     {
         sockaddr_in* addr4 = (sockaddr_in*)addr;
+        host.resize(INET_ADDRSTRLEN);
         inet_ntop(AF_INET, addr4, host.data(), INET_ADDRSTRLEN);
         port = ntohs(addr4->sin_port);
     }
     else if (AF_INET6 == addr->sa_family)
     {
         sockaddr_in6* addr6 = (sockaddr_in6*)addr;
+        host.resize(INET6_ADDRSTRLEN);
         inet_ntop(AF_INET6, addr6, host.data(), INET6_ADDRSTRLEN);
         port = ntohs(addr6->sin6_port);
     }

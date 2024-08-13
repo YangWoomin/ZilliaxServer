@@ -4,11 +4,6 @@
 
 #include    "internal_common.h"
 
-#if defined(_LINUX_) 
-#include    <vector>
-#endif // defined(_LINUX_) 
-#include    <queue>
-
 namespace zs
 {
 namespace network

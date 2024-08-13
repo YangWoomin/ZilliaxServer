@@ -36,7 +36,7 @@ namespace network
     using OnConnected = std::function<void(ConnectionWPtr)>;
     using OnConnectedSPtr = std::shared_ptr<OnConnected>;
 
-    using OnReceived = std::function<void(ConnectionWPtr)>;
+    using OnReceived = std::function<void(ConnectionWPtr, const char*, std::size_t)>;
     using OnReceivedSPtr = std::shared_ptr<OnReceived>;
 
     using OnClosed = std::function<void(ConnectionWPtr)>;
@@ -61,7 +61,7 @@ namespace network
         UDP         = 2,
     };
 
-    static const std::size_t BUFFER_SIZE = 1024; // maximum message size
+    static const std::size_t BUFFER_SIZE = 1024 * 1024; // maxinum message size
 }
 }
 

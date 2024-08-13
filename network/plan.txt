@@ -1,19 +1,4 @@
 
-
-** cube-server의 한계
-
-1. 네트워크 I/O랑 스케줄러가 묶여 있음
-	소켓 자체가 task
-2. dispatcher와 스케줄러 순서가 바뀌어있음
-	worker threads <-> iocp (dispatcher) <-> scheduler
-	worker threads <-> ready queue (dispatcher) <-> scheduler
-												ㄴ epoll
-3. 세션까지 고려함
-	네트워크 모듈 레이어에서 세션은 고려할 필요 없음
-		세션은 redis 같은 곳에 저장할거니깐
-		session이라는 모듈을 따로 파는게 나을듯
-
-
 ** 네트워크 설계
 
 1. network 모듈의 기능 정의
@@ -26,9 +11,9 @@
 		패킷 처리가 여러 worker들에 의해 동시에 처리됨
 			비동기 처리라는 뜻
 	network 객체
-		글로벌한 네트워크 작업을 위한 클래스
+		외부에서 네트워크 작업을 수행시킬 수 있게 인터페이스 제공
 		initialize/finalize
-			네트워크 초기화 (윈도우 WSAStartup)
+			네트워크 초기화 (윈도우 WSAStartup 등)
 		start/stop
 			iocp/epoll 초기화
 			worker들 세팅
@@ -45,7 +30,6 @@
 						UDP는 첫 패킷 수신 시 listen 소켓을 connection과 바인딩 후 onConnected 콜백 매개변수로 전달하며 콜백 호출
 						이어서 onReceived 콜백 함수도 같이 호출
 			close로 socket id를 전달받으며 listen 소켓 종료 가능
-				UDP는 어차피 socket id를 통해 접근 못함
 			따라서 TCP/UDP 모두 가능
 		connect
 			onConnected 함수 포인터(람다)를 매개변수로 전달 받고 connected 시 콜백 호출
@@ -53,28 +37,36 @@
 				UDP도 connected UDP를 사용해서 상대 주소 및 포트를 지정할 수 있도록 준비
 			connected 시 connection 객체와 함께 onConnected 콜백 호출
 				UDP는 connect 결과를 기다릴 필요 없이 connect 수행 후 바로 콜백 호출
+					콜백 호출하지말고 그냥 반환 값을 connection 전달
 		예외 처리
-			인터페이스를 호출했을 때 제외하고 내부적으로 발생하는 에러는 그냥 로깅 (콜백 x)
-				콜백이 필요한가..?
+			인터페이스를 호출했을 때 제외하고 내부적으로 발생하는 에러는 그냥 로깅?
+				연길 시도 같은 connect는 콜백 줘야함
+				원격 호스트로부터 연결이 끊겼을 때에도 콜백 줘야함
 	connection 객체
 		socket을 멤버로 들고 있음
 			TCP, UDP 데이터 송수신 모두 가능
 			UDP면 글로벌 소켓이 되나? (UDP 소켓은 여러개 필요 없으니깐..?)
-				직접 connection(listener)을 생성하는 경우에만 UDP 소켓 생성
-				accept 과정은 없고 received 시 기존에 존재하지 않는 connection(주소)이면 새로 생성 후 소켓은 공유
-					1개의 connection(listener)으로부터 received로 생성된 connection들은 모두 1개 소켓(listener 것) 공유
-		network 모듈 내부/외부에서 공유하는 자원
-			lock 필요?
-				아마도?
+				직접 listen/connect하는 소켓을 가지고 있는 connection은 lessor, 이 소켓을 빌려쓰는 connection은 renter
+					lessor든 renter든 1개 소켓을 공유하고 ownership은 lessor에게 있음
+				lessor connection인 경우에만 실제 UDP 소켓 생성
+		network 모듈 외부에서 connection 개념으로 접근하여 사용
+			원격 호스트와 연결을 맺고 있거나 데이터를 송수신할 수 있는 매개체
 		send, close 인터페이스 지원
-			isClosed 필드 사용
+			isClosed 필드
+				socket 객체가 소멸되기 까지 시간이 좀 필요하니..
+					socket 핸들이나 fd 말고 socket 클래스
+				그냥 닫힌 소켓에 대해 작업하다 에러가 나도록 유도?
+					어차피 소켓 핸들값 자체를 안바꾸면 문제될게 뭐 있나
+					동시성 문제도 없고 bad descriptor 쓴다고 프로그램이 죽는 것도 아니고
+					async send에서만 좀 에러가 나는 정도?
 			send 고도화 필요
 				async(non-blocking)하게 send 해보고 pending io가 아니면 스케줄러(큐)에게 전달해서 대신 보내도록 지원
-				원격 수신 버퍼가 가득 차면 결국 보내는 쪽도 병목이 걸리게 됨
-				송신 버퍼가 어느 정도 차면 소켓 닫아버리고 소켓 연결 종료 처리 필요
-			epoll은 async send할 때 어느 송신이 완료되었는지 알 수 없는 문제가 있음
-				제일 사용해볼만한 방법으로 별도의 스레드(풀)가 async send를 지속적으로 수행
-				전달받은 버퍼(메시지)만큼 다 보냈으면 그 다음 버퍼를 계속 전송
+				원격 수신 버퍼가 가득 차면 결국 송신 쪽도 병목이 걸리게 됨
+				송신 버퍼가 어느 정도 (많이) 차면 소켓 닫아버리고 소켓 연결 종료 처리 필요
+			epoll은 async send할 때 어떤 송신이 완료되었는지 알 수 없는 문제가 있음
+				iocp처럼 io context가 없기 때문에
+				그래서 제일 사용해볼만한 방법으로 별도의 스레드(풀)가 async(non-blocking) send를 지속적으로 수행
+				전달받은 버퍼(메시지)를 다 보냈으면 그 다음 버퍼를 계속 전송
 				그러다가 버퍼가 가득 차게 되면 해당 소켓에 보내는 async send를 중지(대기)
 				epoll로부터 송신 버퍼에 여유가 생기면 시그널 받고 깨어나서 다시 async send 수행
 					그 소켓에 계속 대기하고 있어야 하나?
@@ -84,26 +76,29 @@
 						왜냐면 이미 결정된 내용을 전달하는 통지용이 대부분이라..
 					그리고 클라에서 퍼포먼스 안나와서 못받는걸 서버에서 그것도 고려해줘야하나?
 					그래서 대기가 필요 없다는 뜻?
-			iocp도 소켓 버퍼가 가득차면 WOULDBLOCK 또는 EAGAIN 에러 등이 발생
-				epoll처럼 async send 메커니즘 사용
+			WSASend도 송신 버퍼가 가득차면 WOULDBLOCK 또는 EAGAIN 에러 등이 발생
+				epoll처럼 async send 메커니즘 필요
+			어쨋든 send 고도화는 필요함
 		콜백 지원
 			onReceieved 콜백 : 메시지(버퍼) 매개변수와 함께 전달
 				자세한 내용은 "packet recv 설계" 참고
 			onClosed 콜백 : (원격 호스트로부터) 연결 종료
 				그냥 콜백 함수 호출만 해주면 될듯?
 	connection lifecycle
-		자동 생성
+		생성
 			listen 후 accepted 되었을 때 (onConnected)
+				UDP는 등록되지 않은 주소로부터 처음 메시지를 받았을 때
 			connect 후 connected 되었을 때 (onConnected)
+				UDP는 connected socket을 잘 만들었을 때
 		삭제
-			shared_ptr에 의해 자동 삭제
-				스케줄러 큐에 들어가있을 수 있으니
-			소켓 닫힘이 발생하면 network 모듈의 connection 관리 리스트에서 제거
-				외부에서 알아서 소멸되게 유도
-				UDP 소켓은 0 바이트 수신하면 닫는 걸로?
-		소켓 닫힘
-			atomic flag 멤버 변수(isClosed)로 판단
-			이 멤버 변수로 송수신 작업을 더이상 진행할지말지 판단
+			소켓에서 connection에 대한 소유권을 가지고 있고 shared_ptr로 들고 있음
+			소켓이 소멸되면 자연스럽게 connection도 소멸됨
+			유저는 weak ptr로 들고 있게 해서 dangling을 방지
+			udp의 connection 삭제는.. 좀 어려움
+				0 바이트 수신 시 연결 종료(자체 프로토콜)로 처리할 수 없음
+				0 바이트가 항상 전달된다는 보장이 없으니 어떤 연결은 종료되고 어떤 연결은 종료가 안되는 현상 발생
+				즉 연결 기반에 의해서 connection이 정리될 수 없고 사용자에 의해서 정리되는 구조
+				명확한건 lessor connection이 closed 되면 renter connection도 정리되어야 함
 	 packet send 설계
 		std::async 사용해서 비동기로 전송
 			소켓 자체가 비동기이고 WSASend 같은 함수를 사용하면 어차피 비동기 모드이긴 함
@@ -116,7 +111,7 @@
 	 packet recv 설계
 		UDP는 어차피 메시지 단위로 송수신되기 때문에 한번의 recv 호출로 하나의 메시지 수신이 가능
 		TCP는 스트림이니깐.. 적당한 메시지 포맷을 정해야 함
-			메시지 크기 필드를 2바이트로? -> 메시지 최대 크기는 64K(2^16 = 65536)가 됨
+			메시지 크기 필드를 4바이트로? -> 메시지 최대 크기는 2^32가 됨
 			그 다음 메시지 크기만큼 버퍼링하고 다 받으면 콜백 호출
 			엉뚱한 데이터가 껴서 오면 어쩔거?
 				어차피 TLS 단까지 뚫기는 어려울거고 클라를 조작하거나 클라가 해킹당한거면 어쩔수 없음
@@ -132,7 +127,7 @@ connection이든 assistant worker든 socket을 weak ptr로 참조
 		반대로 send/recv 처리를 안하고 있을 때면 바로 정리가 되기 때문에 간편함
 	따라서 socket을 참조하고 있는 다른 녀석들은 언제든 정리될 수 있는 socket을 안전하게 사용 가능
 
-connection도 사용자에게 weak ptr 참조를 전달
+connection을 사용자에게 전달할 때 weak ptr 전달
 	connection도 네트워크 모듈에서 언제든 정리할 수 있기 때문에
 	어차피 sock이 정리되면 connection은 껍데기만 남기 때문에 아무것도 못하고 자기도 그냥 정리될 수 있음 (간편)
 
@@ -149,7 +144,72 @@ udp 소켓은 needInbound를 false로..
 socket close될 때 onClosed 콜백 호출?
 	이 때가 제일 타당해보이긴 함
 
-socket 정리 부분 정리
+socket 정리 부분
 	언제 어떻게 release해줄 것인가
 	지금은 소켓 close로 유도하고 있음
-	post 부분도 close로 유도하도록 변경 필요 (지금 몇몇 군데에서 RemoveSocket 이용하고 있는데 이 부분을 소켓 close로 변경 필요)
+	post 부분도 close로 유도하도록 변경 필요
+
+manager 역할 축소
+	manager는 소켓 인터페이스만 호출
+	또는 dispatcher와 바인딩만 수행
+	connection도 manager에서 관리할 필요 없고 socket이 그냥 들고있자
+
+connection close 처리
+	TCP는 connection과 socket이 1:1이니 그냥 닫아주면 됨
+	UDP는 n : 1이니 listen하는 connection이 아니면 관계만 끊어주면 됨
+		lessor connection에서 close하면 다른 connetion 관계도 끊어줘야 함
+
+assistant worker 구조 설계
+	하는 일은 마치 스케줄러와 같음
+		해야 할 일(작업)들을 그룹화하여 그룹(큐) 안에서는 순서대로 처리되도록 보장
+	그룹화
+		그룹화를 키 값 자체로 다 쪼갤 수도 있고 해시를 사용한 그룹화도 가능
+	네트워크 관점에서 봤을 때 큐 타입은 2가지가 있음
+		하나는 메시지를 구분하기 위한 UDP 큐
+			바이트 배열이 큐의 element
+		하나는 메시지 구분 필요 없이 바이트 스트림용 TCP 큐
+			바이트 배열이 큐 자체
+	워커 (컨슈머)
+		일반적으로 큐에 작업이 생기면 깨어나서 작업 수행
+			프로듀서가 signal을 날리는 구조
+				큐가 비어있지 않다면 append만 수행
+				큐가 비어있으면 append 후 signal
+				작업이 추가된 큐를 찾을 수 있는 키값도 전달 (얘도 별도 큐를 통해서 전달)
+					워커 전용 큐
+		또는 밀려 있는 작업이 가능함을 뜻하는 알림을 받고 깨어나서 작업 수행
+			큐가 비어있든 아니든 상관없이 signal
+			어떤 큐의 작업이 가능한지 큐를 찾을 수 있는 키값도 전달
+			워커가 작업하고 있어서 signal이 무시되어도 노상관
+				워커가 wait 들어가기 전에 자기 큐를 확인할거임
+		워커의 개수는 큐의 개수보다 적으므로 1개의 워커가 여러 개의 큐를 처리
+	워커의 루틴
+		워커 자체는 스레드 구현한 쪽에서 할일을 정의
+		윈도우
+			큐의 맨 앞 작업 1개를 async send 시도 후 wait으로 대기
+				큐에서 아직 작업을 뺀게 아니므로 append signal이 날아오진 않음
+				따라서 추가 append된 작업들은 계속 추가될 수 있음
+				만약 다른 큐에 작업이 추가되면 그 작업도 똑같이 수행 후 대기
+			async send가 완료되면 해당 작업을 큐에서 제거 후 다음 작업 async send 수행
+				다음 작업이 없으면 다시 wait으로 대기
+			반복..
+			만약 async send가 송신 버퍼가 가득차서 실패하면?
+				async send 완료 signal이 날아오면 해당 작업을 삭제하지 말고 다시 async send 수행
+		리눅스
+			윈도우와 거의 동일
+			async send 부분만 조금 다름
+				일단 non-blocking으로 전송 후 대기
+				마찬가지로 다른 큐에 작업이 있으면 그 작업도 동일하게 수행 후 대기
+			async send 완료 signal이 아니라 그냥 여유 버퍼가 생겼음을 알리는 signal임
+				따라서 현재 메시지든 버퍼든 전송된 크기를 기준으로 이어서 전송하도록 구현
+				윈도우보다 좀 더 복잡할듯
+	-> assistant worker 불필요
+
+
+
+
+
+
+
+
+
+	

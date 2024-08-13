@@ -5,8 +5,6 @@
 #include    "internal_common.h"
 
 #include    <unordered_map>
-#include    <mutex>
-#include    <atomic>
 
 namespace zs
 {
@@ -18,8 +16,9 @@ namespace network
         Manager() = default;
         ~Manager() = default;
 
-        bool Start(std::size_t assitantWorkerCount, std::size_t& dispatcherWorkerCount);
+        bool Start(std::size_t& dispatcherWorkerCount);
         void Stop();
+        bool IsStopped();
 
         bool Bind(IPVer ipVer, Protocol protocol, int32_t port, SocketID& sockID);
         bool Listen(SocketID sockID, int32_t backlog, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived, OnClosedSPtr onClosed);
@@ -34,10 +33,7 @@ namespace network
         bool InsertSocket(SocketSPtr sock);
         void RemoveSocket(SocketID sockID);
         SocketSPtr GetSocket(SocketID sockID);
-
-        bool InsertConnection(ConnectionSPtr conn);
-        ConnectionSPtr RemoveConnection(ConnectionID connID);
-        ConnectionSPtr GetConnection(ConnectionID connID);
+        SocketID GenSockID();
 
     private:
         DispatcherSPtr                                      _dispatcher;
@@ -46,11 +42,9 @@ namespace network
         std::mutex                                          _lock;
         std::unordered_map<SocketID, SocketSPtr>            _sockets;
         std::atomic<SocketID>                               _sockIDGen { 0 };
-        std::unordered_map<ConnectionID, ConnectionSPtr>    _connections;
-        std::atomic<ConnectionID>                           _connIDGen { 0 };
 
 #if defined(_LINUX_) 
-        std::atomic<std::size_t>                        _workerAllocator { 0 };
+        std::atomic<std::size_t>                            _workerAllocator { 0 };
 #endif // defined(_LINUX_) 
 
         Manager(const Manager&) = delete;

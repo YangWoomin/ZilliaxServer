@@ -5,6 +5,7 @@
 
 #include    "helper.h"
 #include    "manager.h"
+#include    "network/connection.h"
 
 using namespace zs::common;
 using namespace zs::network;
@@ -56,9 +57,9 @@ bool SocketTCPAceepter::Listen(int32_t backlog)
         return false;
     }
 
-    if (false == PreAccept())
+    if (false == InitAccept())
     {
-        ZS_LOG_ERROR(network, "pre accepting failed, sock id : %llu, socket name : %s, err : %d", 
+        ZS_LOG_ERROR(network, "init accepting failed, sock id : %llu, socket name : %s, err : %d", 
             _sockID, GetName(), errno);
         return false;
     }
@@ -67,6 +68,41 @@ bool SocketTCPAceepter::Listen(int32_t backlog)
         _sockID, GetName());
 
     return true;
+}
+
+SocketSPtr SocketTCPAceepter::PostAccept()
+{
+    // check whether a socket is accepted well
+    std::string name, peer;
+    if (false == postAccept(name, peer))
+    {
+        ZS_LOG_ERROR(network, "internal post accepting failed, sock id : %llu, socket name : %s",
+            GetID(), GetName());
+        return nullptr;
+    }
+
+    // create a new socket(object) for the accepted real socket
+    SocketSPtr sock = SocketGenerator::CreateSocket(
+        _manager, _manager.GenSockID(), _aCtx->_sock,
+        name, peer, SocketType::MESSENGER, _ipVer, _protocol);
+    if (nullptr == sock)
+    {
+        ZS_LOG_ERROR(network, "creating messenger socket in post accepting failed, sock id : %llu, socket name : %s, peer : %s, ip ver : %d, protocol : %d",
+            _sockID, GetName(), GetPeer(), _ipVer, _protocol);
+        return nullptr;
+    }
+
+    // create a connection for the accepted socket
+    ConnectionSPtr conn = ConnectionSPtr(new Connection(++_connIDGen, sock));
+    sock->SetConnection(conn);
+
+    // invoke onConnected with the connection as a parameter
+    if (nullptr != _onConnected)
+    {
+        (*_onConnected)(conn);
+    }
+
+    return sock;
 }
 
 SocketTCPAceepter::SocketTCPAceepter(Manager& manager, SocketID sockID, IPVer ipVer, bool nonBlocking)

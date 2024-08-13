@@ -22,6 +22,17 @@ set( bin_db_d                           ${dir_output_lib}/libdbd.so )
 set( bin_db                             ${dir_output_lib}/libdb.so )
 endif ()
 
+# network
+set( dir_network_root                   ${CMAKE_SOURCE_DIR}/../network)
+set( dir_network_include                ${dir_network_root}/include)
+if ( "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows" )
+set( bin_network_d                      ${dir_output_lib}/networkd.lib )
+set( bin_network                        ${dir_output_lib}/network.lib )
+elseif ( "${CMAKE_SYSTEM_NAME}" STREQUAL "Linux" )
+set( bin_network_d                      ${dir_output_lib}/libnetworkd.so )
+set( bin_network                        ${dir_output_lib}/libnetwork.so )
+endif ()
+
 # spdlog
 set( dir_spdlog_root                    ${CMAKE_SOURCE_DIR}/../log )
 set( dir_spdlog_include                 ${dir_spdlog_root}/include )

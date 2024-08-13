@@ -11,40 +11,11 @@ using namespace zs::network;
 
 #if defined(_WIN64_)
 
-bool SocketTCPConnector::Connect(const std::string& host, int32_t port)
+bool SocketTCPConnector::initConnect(std::size_t idx)
 {
     if (INVALID_SOCKET == _sock)
     {
-        ZS_LOG_ERROR(network, "invalid connect socket in connect, sock id : %llu, socket name : %s", 
-            _sockID, GetName());
-        return false;
-    }
-
-    if (false == prepare(host, port))
-    {
-        ZS_LOG_ERROR(network, "preparing for connect failed, sock id : %llu, socket name : %s",
-            _sockID, GetName());
-        return false;
-    }
-
-    if (false == PreConnect(_cCtx->_idx))
-    {
-        ZS_LOG_ERROR(network, "pre connecting failed, sock id : %llu, socket name : %s",
-            _sockID, GetName());
-        return false;
-    }
-
-    ZS_LOG_INFO(network, "connecting succeeded, socket id : %llu, socket name : %s, host : %s, port : %d", 
-        _sockID, GetName(), host.c_str(), port);
-
-    return true;
-}
-
-bool SocketTCPConnector::PreConnect(std::size_t idx)
-{
-    if (INVALID_SOCKET == _sock)
-    {
-        ZS_LOG_ERROR(network, "invalid connect socket in pre connect, sock id : %llu, socket name : %s", 
+        ZS_LOG_ERROR(network, "invalid connect socket in internal init connect, sock id : %llu, socket name : %s", 
             _sockID, GetName());
         return false;
     }
@@ -72,7 +43,7 @@ bool SocketTCPConnector::PreConnect(std::size_t idx)
     int32_t remotePort = 0;
     Helper::GetSockAddr((sockaddr*)_cCtx->_addrs[idx]._addr, remoteHost, remotePort);
 
-    ZS_LOG_INFO(network, "pre connecting succeeded, socket id : %llu, socket name : %s, remote host : %s, remote port : %d", 
+    ZS_LOG_INFO(network, "internal init connecting succeeded, socket id : %llu, socket name : %s, remote host : %s, remote port : %d", 
         _sockID, GetName(), remoteHost.c_str(), remotePort);
 
     return true;

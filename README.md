@@ -23,8 +23,9 @@
 * MSVC/G++
 * ODBC Driver (MySQL)
 
-## Dependent Open Sources
-* spdlog-1.14.1 ([https://github.com/gabime/spdlog](https://github.com/gabime/spdlog/tree/v1.14.1))
+## License
+* ZilliaxServer : Apache 2.0
+* spdlog-1.14.1 ([https://github.com/gabime/spdlog](https://github.com/gabime/spdlog/tree/v1.14.1)) - MIT License
 
 ## Development Envrionment
 

@@ -11,8 +11,8 @@
 using namespace zs::common;
 using namespace zs::network;
 
-/////////////////////////////////////////////////////////////////////////////
-// ISocket
+std::atomic<ConnectionID> ISocket::_connIDGen { 0 };
+
 ISocket::ISocket(Manager& manager, SocketID sockID, SocketType type, IPVer ipVer, Protocol protocol, bool nonBlocking)
     : _manager(manager), _sockID(sockID), _type(type), _ipVer(ipVer), _protocol(protocol)
 {
@@ -50,34 +50,36 @@ ISocket::~ISocket()
         delete _rCtx;
         _rCtx = nullptr;
     }
+
+    _sock = INVALID_SOCKET;
 }
 
 void ISocket::Close()
 {
-    ConnectionSPtr conn = _manager.RemoveConnection(_connID);
+    OnClosedSPtr onClosed { nullptr };
     {
-        std::lock_guard<std::mutex> locker(_lock);
-
         if (INVALID_SOCKET != _sock)
         {
             CloseSocket(_sock);
-            _sock = INVALID_SOCKET;
         }
 
-        _isClosing = true;
+        std::lock_guard<std::mutex> locker(_lock);
+
+        onClosed = _onClosed;
+        _onClosed.reset();
     }
 
     // invoke onClosed
-    if (nullptr != _onClosed && nullptr != conn)
+    if (nullptr != onClosed && nullptr != _conn)
     {
-        (*_onClosed)(conn);
+        (*onClosed)(_conn);
     }
 
-    ZS_LOG_WARN(network, "socket is being closed, sock id : %llu, name : %s",
-        _sockID, GetName());
+    ZS_LOG_WARN(network, "socket is being destroyed, sock id : %llu, socket name : %s, peer : %s",
+        _sockID, GetName(), GetPeer());
 }
 
-bool ISocket::Bind(int32_t port)
+bool ISocket::Bind(int32_t)
 {
     ZS_LOG_FATAL(network, "binding on this socket is not implemented, sock id : %llu, name : %s", 
         _sockID, _name.c_str());
@@ -85,22 +87,22 @@ bool ISocket::Bind(int32_t port)
     return false;
 }
 
-bool ISocket::Listen(int32_t backlog)
+bool ISocket::Listen(int32_t)
 {
     ZS_LOG_FATAL(network, "listening on this socket is not implemented, sock id : %llu, name : %s", 
         _sockID, _name.c_str());
 
     return false;
 }
-bool ISocket::PreAccept()
+bool ISocket::InitAccept()
 {
-    ZS_LOG_FATAL(network, "pre accepting on this socket is not implemented, sock id : %llu, name : %s", 
+    ZS_LOG_FATAL(network, "init accepting on this socket is not implemented, sock id : %llu, name : %s", 
         _sockID, _name.c_str());
 
     return false;
 }
 
-bool ISocket::Connect(const std::string& host, int32_t port)
+bool ISocket::InitConnect(const std::string&, int32_t)
 {
     ZS_LOG_FATAL(network, "connecting on this socket is not implemented, sock id : %llu, name : %s", 
         _sockID, _name.c_str());
@@ -108,33 +110,25 @@ bool ISocket::Connect(const std::string& host, int32_t port)
     return false;
 }
 
-bool ISocket::PreConnect(std::size_t idx)
+bool ISocket::InitSend(std::string&&)
 {
-    ZS_LOG_FATAL(network, "pre connecting on this socket is not implemented, sock id : %llu, name : %s", 
+    ZS_LOG_FATAL(network, "init sending on this socket is not implemented, sock id : %llu, name : %s", 
         _sockID, _name.c_str());
 
     return false;
 }
 
-bool ISocket::PreRecv(bool& isReceived)
+bool ISocket::ContinueSend()
 {
-    ZS_LOG_FATAL(network, "pre receiving on this socket is not implemented, sock id : %llu, name : %s", 
+    ZS_LOG_FATAL(network, "continuing sending on this socket is not implemented, sock id : %llu, name : %s", 
         _sockID, _name.c_str());
 
     return false;
 }
 
-bool ISocket::PostAccept(std::string& name, std::string& peer)
+bool ISocket::InitReceive()
 {
-    ZS_LOG_FATAL(network, "post accepting on this socket is not implemented, sock id : %llu, name : %s", 
-        _sockID, _name.c_str());
-
-    return false;
-}
-
-bool ISocket::PostConnect(bool& retry)
-{
-    ZS_LOG_FATAL(network, "post connecting on this socket is not implemented, sock id : %llu, name : %s", 
+    ZS_LOG_FATAL(network, "init receiving on this socket is not implemented, sock id : %llu, name : %s", 
         _sockID, _name.c_str());
 
     return false;
@@ -149,7 +143,7 @@ bool ISocket::OnAccepted()
     return false;
 }
 
-bool ISocket::OnReceived(bool& later)
+bool ISocket::OnReceived(bool&)
 {
     ZS_LOG_FATAL(network, "being received on this socket is not implemented, sock id : %llu, name : %s", 
         _sockID, _name.c_str());
@@ -157,6 +151,38 @@ bool ISocket::OnReceived(bool& later)
     return false;
 }
 #endif // defined(_LINUX_) 
+
+SocketSPtr ISocket::PostAccept()
+{
+    ZS_LOG_FATAL(network, "post accepting on this socket is not implemented, sock id : %llu, name : %s", 
+        _sockID, _name.c_str());
+
+    return nullptr;
+}
+
+bool ISocket::PostConnect(bool&)
+{
+    ZS_LOG_FATAL(network, "post connecting on this socket is not implemented, sock id : %llu, name : %s", 
+        _sockID, _name.c_str());
+
+    return false;
+}
+
+bool ISocket::PostSend()
+{
+    ZS_LOG_FATAL(network, "post sending on this socket is not implemented, sock id : %llu, name : %s", 
+        _sockID, _name.c_str());
+
+    return false;
+}
+
+bool ISocket::PostReceive()
+{
+    ZS_LOG_FATAL(network, "post receiving on this socket is not implemented, sock id : %llu, name : %s", 
+        _sockID, _name.c_str());
+
+    return false;
+}
 
 void ISocket::SetCallback(OnConnectedSPtr onConnected, OnReceivedSPtr onReceived, OnClosedSPtr onClosed)
 {
@@ -187,7 +213,8 @@ bool ISocket::bind(int32_t port)
     }
     
     _port = port;
-    _name = name + ":" + std::to_string(port);
+    _name = name.c_str();
+    _name += (":" + std::to_string(port));
 
     return true;
 }

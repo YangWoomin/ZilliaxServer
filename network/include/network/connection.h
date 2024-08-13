@@ -2,24 +2,25 @@
 #ifndef __ZS_NETWORK_CONNECTION_H__
 #define __ZS_NETWORK_CONNECTION_H__
 
-#include    "internal_common.h"
+#include    "network/common.h"
 
 #include    <string>
-#include    <mutex>
 
 namespace zs
 {
 namespace network
 {
-    class Connection final : protected std::enable_shared_from_this<Connection>
+    class Connection final 
+        : protected std::enable_shared_from_this<Connection>
     {
     public:
-        bool Send(const char* buf, std::size_t len);
-        bool Send(const std::string& buf);
+        __ZS_NETWORK_API bool Send(std::string&& buf);
+        __ZS_NETWORK_API void Close();
 
-        IPVer           GetIPVer()      const;
-        Protocol        GetProtocol()   const;
-        ConnectionID    GetID()         const       { return _id; }
+        __ZS_NETWORK_API IPVer           GetIPVer()      const;
+        __ZS_NETWORK_API Protocol        GetProtocol()   const;
+        __ZS_NETWORK_API ConnectionID    GetID()         const       { return _id; }
+        __ZS_NETWORK_API const char*     GetPeer()       const;
 
         ~Connection() = default;
 
@@ -27,22 +28,15 @@ namespace network
         ConnectionID    _id;
         SocketWPtr      _sock;
 
-        std::mutex      _lock;
-
-        // socket receiving buffer
-        // received messages
-
-
-        void handleConnected();
-        void handleReceived();
-
         Connection(ConnectionID id, SocketWPtr sock);
 
         Connection(const Connection&) = delete;
         Connection(const Connection&&) = delete;
         Connection& operator=(const Connection&) = delete;
 
-    friend class Manager;
+    friend class SocketTCPAceepter;
+    friend class SocketTCPMessenger;
+    friend class SocketTCPConnector;
     };
 }
 }

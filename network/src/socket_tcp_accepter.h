@@ -21,23 +21,26 @@ namespace network
         // if in windows initiate async accept for the next accepted socket
         virtual bool Listen(int32_t backlog) override;
 
-        virtual bool PreAccept() override;
+        virtual bool InitAccept() override;
 
 #if defined(_LINUX_) 
         virtual bool OnAccepted() override;
 #endif // defined(_LINUX_) 
 
-        virtual bool PostAccept(std::string& name, std::string& peer) override;
-
-        virtual ~SocketTCPAceepter();
+        virtual SocketSPtr PostAccept() override;
 
     private:
+        bool postAccept(std::string& name, std::string& peer);
+
         SocketTCPAceepter(Manager& manager, SocketID sockID, IPVer ipVer, bool nonBlocking);
         SocketTCPAceepter(Manager& manager, SocketID sockID, Socket sock, const std::string& name, const std::string& peer, IPVer ipVer);
-
+        
         SocketTCPAceepter(const SocketTCPAceepter&) = delete;
         SocketTCPAceepter(const SocketTCPAceepter&&) = delete;
         SocketTCPAceepter& operator=(const SocketTCPAceepter&) = delete;
+
+    public:
+        virtual ~SocketTCPAceepter();
 
         friend class SocketGenerator;
     };

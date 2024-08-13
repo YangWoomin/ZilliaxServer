@@ -46,7 +46,7 @@ void DispatcherWorker::handle(IOResult& res)
 {
     if (nullptr == res._sock)
     {
-        ZS_LOG_ERROR(network, "invalid socket");
+        ZS_LOG_ERROR(network, "invalid socket for handle in dispatcher worker");
         return;
     }
 

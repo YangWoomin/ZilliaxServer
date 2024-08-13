@@ -25,6 +25,23 @@
             "cwd": "${workspaceFolder}/output/bin",
             "environment": [],
             "console": "externalTerminal"
+        },
+        {
+            "name": "Launch network_test",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/output/bin/network_testd.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/output/bin",
+            "environment": [],
+            "console": "externalTerminal"
+        },
+        {
+            "name": "Attach network_test",
+            "type": "cppvsdbg",
+            "request": "attach",
+            "processId": "${command:pickProcess}"
         }
     ]
 }

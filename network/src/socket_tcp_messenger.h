@@ -13,20 +13,40 @@ namespace network
     class SocketTCPMessenger : public ISocket
     {
     public:
-        virtual bool Send() override;
+        virtual bool InitSend(std::string&& buf) override;
 
-        virtual bool PreRecv(bool& isReceived) override;
+        virtual bool ContinueSend() override;
 
-        virtual ~SocketTCPMessenger();
+        virtual bool InitReceive() override;
+
+#if defined(_LINUX_) 
+        virtual bool OnReceived(bool& later) override;
+#endif // defined(_LINUX_) 
+
+        virtual bool PostSend() override;
+
+        virtual bool PostReceive() override;
 
     private:
+        bool initSend();
+
+        std::queue<std::string>     _sendBuf;
+        std::deque<std::string>     _sendBufPool;
+        std::mutex                  _sendLock;
+
+        std::string                 _recvBuf;
+        uint32_t                    _curMsgLen = 0;
+        std::mutex                  _recvLock;
+
         SocketTCPMessenger(Manager& manager, SocketID sockID, IPVer ipVer, bool nonBlocking);
         SocketTCPMessenger(Manager& manager, SocketID sockID, Socket sock, const std::string& name, const std::string& peer, IPVer ipVer);
-        
 
         SocketTCPMessenger(const SocketTCPMessenger&) = delete;
         SocketTCPMessenger(const SocketTCPMessenger&&) = delete;
         SocketTCPMessenger& operator=(const SocketTCPMessenger&) = delete;
+
+    public:
+        virtual ~SocketTCPMessenger();
 
         friend class SocketGenerator;
         friend class SocketTCPConnector;
@@ -35,4 +55,3 @@ namespace network
 }
 
 #endif // __ZS_NETWORK_SOCKET_TCP_MESSENGER_H__
-

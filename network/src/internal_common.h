@@ -37,6 +37,8 @@
 #include    <atomic>
 #include    <cstring>
 #include    <mutex>
+#include    <queue>
+#include    <deque>
 
 namespace zs
 {
@@ -63,7 +65,7 @@ namespace network
         MODIFY          = EPOLL_CTL_MOD,
     };
 
-    enum EventType
+    enum EventType : int32_t
     {
         INBOUND         = EPOLLIN,      // triggered when some data is received or a remote client is accepted
         OUTBOUND        = EPOLLOUT,     // triggered when socket affords to get sending data or a remote client is connected
@@ -136,16 +138,12 @@ namespace network
         socklen_t       _len = 0; // addr len
 #endif // _WIN64_
         
-        // receiving buffer for udp
-        char            _buf[BUFFER_SIZE] = { 0, };
-        
         void Reset()
         {
             IOContext::Reset();
             _sock = INVALID_SOCKET;
             std::memset(_addr, 0, sizeof(_addr));
             _len = 0;
-            std::memset(_buf, 0, sizeof(_buf));
         }
     };
 
@@ -177,12 +175,12 @@ namespace network
     struct SendRecvContext : public IOContext
     {
         // send/recv buffer
-        char            _buf[BUFFER_SIZE] = { 0, };
+        std::string     _buf;
 
 #if defined(_WIN64_)
         DWORD           _bytes = 0; // send/recv size
 #elif defined(_LINUX_) 
-        int32_t         _bytes = 0; // send/recv size
+        ssize_t         _bytes = 0; // send/recv size
 #endif // _WIN64_
 
         // socket address for udp
@@ -191,7 +189,6 @@ namespace network
         void Reset()
         {
             IOContext::Reset();
-            std::memset(_buf, 0, sizeof(_buf));
             _bytes = 0;
             _addrInfo.Reset();
         }

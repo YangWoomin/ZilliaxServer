@@ -49,16 +49,16 @@ void Network::Finalize()
     {
         delete manager;
         manager = nullptr;
+
+        ZS_LOG_INFO(network, "network module finalized");
     }
 
 #if defined(_WIN64_)  
     WSACleanup();
 #endif // _WIN64_
-
-    ZS_LOG_INFO(network, "network module finalized");
 }
 
-bool Network::Start(std::size_t assitantWorkerCount, std::size_t dispatcherWorkerCount)
+bool Network::Start(std::size_t dispatcherWorkerCount)
 {
     if (nullptr == manager)
     {
@@ -66,26 +66,25 @@ bool Network::Start(std::size_t assitantWorkerCount, std::size_t dispatcherWorke
         return false;
     }
 
-    if (false == manager->Start(assitantWorkerCount, dispatcherWorkerCount))
+    if (false == manager->Start(dispatcherWorkerCount))
     {
         ZS_LOG_ERROR(network, "network manager start failed");
         return false;
     }
 
-    ZS_LOG_INFO(network, "network module started, assistant worker count : %llu, dispatcher worker count : %d",
-        assitantWorkerCount, dispatcherWorkerCount);
+    ZS_LOG_INFO(network, "network module started, dispatcher worker count : %d",
+        dispatcherWorkerCount);
 
     return true;
 }
 
 void Network::Stop()
 {
-    if (nullptr != manager)
+    if (nullptr != manager && false == manager->IsStopped())
     {
         manager->Stop();
+        ZS_LOG_INFO(network, "network module stopped");
     }
-
-    ZS_LOG_INFO(network, "network module stopped");
 }
 
 bool Network::Bind(IPVer ipVer, Protocol protocol, int32_t port, SocketID& sockID)

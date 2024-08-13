@@ -11,7 +11,7 @@ using namespace zs::network;
 
 #if defined(_WIN64_)
 
-bool SocketTCPAceepter::PreAccept()
+bool SocketTCPAceepter::InitAccept()
 {
     // AcceptEx
     if (nullptr == Helper::_lpfnAcceptEx)
@@ -24,7 +24,7 @@ bool SocketTCPAceepter::PreAccept()
     Socket sock = Helper::CreateSocket(_ipVer, _protocol);
     if (INVALID_SOCKET == sock)
     {
-        ZS_LOG_ERROR(network, "creating socket for pre accept failed, sock id : %llu, socket name : %s",
+        ZS_LOG_ERROR(network, "creating socket for init accept failed, sock id : %llu, socket name : %s",
             _sockID, GetName());
         return false;
     }
@@ -47,13 +47,13 @@ bool SocketTCPAceepter::PreAccept()
         }
     }
 
-    ZS_LOG_INFO(network, "pre accepting succeeded, socket id : %llu, socket name : %s", 
+    ZS_LOG_INFO(network, "init accepting succeeded, socket id : %llu, socket name : %s", 
         _sockID, GetName());
 
     return true;
 }
 
-bool SocketTCPAceepter::PostAccept(std::string& name, std::string& peer)
+bool SocketTCPAceepter::postAccept(std::string& name, std::string& peer)
 {
     if (nullptr == _aCtx)
     {
@@ -106,7 +106,9 @@ bool SocketTCPAceepter::PostAccept(std::string& name, std::string& peer)
         return false;
     }
 
+    name = name.c_str();
     name += (":" + std::to_string(localPort));
+    peer = peer.c_str();
     peer += (":" + std::to_string(remotePort));
     
     return true;
