@@ -72,7 +72,7 @@
 #### VS Code on Linux (wsl2)
 * Open VS Code and Connect to WSL
   + reference : https://code.visualstudio.com/docs/remote/wsl
-  + check "Debugging -> Linux on wsl2"
+  + check "Debugging -> VS Code on Linux (wsl2)"
 * Ctrl + Shift + B
 * select one of the list that you want to build
 
