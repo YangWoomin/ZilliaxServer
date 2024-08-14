@@ -88,6 +88,7 @@
 * VS Code setting for WSL : https://code.visualstudio.com/docs/remote/wsl
 * install "WSL" extension of Visual Studio Code
 * open VS Code from WSL cmd or connect to WSL from VS Code on Windows
+  + ![image](https://github.com/user-attachments/assets/1aedf17e-991a-4675-bfae-eaa0e27e6872)
 * Ctrl + Shift + D
 * select one of the launch list you want to debug
 * click the play icon
