@@ -81,6 +81,7 @@
 * open VS Code
 * Ctrl + Shift + D
 * select one of the launch list you want to debug
+  + ![image](https://github.com/user-attachments/assets/513a55a3-8619-44ee-b983-d39c813ab689)
 * click the play icon
 ### VS Code on Linux (wsl2)
 * install gdb on    
