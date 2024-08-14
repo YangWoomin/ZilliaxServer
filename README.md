@@ -20,7 +20,7 @@
 
 ## Build Tool / Driver
 * Make/CMake
-* MSVC/G++
+* MSVC/g++
 * ODBC Driver (MySQL)
 
 ## License
