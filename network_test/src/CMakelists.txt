@@ -36,7 +36,7 @@ target_include_directories( ${target} PRIVATE . )
 target_include_directories( ${target} PRIVATE ${dir_proj_include} )
 target_include_directories( ${target} PRIVATE ${dir_common_include} )
 target_include_directories( ${target} PRIVATE ${dir_network_include} )
-target_include_directories( ${target} PRIVATE ${dir_spdlog_include} )
+target_include_directories( ${target} PRIVATE ${dir_third_party_include} )
 
 target_link_libraries( ${target} 
     PRIVATE 

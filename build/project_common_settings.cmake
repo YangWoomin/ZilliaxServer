@@ -33,6 +33,6 @@ set( bin_network_d                      ${dir_output_lib}/libnetworkd.so )
 set( bin_network                        ${dir_output_lib}/libnetwork.so )
 endif ()
 
-# spdlog
-set( dir_spdlog_root                    ${CMAKE_SOURCE_DIR}/../log )
-set( dir_spdlog_include                 ${dir_spdlog_root}/include )
+# third party
+set( dir_third_party_root               ${CMAKE_SOURCE_DIR}/../third_party )
+set( dir_third_party_include            ${dir_third_party_root}/include )

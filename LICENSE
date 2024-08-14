@@ -56,6 +56,7 @@ ZilliaxServer is licensed under the Apache License, Version 2.0.
 This project also makes use of the following third-party libraries:
 
 spdlog - Licensed under the MIT License:
+cxxopts - Licensed under the MIT License:
 -------------------------------------------------------------------------------
 
 The MIT License (MIT)

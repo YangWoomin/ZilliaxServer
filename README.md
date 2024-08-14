@@ -26,6 +26,7 @@
 ## License
 * ZilliaxServer : Apache 2.0
 * spdlog-1.14.1 ([https://github.com/gabime/spdlog](https://github.com/gabime/spdlog/tree/v1.14.1)) - MIT License
+* cxxopts-3.2.0 () - MIT License
 
 ## Development Envrionment
 

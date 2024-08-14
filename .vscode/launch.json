@@ -13,8 +13,8 @@
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/output/bin",
             "environment": [],
-            "console": "integratedTerminal",
-            "preLaunchTask": "Rebuild db db_test as Debug"
+            //"preLaunchTask": "Rebuild db db_test as Debug",
+            "console": "integratedTerminal"
         },
         {
             "name": "Launch cpp_test",
@@ -25,8 +25,8 @@
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/output/bin",
             "environment": [],
-            "console": "integratedTerminal",
-            "preLaunchTask": "Rebuild cpp_test as Debug"
+            //"preLaunchTask": "Rebuild cpp_test as Debug",
+            "console": "integratedTerminal"
         },
         {
             "name": "Launch network_test",
@@ -37,8 +37,20 @@
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/output/bin",
             "environment": [],
-            "console": "integratedTerminal",
-            "preLaunchTask": "Rebuild network network_test as Debug"
+            //"preLaunchTask": "Rebuild network network_test as Debug",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Launch network_test (client)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/output/bin/network_testd.exe",
+            "args": ["--mode", "client"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/output/bin",
+            "environment": [],
+            //"preLaunchTask": "Rebuild network network_test as Debug",
+            "console": "integratedTerminal"
         },
         {
             "name": "Attach network_test",
@@ -54,8 +66,8 @@
             "cwd": "${workspaceFolder}/output/bin",
             "MIMode": "gdb",
             "miDebuggerPath": "/usr/bin/gdb",
-            "internalConsoleOptions": "openOnSessionStart",
-            "preLaunchTask": "Rebuild network network_test as Debug"
+            //"preLaunchTask": "Rebuild network network_test as Debug",
+            "internalConsoleOptions": "openOnSessionStart"
         }
     ]
 }
