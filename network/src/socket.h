@@ -23,6 +23,8 @@ namespace network
                 void        Close();
         virtual bool        InitConnect(const std::string& host, int32_t port);
         virtual bool        InitSend(std::string&& buf);
+        virtual bool        InitSend(std::string& buf);
+        virtual bool        InitSend(const char* buf, std::size_t len);
         virtual bool        ContinueSend();
         virtual bool        InitReceive();
 

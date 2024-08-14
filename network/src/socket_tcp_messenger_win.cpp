@@ -25,13 +25,12 @@ bool SocketTCPMessenger::InitReceive()
     if (nullptr == _rCtx)
     {
         _rCtx = new SendRecvContext();
-        _rCtx->_buf.resize(Network::DEFAULT_TCP_RECVING_BUFFER_SIZE);
     }
     _rCtx->Reset();
 
     WSABUF wsabuf;
-    wsabuf.buf = _rCtx->_buf.data();
-    wsabuf.len = (ULONG)_rCtx->_buf.size();
+    wsabuf.buf = _rCtx->_buf;
+    wsabuf.len = (ULONG)sizeof(_rCtx->_buf);
     DWORD flags = 0;
     int res = WSARecv(_sock, &wsabuf, 1, &_rCtx->_bytes, &flags, &_rCtx->_ol, NULL);
     if (SOCKET_ERROR == res)
@@ -44,7 +43,7 @@ bool SocketTCPMessenger::InitReceive()
             return false;
         }
     }
-    else if (SUCCESS_RESULT == res && 0 < _rCtx->_bytes)
+    else if (NO_ERROR == res && 0 < _rCtx->_bytes)
     {
         PostReceive();
         return InitReceive();
@@ -57,7 +56,12 @@ bool SocketTCPMessenger::PostSend()
 {
     std::unique_lock<std::mutex> locker(_sendLock);
 
-    std::string& buf = _sendBuf.front();
+    if (true == _sendBuf.empty())
+    {
+        return false;
+    }
+
+    std::vector<uint8_t>& buf = _sendBuf.front();
     if (buf.size() != _sCtx->_bytes)
     {
         ZS_LOG_ERROR(network, "sending buffer size is not equal with sent byte size, sock id : %llu, socket name : %s, peer : %s",
@@ -69,7 +73,7 @@ bool SocketTCPMessenger::PostSend()
     buf.clear();
 
     // move the buffer back to the back of the queue so that it would be reused
-    if (Network::DEFAULT_TCP_SENDING_BUFFER_COUNT > _sendBufPool.size())
+    if (DEFAULT_TCP_SENDING_BUFFER_COUNT > _sendBufPool.size())
     {
         _sendBufPool.push_front(std::move(buf));
     }
@@ -89,8 +93,9 @@ bool SocketTCPMessenger::initSend()
 bool SocketTCPMessenger::send()
 {
     WSABUF wsabuf;
-    std::string& buf = _sendBuf.front();
-    wsabuf.buf = buf.data();
+    std::vector<uint8_t>& buf = _sendBuf.front();
+    std::memcpy(_sCtx->_buf, buf.data(), buf.size());
+    wsabuf.buf = _sCtx->_buf;
     wsabuf.len = (ULONG)buf.size();
 
     int res = WSASend(_sock, &wsabuf, 1, &_sCtx->_bytes, 0, &_sCtx->_ol, NULL);
@@ -104,7 +109,7 @@ bool SocketTCPMessenger::send()
             return false;
         }
     }
-    else if (SUCCESS_RESULT == res && 0 < _sCtx->_bytes)
+    else if (NO_ERROR == res && 0 < _sCtx->_bytes)
     {
         // processed directly
         if (true == PostSend())

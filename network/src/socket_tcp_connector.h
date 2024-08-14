@@ -27,7 +27,7 @@ namespace network
     private:
         bool prepare(const std::string& host, int32_t port);
         bool initConnect(std::size_t idx);
-        bool postConnect();
+        bool postConnect(bool& retry);
 
         SocketTCPConnector(Manager& manager, SocketID sockID, IPVer ipVer, bool nonBlocking);
         SocketTCPConnector(Manager& manager, SocketID sockID, Socket sock, const std::string& name, const std::string& peer, IPVer ipVer);

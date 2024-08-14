@@ -192,7 +192,8 @@ bool Network::ConnectTCP(IPVer ipVer, std::string host, int32_t port, OnConnecte
     return true;
 }
 
-ConnectionWPtr ConnectUDP(IPVer ipVer, std::string host, int32_t port, OnReceivedSPtr onReceived)
+ConnectionSPtr Network::ConnectUDP(IPVer ipVer, std::string host, int32_t port, OnReceivedSPtr onReceived)
 {
+    // implement soon
     return ConnectionSPtr(nullptr);
 }

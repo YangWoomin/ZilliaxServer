@@ -28,7 +28,7 @@ namespace network
         bool Connect(IPVer ipVer, Protocol protocol, const std::string& host, int32_t port, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived, OnClosedSPtr onClosed);
 
         void HandleAccepted(SocketSPtr sock);
-        void HandleConnected(SocketSPtr sock);
+        bool HandleConnected(SocketSPtr sock);
         void HandleReceived(SocketSPtr sock);
         void HandleSent(SocketSPtr sock);
 

@@ -53,10 +53,6 @@ namespace network
 
     static const std::size_t SOCKET_NAME_SIZE = 128;
 
-#define NO_SOCKET_ERROR         0
-#define SUCCESS_RESULT          0
-#define INVALID_RESULT          -1
-
 #if defined(_POSIX_) 
     enum BindType : int32_t
     {
@@ -71,6 +67,8 @@ namespace network
         OUTBOUND        = EPOLLOUT,     // triggered when socket affords to get sending data or a remote client is connected
     };
 
+#define NO_ERROR                0
+#define INVALID_RESULT          -1
 #define INVALID_FD_VALUE        -1
 #define INVALID_SOCKET          -1
 #define SOCKET_ERROR            -1
@@ -175,7 +173,7 @@ namespace network
     struct SendRecvContext : public IOContext
     {
         // send/recv buffer
-        std::string     _buf;
+        char            _buf[DEFAULT_TCP_SENDING_BUFFER_SIZE];
 
 #if defined(_WIN64_)
         DWORD           _bytes = 0; // send/recv size
@@ -189,7 +187,8 @@ namespace network
         void Reset()
         {
             IOContext::Reset();
-            _buf.clear();
+            //_buf.clear();
+            std::memset(_buf, 0, sizeof(_buf));
             _bytes = 0;
             _addrInfo.Reset();
         }

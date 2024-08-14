@@ -30,16 +30,12 @@ namespace network
         static bool Close(SocketID sockID);
         
         static bool ConnectTCP(IPVer ipVer, std::string host, int32_t port, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived, OnClosedSPtr onClosed);
-        static ConnectionWPtr ConnectUDP(IPVer ipVer, std::string host, int32_t port, OnReceivedSPtr onReceived);
+        static ConnectionSPtr ConnectUDP(IPVer ipVer, std::string host, int32_t port, OnReceivedSPtr onReceived);
 
         static const std::size_t        MAX_WORKER_COUNT = 128;
         static const int32_t            AVAILABLE_MINIMUM_PORT = 1024;
         static const int32_t            AVAILABLE_MAXIMUM_PORT = 65535;
         static const int32_t            MAX_BACKLOG_SIZE = 1024;
-
-        static const uint32_t           DEFAULT_TCP_RECVING_BUFFER_SIZE = 4000; // 4KiB (approximately)
-        static const uint32_t           DEFAULT_TCP_SENDING_BUFFER_SIZE = 4000; // 4KiB (approximately)
-        static const uint32_t           DEFAULT_TCP_SENDING_BUFFER_COUNT = 8; // maximum 4KiB * DEFAULT_TCP_SENDING_BUFFER_COUNT
     
     private:
 

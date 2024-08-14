@@ -70,13 +70,13 @@ void ISocket::Close()
     }
 
     // invoke onClosed
-    if (nullptr != onClosed && nullptr != _conn)
+    if (nullptr != onClosed && SocketType::ACCEPTER != _type)
     {
         (*onClosed)(_conn);
-    }
 
-    ZS_LOG_WARN(network, "socket is being destroyed, sock id : %llu, socket name : %s, peer : %s",
-        _sockID, GetName(), GetPeer());
+        ZS_LOG_WARN(network, "socket is being destroyed, sock id : %llu, socket name : %s, peer : %s",
+            _sockID, GetName(), GetPeer());
+    }
 }
 
 bool ISocket::Bind(int32_t)
@@ -111,6 +111,22 @@ bool ISocket::InitConnect(const std::string&, int32_t)
 }
 
 bool ISocket::InitSend(std::string&&)
+{
+    ZS_LOG_FATAL(network, "init sending on this socket is not implemented, sock id : %llu, name : %s", 
+        _sockID, _name.c_str());
+
+    return false;
+}
+
+bool ISocket::InitSend(std::string&)
+{
+    ZS_LOG_FATAL(network, "init sending on this socket is not implemented, sock id : %llu, name : %s", 
+        _sockID, _name.c_str());
+
+    return false;
+}
+
+bool ISocket::InitSend(const char*, std::size_t)
 {
     ZS_LOG_FATAL(network, "init sending on this socket is not implemented, sock id : %llu, name : %s", 
         _sockID, _name.c_str());

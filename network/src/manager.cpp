@@ -141,6 +141,8 @@ bool Manager::Listen(SocketID sockID, int32_t backlog, OnConnectedSPtr onConnect
         return false;
     }
 
+    sock->SetCallback(onConnected, onReceived, onClosed);
+
     if (false == sock->Listen(backlog))
     {
         ZS_LOG_ERROR(network, "listen failed, socket id : %llu, socket name : %s", 
@@ -163,8 +165,6 @@ bool Manager::Listen(SocketID sockID, int32_t backlog, OnConnectedSPtr onConnect
         RemoveSocket(sock->GetID()); // not bound yet
         return false;
     }
-
-    sock->SetCallback(onConnected, onReceived, onClosed);
 
     ZS_LOG_INFO(network, "listen succeeded, sock id : %llu, socket name : %s",
         sock->GetID(), sock->GetName());
@@ -233,6 +233,8 @@ bool Manager::Connect(IPVer ipVer, Protocol protocol, const std::string& host, i
         return false;
     }
 
+    sock->SetCallback(onConnected, onReceived, onClosed);
+
     if (false == sock->InitConnect(host, port))
     {
         ZS_LOG_ERROR(network, "inserting connect socket failed, sock id : %llu, ip ver : %d, protocol : %d, host : %s, port : %d",
@@ -241,9 +243,7 @@ bool Manager::Connect(IPVer ipVer, Protocol protocol, const std::string& host, i
         return false;
     }
 
-    sock->SetCallback(onConnected, onReceived, onClosed);
-
-    ZS_LOG_INFO(network, "connecting succeeded, sock id : %llu, ip ver : %d, protocol : %d, host : %s, port : %d",
+    ZS_LOG_INFO(network, "connecting succeeded, sock id : %llu, socket name : %s, ip ver : %d, protocol : %d, host : %s, port : %d",
         sock->GetID(), sock->GetName(), ipVer, protocol, host.c_str(), port);
 
     return true;
@@ -283,6 +283,8 @@ void Manager::HandleAccepted(SocketSPtr sock)
         RemoveSocket(newSock->GetID()); // not bound yet
         return;
     }
+
+    newSock->SetCallback(sock->GetOnConnected(), sock->GetOnReceived(), sock->GetOnClosed());
     
     // if in windows reinitiate async accept for the next socket 
     if (false == sock->InitAccept())
@@ -305,7 +307,7 @@ void Manager::HandleAccepted(SocketSPtr sock)
     return;
 }
 
-void Manager::HandleConnected(SocketSPtr sock)
+bool Manager::HandleConnected(SocketSPtr sock)
 {
     bool retry = false;
     if (false == sock->PostConnect(retry))
@@ -313,11 +315,11 @@ void Manager::HandleConnected(SocketSPtr sock)
         ZS_LOG_ERROR(network, "post connect failed, sock id : %llu, socket name : %s",
             sock->GetID(), sock->GetName());
         sock->Close();
-        return;
+        return false;
     }
     if (true == retry)
     {
-        return;
+        return true;
     }   
 
     // if windows, initiate async receive on the connected socket
@@ -326,10 +328,10 @@ void Manager::HandleConnected(SocketSPtr sock)
         ZS_LOG_ERROR(network, "init receiving failed in handling connected, sock id : %llu, socket name : %s, peer : %s",
             sock->GetID(), sock->GetName(), sock->GetPeer());
         sock->Close();
-        return;
+        return false;
     }
 
-    return;
+    return true;
 }
 
 void Manager::HandleReceived(SocketSPtr sock)

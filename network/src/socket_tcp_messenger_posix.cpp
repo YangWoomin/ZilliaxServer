@@ -17,7 +17,7 @@ bool SocketTCPMessenger::InitReceive()
     if (nullptr == _rCtx)
     {
         _rCtx = new SendRecvContext();
-        _rCtx->_buf.resize(Network::DEFAULT_TCP_RECVING_BUFFER_SIZE);
+        _rCtx->_buf.resize(DEFAULT_TCP_RECVING_BUFFER_SIZE);
     }
     _rCtx->Reset();
     

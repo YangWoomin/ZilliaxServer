@@ -30,8 +30,52 @@ bool SocketTCPConnector::initConnect(std::size_t idx)
     return true;
 }
 
-bool SocketTCPConnector::postConnect()
+bool SocketTCPConnector::postConnect(bool& retry)
 {
+    int err;
+    socklen_t len = sizeof(err);
+    if (SOCKET_ERROR == getsockopt(_sock, SOL_SOCKET, SO_ERROR, (char*)&err, &len))
+    {
+        ZS_LOG_ERROR(network, "getsockopt failed in post connect, sock id : %llu, socket name : %s, err : %d",
+            _sockID, GetName(), errno);
+        return false;
+    }
+
+    // check whether the connection to remote is established well
+    // if not, retry to connect with the other ip (in context)
+    // if all of tries failed then invoke onConnected with null pointer of connection
+    if (NO_ERROR != err)
+    {
+        if (CONN_REFUSED == err || CONN_TIMEOUT == err || 
+            CONN_HOSTUNREACH == err || CONN_NETUNREACH == err)
+        {
+            ++_cCtx->_idx;
+            if (_cCtx->_addrs.size() <= _cCtx->_idx)
+            {
+                ZS_LOG_ERROR(network, "no triable ip in post connect, sock id : %llu, socket name : %s", 
+                    _sockID, GetName());
+                return false;
+            }
+
+            if (false == initConnect(_cCtx->_idx))
+            {
+                ZS_LOG_ERROR(network, "retrying to connect failed in post connect, sock id : %llu, socket name : %s", 
+                    _sockID, GetName());
+                return false;
+            }
+
+            ZS_LOG_WARN(network, "retrying to connect in post connect, sock id : %llu, socket name : %s, err : %d",
+                _sockID, GetName(), err);
+
+            retry = true;
+            return true;
+        }
+
+        ZS_LOG_ERROR(network, "socket error occurred in post connect, sock id : %llu, socket name : %s", 
+            _sockID, GetName());
+        return false;
+    }
+
     // unbind the connected socket from dispatcher for connected event
     // bind the connected socket to dispatcher for data received event
     if (false == _manager.Bind(_workerID, this, BindType::MODIFY, EventType::INBOUND))

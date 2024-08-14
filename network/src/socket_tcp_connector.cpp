@@ -71,60 +71,15 @@ bool SocketTCPConnector::PostConnect(bool& retry)
         return false;
     }
 
-    int err = 0;
-    socklen_t len = sizeof(err);
-    if (SOCKET_ERROR == getsockopt(_sock, SOL_SOCKET, SO_ERROR, (char*)&err, &len))
-    {
-        ZS_LOG_ERROR(network, "getsockopt failed in post connect, sock id : %llu, socket name : %s, err : %d",
-            _sockID, GetName(), errno);
-        return false;
-    }
-
-    // check whether the connection to remote is established well
-    // if not, retry to connect with the other ip (in context)
-    // if all of tries failed then invoke onConnected with null pointer of connection
-    if (NO_SOCKET_ERROR != err)
-    {
-        if (CONN_REFUSED == err || CONN_TIMEOUT == err || 
-            CONN_HOSTUNREACH == err || CONN_NETUNREACH == err)
-        {
-            if (_cCtx->_addrs.size() <= _cCtx->_idx)
-            {
-                ZS_LOG_ERROR(network, "no triable ip in post connect, sock id : %llu, socket name : %s", 
-                    _sockID, GetName());
-                return false;
-            }
-
-            if (false == initConnect(++_cCtx->_idx))
-            {
-                ZS_LOG_ERROR(network, "retrying to connect failed in post connect, sock id : %llu, socket name : %s", 
-                    _sockID, GetName());
-                return false;
-            }
-
-            ZS_LOG_WARN(network, "retrying to connect in post connect, sock id : %llu, socket name : %s, err : %d",
-                _sockID, GetName(), err);
-
-            retry = true;
-            return true;
-        }
-
-        ZS_LOG_ERROR(network, "socket error occurred in post connect, sock id : %llu, socket name : %s", 
-            _sockID, GetName());
-        
-        if (nullptr != _onConnected)
-        {
-            (*_onConnected)(ConnectionSPtr(nullptr));
-        }
-
-        return false;
-    }
-
-    if (false == postConnect())
+    if (false == postConnect(retry))
     {
         ZS_LOG_ERROR(network, "internal post connect failed, sock id : %llu, socket name : %s",
             _sockID, GetName());
         return false;
+    }
+    if (true == retry)
+    {
+        return true;
     }
 
     int32_t remotePort = 0;
@@ -192,8 +147,13 @@ bool SocketTCPConnector::prepare(const std::string& host, int32_t port)
         for (auto p = res; NULL != p; p = p->ai_next)
         {
             AddrInfo addrInfo;
-            Helper::ConvertAddrInfoToSockAdddr(p, port, (sockaddr_storage*)addrInfo._addr, addrInfo._len);
+            std::string host;
+            if (false == Helper::ConvertAddrInfoToSockAdddr(_ipVer, p, port, (sockaddr_storage*)addrInfo._addr, addrInfo._len, host))
+            {
+                continue;
+            }
             _cCtx->_addrs.push_back(addrInfo);
+            ZS_LOG_INFO(network, "one of connecting remote host : %s", host.c_str());
         }
     }
     else

@@ -30,16 +30,15 @@ namespace network
 {
     class Connection;
     using ConnectionSPtr = std::shared_ptr<Connection>;
-    using ConnectionWPtr = std::weak_ptr<Connection>;
     using ConnectionID = uint64_t;
 
-    using OnConnected = std::function<void(ConnectionWPtr)>;
+    using OnConnected = std::function<void(ConnectionSPtr)>;
     using OnConnectedSPtr = std::shared_ptr<OnConnected>;
 
-    using OnReceived = std::function<void(ConnectionWPtr, const char*, std::size_t)>;
+    using OnReceived = std::function<void(ConnectionSPtr, const char*, std::size_t)>;
     using OnReceivedSPtr = std::shared_ptr<OnReceived>;
 
-    using OnClosed = std::function<void(ConnectionWPtr)>;
+    using OnClosed = std::function<void(ConnectionSPtr)>;
     using OnClosedSPtr = std::shared_ptr<OnClosed>;
 
     class ISocket;
@@ -60,6 +59,10 @@ namespace network
         TCP         = 1,
         UDP         = 2,
     };
+
+    static const uint32_t           DEFAULT_TCP_RECVING_BUFFER_SIZE = 4000; // 4KiB (approximately)
+    static const uint32_t           DEFAULT_TCP_SENDING_BUFFER_SIZE = 1024;
+    static const uint32_t           DEFAULT_TCP_SENDING_BUFFER_COUNT = 8; // maximum 4KiB * DEFAULT_TCP_SENDING_BUFFER_COUNT
 }
 }
 

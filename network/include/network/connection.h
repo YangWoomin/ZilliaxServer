@@ -15,6 +15,8 @@ namespace network
     {
     public:
         __ZS_NETWORK_API bool Send(std::string&& buf);
+        __ZS_NETWORK_API bool Send(std::string& buf);
+        __ZS_NETWORK_API bool Send(const char* buf, std::size_t len);
         __ZS_NETWORK_API void Close();
 
         __ZS_NETWORK_API IPVer           GetIPVer()      const;

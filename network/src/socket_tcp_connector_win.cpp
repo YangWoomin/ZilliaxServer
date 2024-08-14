@@ -49,13 +49,42 @@ bool SocketTCPConnector::initConnect(std::size_t idx)
     return true;
 }
 
-bool SocketTCPConnector::postConnect()
+bool SocketTCPConnector::postConnect(bool& retry)
 {
-    if (INVALID_SOCKET == _sock)
+    int seconds;
+    socklen_t len = sizeof(seconds);
+    if (SOCKET_ERROR == getsockopt(_sock, SOL_SOCKET, SO_CONNECT_TIME, (char*)&seconds, &len))
     {
-        ZS_LOG_ERROR(network, "invalid connect socket in post connect, sock id : %llu, socket name : %s", 
-            _sockID, GetName());
+        ZS_LOG_ERROR(network, "getsockopt failed in post connect, sock id : %llu, socket name : %s, err : %d",
+            _sockID, GetName(), errno);
         return false;
+    }
+
+    // check whether the connection to remote is established well
+    // if not, retry to connect with the other ip (in context)
+    // if all of tries failed then invoke onConnected with null pointer of connection
+    if (0xFFFFFFFF == seconds)
+    {
+        ++_cCtx->_idx;
+        if (_cCtx->_addrs.size() <= _cCtx->_idx)
+        {
+            ZS_LOG_ERROR(network, "no triable ip in post connect, sock id : %llu, socket name : %s", 
+                _sockID, GetName());
+            return false;
+        }
+
+        if (false == initConnect(_cCtx->_idx))
+        {
+            ZS_LOG_ERROR(network, "retrying to connect failed in post connect, sock id : %llu, socket name : %s", 
+                _sockID, GetName());
+            return false;
+        }
+
+        ZS_LOG_WARN(network, "retrying to connect in post connect, sock id : %llu, socket name : %s",
+            _sockID, GetName());
+
+        retry = true;
+        return true;
     }
 
     if (SOCKET_ERROR == setsockopt(_sock, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0))

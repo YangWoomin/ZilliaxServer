@@ -56,7 +56,7 @@ void DispatcherWorker::handle(IOResult& res)
     }
     else if (SocketType::CONNECTOR == res._sock->GetType())
     {
-        _manager.HandleConnected(res._sock);
+        res._release = !_manager.HandleConnected(res._sock);
     }
     else if (SocketType::MESSENGER == res._sock->GetType())
     {

@@ -3,7 +3,6 @@
 
 #include    "common/log.h"
 
-#include    "network/network.h"
 #include    "helper.h"
 #include    "manager.h"
 #include    "network/connection.h"
@@ -13,6 +12,11 @@ using namespace zs::network;
 
 bool SocketTCPMessenger::InitSend(std::string&& buf)
 {
+    return InitSend(buf);
+}
+
+bool SocketTCPMessenger::InitSend(std::string& buf)
+{
     if (0 >= buf.size())
     {
         ZS_LOG_ERROR(network, "invalid bufffer in init send, sock id : %llu, socket name : %s, peer : %s", 
@@ -20,88 +24,19 @@ bool SocketTCPMessenger::InitSend(std::string&& buf)
         return false;
     }
 
-    if (INVALID_SOCKET == _sock)
+    return initSend(buf, buf.size());
+}
+
+bool SocketTCPMessenger::InitSend(const char* buf, std::size_t len)
+{
+    if (nullptr == buf || 0 == len)
     {
-        ZS_LOG_ERROR(network, "invalid messenger socket in init send, sock id : %llu, socket name : %s, peer : %s", 
+        ZS_LOG_ERROR(network, "invalid bufffer in init send, sock id : %llu, socket name : %s, peer : %s", 
             _sockID, GetName(), GetPeer());
         return false;
     }
 
-    uint32_t msgLen = static_cast<uint32_t>(buf.size());
-    msgLen = htonl(msgLen);
-    std::string msgLenStr((const char*)&msgLen, sizeof(u_long));
-
-    {
-        std::unique_lock<std::mutex> locker(_sendLock);
-
-        bool isNewBufferNeeded = false;
-
-        if (true == _sendBuf.empty())
-        {
-            // no data being sent yet
-            isNewBufferNeeded = true;
-        }
-        else if (1 == _sendBuf.size())
-        {
-            // already first element is being sent
-            isNewBufferNeeded = true;
-        }
-        else
-        {
-            std::string& old = _sendBuf.back();
-            if (Network::DEFAULT_TCP_SENDING_BUFFER_SIZE < old.size() + msgLenStr.size() + buf.size())
-            {
-                isNewBufferNeeded = true;
-            }
-            else
-            {
-                // append to the last old buffer
-                old.append(msgLenStr);
-                old.append(buf);
-            }
-        }
-
-        if (true == isNewBufferNeeded)
-        {
-            std::string newBuf;
-            if (0 < _sendBufPool.size())
-            {
-                // reuse buffer
-                newBuf = std::move(_sendBufPool.front());
-                _sendBufPool.pop_front();
-            }
-            else
-            {
-                newBuf.reserve(Network::DEFAULT_TCP_SENDING_BUFFER_SIZE);
-            }
-            newBuf.append(msgLenStr);
-            newBuf.append(buf);
-            _sendBuf.push(std::move(newBuf));
-        }
-
-        if (1 < _sendBuf.size())
-        {
-            // just hand over sending work to the currently working thread
-            return true;
-        }
-    }
-    
-    // this thread sends the remote the buffer directly and asynchronously
-    if (nullptr == _sCtx)
-    {
-        _sCtx = new SendRecvContext();
-    }
-    _sCtx->Reset();
-
-    if (false == initSend())
-    {
-        ZS_LOG_WARN(network, "internal init send failed, sock id : %llu, socket name : %s, peer : %s", 
-            _sockID, GetName(), GetPeer());
-        Close();
-        return false;
-    }
-
-    return true;
+    return initSend(buf, len);
 }
 
 bool SocketTCPMessenger::ContinueSend()
@@ -148,24 +83,33 @@ bool SocketTCPMessenger::PostReceive()
 
     std::unique_lock<std::mutex> locker(_recvLock);
 
-    _recvBuf.append(_rCtx->_buf);
+    _recvBuf.insert(_recvBuf.end(), _rCtx->_buf, _rCtx->_buf + _rCtx->_bytes);
 
-    if (0 == _curMsgLen && sizeof(_curMsgLen) < _recvBuf.size())
+    while (true)
     {
-        _curMsgLen = *(reinterpret_cast<uint32_t*>(_recvBuf.data()));
-        _curMsgLen = ntohl(_curMsgLen);
-        _recvBuf.erase(0, sizeof(_curMsgLen));
-    }
-
-    if (0 < _curMsgLen && _recvBuf.size() >= _curMsgLen)
-    {
-        if (nullptr != _onReceived)
+        if (0 == _curMsgLen && sizeof(_curMsgLen) < _recvBuf.size())
         {
-            (*_onReceived)(_conn, _recvBuf.data(), _curMsgLen);
+            _curMsgLen = *(reinterpret_cast<uint32_t*>(_recvBuf.data()));
+            _curMsgLen = ntohl(_curMsgLen);
+            _recvBuf.erase(_recvBuf.begin(), _recvBuf.begin() + sizeof(_curMsgLen));
         }
-        _recvBuf.erase(0, _curMsgLen);
-    }
 
+        if (0 < _curMsgLen && _recvBuf.size() >= _curMsgLen)
+        {
+            if (nullptr != _onReceived)
+            {
+                //(*_onReceived)(_conn, (const char*)_recvBuf.data(), _curMsgLen);
+                std::string data((const char*)_recvBuf.data(), _curMsgLen);
+                (*_onReceived)(_conn, data.c_str(), data.size());
+            }
+
+            _recvBuf.erase(_recvBuf.begin(), _recvBuf.begin() + _curMsgLen);
+            _curMsgLen = 0;
+            continue;
+        }
+
+        break;
+    }
     
     // ** UDP **
     // just invoke onReceived with the received data as a message

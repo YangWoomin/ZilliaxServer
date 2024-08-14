@@ -338,22 +338,34 @@ void Helper::GenAddrInfo(Protocol protocol, addrinfo& hints)
     }
 }
 
-void Helper::ConvertAddrInfoToSockAdddr(addrinfo* in, int32_t port, sockaddr_storage* out, size_t& len)
+bool Helper::ConvertAddrInfoToSockAdddr(IPVer ipVer, addrinfo* in, int32_t port, sockaddr_storage* out, size_t& len, std::string& host)
 {
     std::memset(out, 0, sizeof(sockaddr_storage));
 
-    if (AF_INET == in->ai_family)
+    if (AF_INET == in->ai_family && IPVer::IP_V4 == ipVer)
     {
-        struct sockaddr_in* ipv4 = (struct sockaddr_in*)in->ai_addr;
-        ipv4->sin_port = htons((uint16_t)port);
+        struct sockaddr_in* addr4 = (struct sockaddr_in*)in->ai_addr;
+        addr4->sin_port = htons((uint16_t)port);
         len = in->ai_addrlen;
-        std::memcpy(out, ipv4, len);
+        std::memcpy(out, addr4, len);
+
+        host.resize(INET_ADDRSTRLEN);
+        inet_ntop(AF_INET, &(addr4->sin_addr), host.data(), host.size());
+        
+        return true;
     }
-    else if (AF_INET6 == in->ai_family)
+    else if (AF_INET6 == in->ai_family && IPVer::IP_V6 == ipVer)
     {
-        struct sockaddr_in6* ipv6 = (struct sockaddr_in6*)in->ai_addr;
-        ipv6->sin6_port = htons((uint16_t)port);
+        struct sockaddr_in6* addr6 = (struct sockaddr_in6*)in->ai_addr;
+        addr6->sin6_port = htons((uint16_t)port);
         len = in->ai_addrlen;
-        std::memcpy(out, ipv6, len);
+        std::memcpy(out, addr6, len);
+
+        host.resize(INET6_ADDRSTRLEN);
+        inet_ntop(AF_INET6, &(addr6->sin6_addr), host.data(), host.size());
+
+        return true;
     }
+
+    return false;
 }

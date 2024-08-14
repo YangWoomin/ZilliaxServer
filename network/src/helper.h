@@ -32,7 +32,7 @@ namespace network
         static void GetSockRemoteAddr(Socket sock, IPVer ipVer, std::string& host, int32_t& port);
         static bool IsValidIP(const char* ip, IPVer ipVer);
         static void GenAddrInfo(Protocol protocol, addrinfo& hints);
-        static void ConvertAddrInfoToSockAdddr(addrinfo* in, int32_t port, sockaddr_storage* out, size_t& len);
+        static bool ConvertAddrInfoToSockAdddr(IPVer ipVer, addrinfo* in, int32_t port, sockaddr_storage* out, size_t& len, std::string& host);
      };
 }
 }
