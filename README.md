@@ -85,7 +85,7 @@
   + ![image](https://github.com/user-attachments/assets/513a55a3-8619-44ee-b983-d39c813ab689)
 * click the play icon
 ### VS Code on Linux (wsl2)
-* install gdb on    
+* install gdb    
   + sudo apt install gdb
 * VS Code setting for WSL : https://code.visualstudio.com/docs/remote/wsl
 * install "WSL" extension of Visual Studio Code
