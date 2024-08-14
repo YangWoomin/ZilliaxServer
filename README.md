@@ -15,7 +15,7 @@
 * C/C++(20)
 * Cross platform (Windows/Linux)
 * Database module (ODBC connector)
-* Asynchronous network module (IOCP, epoll) ===> in progress
+* Asynchronous network module (IOCP, epoll) ===> in progress (completed up to TCP)
 * Seamless open world framework (geographical separating shards synchronized by inter-server, which means technologically distributed system) ===> after Asynchronous network module
 
 ## Build Tool / Driver
@@ -121,5 +121,5 @@
 #### Test
 * some cases are testable such as simple select, update, delete, stored procedure, transaction
 
-## Server Configuration
-## Server Run
+## Network
+(in progress)
