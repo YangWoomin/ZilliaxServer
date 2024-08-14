@@ -66,6 +66,31 @@
 * build release : make build_release
 * rebuild debug : make rebuild_release
 * distclean : make distclean
+#### VS Code on Windows
+* Ctrl + Shift + B
+* select one of the list that you want to build
+#### VS Code on Linux (wsl2)
+* Open VS Code and Connect to WSL
+  + reference : https://code.visualstudio.com/docs/remote/wsl
+  + check "Debugging -> Linux on wsl2"
+* Ctrl + Shift + B
+* select one of the list that you want to build
+
+## Debugging
+### VS Code on Windows
+* open VS Code
+* Ctrl + Shift + D
+* select one of the launch list you want to debug
+* click the play icon
+### VS Code on Linux (wsl2)
+* install gdb on    
+  + sudo apt install gdb
+* VS Code setting for WSL : https://code.visualstudio.com/docs/remote/wsl
+* install "WSL" extension of Visual Studio Code
+* open VS Code from WSL cmd or connect to WSL from VS Code on Windows
+* Ctrl + Shift + D
+* select one of the launch list you want to debug
+* click the play icon
 
 ## Database
 * env : Ubuntu 24.04 on wsl2 + docker + docker-compose + MySQL Workbench
