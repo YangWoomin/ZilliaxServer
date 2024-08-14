@@ -9,7 +9,7 @@
 using namespace zs::common;
 using namespace zs::network;
 
-#if defined(_LINUX_) 
+#if defined(_POSIX_) 
 
 bool SocketTCPConnector::initConnect(std::size_t idx)
 {
@@ -32,7 +32,16 @@ bool SocketTCPConnector::initConnect(std::size_t idx)
 
 bool SocketTCPConnector::postConnect()
 {
+    // unbind the connected socket from dispatcher for connected event
+    // bind the connected socket to dispatcher for data received event
+    if (false == _manager.Bind(_workerID, this, BindType::MODIFY, EventType::INBOUND))
+    {
+        ZS_LOG_ERROR(network, "binding connector socket on dispatcher failed, sock id : %llu, socket name : %s, peer : %s",
+            _sockID, GetName(), GetPeer());
+        return false;
+    }
+
     return true;
 }
 
-#endif // defined(_LINUX_) 
+#endif // defined(_POSIX_) 

@@ -7,10 +7,11 @@
 #include    <iostream>
 #include    <thread>
 #include    <chrono>
+#include    <cstring>
 
 #if defined(_WIN64_)
 #include    <windows.h>
-#elif defined(_LINUX_)
+#elif defined(_POSIX_)
 #include    <csignal>
 #include    <unistd.h>
 #endif // defined(_WIN64_)
@@ -30,7 +31,7 @@ BOOL WINAPI ConsoleHandler(DWORD signal) {
     }
     return FALSE;
 }
-#elif defined(_LINUX_)
+#elif defined(_POSIX_)
 void signalHandler(int signum)
 {
     if (signum == SIGINT)
@@ -70,8 +71,16 @@ void Server(int32_t port)
         ZS_LOG_ERROR(network_test, "Failed to install Ctrl+C handler.");
         return;
     }
-#elif defined(_LINUX_)
-    signal(SIGINT, signalHandler);
+#elif defined(_POSIX_)
+    // SIGPIPE 무시 설정
+    struct sigaction sa;
+    std::memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = SIG_IGN;  // 무시 설정
+    sigaction(SIGPIPE, &sa, NULL);
+
+    // SIGINT 핸들러 설정
+    sa.sa_handler = signalHandler;
+    sigaction(SIGINT, &sa, NULL);
     ZS_LOG_INFO(network_test, "Ctrl+C handler installed.");
 #endif // defined(_WIN64_)
 

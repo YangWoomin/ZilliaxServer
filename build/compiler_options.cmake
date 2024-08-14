@@ -65,7 +65,7 @@ elseif ( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" ) # CMAKE_CXX_COMPILER_ID
     ############################################
     ### definitions
     add_compile_definitions(_X64 __x86_64__)
-    add_compile_definitions(_LINUX_)
+    add_compile_definitions(_LINUX_ _POSIX_)
 
     ############################################
     ### link options

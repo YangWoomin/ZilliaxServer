@@ -9,7 +9,7 @@
 using namespace zs::common;
 using namespace zs::network;
 
-#if defined(_LINUX_) 
+#if defined(_POSIX_) 
 
 bool SocketTCPAceepter::InitAccept()
 {
@@ -88,4 +88,4 @@ bool SocketTCPAceepter::postAccept(std::string& name, std::string& peer)
     return true;
 }
 
-#endif // defined(_LINUX_) 
+#endif // defined(_POSIX_) 

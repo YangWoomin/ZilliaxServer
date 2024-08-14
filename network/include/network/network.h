@@ -37,8 +37,9 @@ namespace network
         static const int32_t            AVAILABLE_MAXIMUM_PORT = 65535;
         static const int32_t            MAX_BACKLOG_SIZE = 1024;
 
+        static const uint32_t           DEFAULT_TCP_RECVING_BUFFER_SIZE = 4000; // 4KiB (approximately)
         static const uint32_t           DEFAULT_TCP_SENDING_BUFFER_SIZE = 4000; // 4KiB (approximately)
-        static const uint32_t           DEFAULT_TCP_SENDING_BUFFER_COUNT = 64; // maximum 4KiB * DEFAULT_TCP_SENDING_BUFFER_COUNT
+        static const uint32_t           DEFAULT_TCP_SENDING_BUFFER_COUNT = 8; // maximum 4KiB * DEFAULT_TCP_SENDING_BUFFER_COUNT
     
     private:
 

@@ -134,7 +134,7 @@ bool ISocket::InitReceive()
     return false;
 }
 
-#if defined(_LINUX_) 
+#if defined(_POSIX_) 
 bool ISocket::OnAccepted()
 {
     ZS_LOG_FATAL(network, "being accepted on this socket is not implemented, sock id : %llu, name : %s", 
@@ -150,7 +150,7 @@ bool ISocket::OnReceived(bool&)
 
     return false;
 }
-#endif // defined(_LINUX_) 
+#endif // defined(_POSIX_) 
 
 SocketSPtr ISocket::PostAccept()
 {

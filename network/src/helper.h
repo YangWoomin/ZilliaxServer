@@ -19,9 +19,9 @@ namespace network
 #endif // defined(_WIN64_)
         
         static Socket CreateSocket(IPVer ipVer, Protocol protocol, bool isNonBlocking = false);
-#if defined(_LINUX_) 
+#if defined(_POSIX_) 
         static bool MakeSocketNonBlocking(Socket sock);
-#endif // defined(_LINUX_) 
+#endif // defined(_POSIX_) 
         static int32_t GetIPVerValue(IPVer ipVer);
         static int32_t GetProtocolValue(Protocol protocol);
         static int32_t GetSocketTypeValue(Protocol protocol);

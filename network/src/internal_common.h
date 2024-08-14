@@ -11,7 +11,7 @@
 #include    <ws2ipdef.h>
 #include    <ws2tcpip.h>
 
-#elif defined(_LINUX_) 
+#elif defined(_POSIX_) 
 
 #include    <unistd.h>
 #include    <errno.h>
@@ -57,7 +57,7 @@ namespace network
 #define SUCCESS_RESULT          0
 #define INVALID_RESULT          -1
 
-#if defined(_LINUX_) 
+#if defined(_POSIX_) 
     enum BindType : int32_t
     {
         BIND            = EPOLL_CTL_ADD,
@@ -103,7 +103,7 @@ namespace network
         OUTBOUND        = 1,
     };
 
-#endif // defined(_LINUX_) 
+#endif // defined(_POSIX_) 
 
     enum SocketType
     {
@@ -121,7 +121,7 @@ namespace network
         {
             std::memset(&_ol, 0, sizeof(_ol));
         }
-#elif defined(_LINUX_)
+#elif defined(_POSIX_)
         void Reset()
         {}
 #endif // _WIN64_
@@ -134,7 +134,7 @@ namespace network
         char            _addr[(sizeof(sockaddr_storage) + 16) * 2] = { 0, };
 #if defined(_WIN64_)
         DWORD           _len = 0; // addr len
-#elif defined(_LINUX_) 
+#elif defined(_POSIX_) 
         socklen_t       _len = 0; // addr len
 #endif // _WIN64_
         
@@ -179,7 +179,7 @@ namespace network
 
 #if defined(_WIN64_)
         DWORD           _bytes = 0; // send/recv size
-#elif defined(_LINUX_) 
+#elif defined(_POSIX_) 
         ssize_t         _bytes = 0; // send/recv size
 #endif // _WIN64_
 
@@ -189,6 +189,7 @@ namespace network
         void Reset()
         {
             IOContext::Reset();
+            _buf.clear();
             _bytes = 0;
             _addrInfo.Reset();
         }

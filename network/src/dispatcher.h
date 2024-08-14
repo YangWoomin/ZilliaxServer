@@ -10,7 +10,7 @@ namespace network
 {
     class ISocket;
     
-#if defined(_LINUX_) 
+#if defined(_POSIX_) 
     class Epoll final
     {
     public:
@@ -37,7 +37,7 @@ namespace network
     };
     using EpollSPtr = std::shared_ptr<Epoll>;
 
-#endif // defined(_LINUX_) 
+#endif // defined(_POSIX_) 
 
     class Dispatcher final
     {
@@ -58,7 +58,7 @@ namespace network
     private:
         HANDLE                  _iocp = INVALID_HANDLE_VALUE;
 
-#elif defined(_LINUX_) 
+#elif defined(_POSIX_) 
     public:
         void SetOwner(std::size_t workerID);
         bool Bind(std::size_t workerID, ISocket* sock, BindType bindType, EventType eventType);

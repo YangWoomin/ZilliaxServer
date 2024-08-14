@@ -19,9 +19,9 @@ namespace network
 
         virtual bool InitReceive() override;
 
-#if defined(_LINUX_) 
+#if defined(_POSIX_) 
         virtual bool OnReceived(bool& later) override;
-#endif // defined(_LINUX_) 
+#endif // defined(_POSIX_) 
 
         virtual bool PostSend() override;
 
@@ -29,6 +29,7 @@ namespace network
 
     private:
         bool initSend();
+        bool send();
 
         std::queue<std::string>     _sendBuf;
         std::deque<std::string>     _sendBufPool;

@@ -10,6 +10,8 @@ namespace zs
 {
 namespace network
 {
+    class ISocket;
+
     class Manager final
     {
     public:
@@ -34,6 +36,9 @@ namespace network
         void RemoveSocket(SocketID sockID);
         SocketSPtr GetSocket(SocketID sockID);
         SocketID GenSockID();
+#if defined(_POSIX_)
+        bool Bind(std::size_t workerID, ISocket* sock, BindType bindType, EventType eventType);
+#endif // defined(_POSIX_) 
 
     private:
         DispatcherSPtr                                      _dispatcher;
@@ -43,9 +48,9 @@ namespace network
         std::unordered_map<SocketID, SocketSPtr>            _sockets;
         std::atomic<SocketID>                               _sockIDGen { 0 };
 
-#if defined(_LINUX_) 
+#if defined(_POSIX_)
         std::atomic<std::size_t>                            _workerAllocator { 0 };
-#endif // defined(_LINUX_) 
+#endif // defined(_POSIX_) 
 
         Manager(const Manager&) = delete;
         Manager& operator=(const Manager&) = delete;

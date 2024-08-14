@@ -26,10 +26,10 @@ namespace network
         virtual bool        ContinueSend();
         virtual bool        InitReceive();
 
-#if defined(_LINUX_) 
+#if defined(_POSIX_) 
         virtual bool        OnAccepted();
         virtual bool        OnReceived(bool& later);
-#endif // defined(_LINUX_) 
+#endif // defined(_POSIX_) 
 
         virtual SocketSPtr  PostAccept();   
         virtual bool        PostConnect(bool& retry);

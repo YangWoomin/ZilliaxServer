@@ -10,7 +10,7 @@
 #define __ZS_NETWORK_API __declspec(dllimport)
 #endif
 
-#elif defined(_LINUX_) 
+#elif defined(_POSIX_) 
 
 #ifdef ZS_NETWORK_EXPORTS
 #define __ZS_NETWORK_API __attribute__((visibility ("default")))
@@ -60,8 +60,6 @@ namespace network
         TCP         = 1,
         UDP         = 2,
     };
-
-    static const std::size_t BUFFER_SIZE = 1024 * 1024; // maxinum message size
 }
 }
 

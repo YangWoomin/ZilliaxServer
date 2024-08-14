@@ -14,9 +14,9 @@ DispatcherWorker::DispatcherWorker(Manager& manager, DispatcherSPtr dispatcher, 
     , _dispatcher(dispatcher)
     , _workerID(workerID)
 {
-#if defined(_LINUX_) 
+#if defined(_POSIX_) 
     _dispatcher->SetOwner(_workerID);
-#endif // defined(_LINUX_) 
+#endif // defined(_POSIX_) 
 }
 
 void DispatcherWorker::threadMain()

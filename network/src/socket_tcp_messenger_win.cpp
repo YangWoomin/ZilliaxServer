@@ -25,6 +25,7 @@ bool SocketTCPMessenger::InitReceive()
     if (nullptr == _rCtx)
     {
         _rCtx = new SendRecvContext();
+        _rCtx->_buf.resize(Network::DEFAULT_TCP_RECVING_BUFFER_SIZE);
     }
     _rCtx->Reset();
 
@@ -82,6 +83,11 @@ bool SocketTCPMessenger::PostSend()
 
 bool SocketTCPMessenger::initSend()
 {
+    return this->send();
+}
+
+bool SocketTCPMessenger::send()
+{
     WSABUF wsabuf;
     std::string& buf = _sendBuf.front();
     wsabuf.buf = buf.data();
@@ -103,7 +109,7 @@ bool SocketTCPMessenger::initSend()
         // processed directly
         if (true == PostSend())
         {
-            return initSend();
+            return this->send();
         }
     }
 

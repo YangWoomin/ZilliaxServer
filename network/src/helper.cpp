@@ -72,7 +72,7 @@ Socket Helper::CreateSocket(IPVer ipVer, Protocol protocol, bool isNonBlocking)
             errno);
         return INVALID_SOCKET;
     }
-#elif defined(_LINUX_) 
+#elif defined(_POSIX_) 
     Socket sock = socket(
         Helper::GetIPVerValue(ipVer), 
         Helper::GetSocketTypeValue(protocol), 
@@ -97,7 +97,7 @@ Socket Helper::CreateSocket(IPVer ipVer, Protocol protocol, bool isNonBlocking)
     return sock;
 }
 
-#if defined(_LINUX_) 
+#if defined(_POSIX_) 
 bool Helper::MakeSocketNonBlocking(Socket sock)
 {
     int flags, s;
@@ -119,7 +119,7 @@ bool Helper::MakeSocketNonBlocking(Socket sock)
 
     return true;
 }
-#endif // defined(_LINUX_) 
+#endif // defined(_POSIX_) 
 
 int32_t Helper::GetIPVerValue(IPVer ipVer)
 {

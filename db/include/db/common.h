@@ -10,7 +10,7 @@
 #define __ZS_DB_API __declspec(dllimport)
 #endif
 
-#elif defined(_LINUX_)
+#elif defined(_POSIX_)
 
 #ifdef ZS_DB_EXPORTS
 #define __ZS_DB_API __attribute__((visibility ("default")))

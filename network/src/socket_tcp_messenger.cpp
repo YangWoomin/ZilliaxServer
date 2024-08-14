@@ -97,8 +97,8 @@ bool SocketTCPMessenger::InitSend(std::string&& buf)
     {
         ZS_LOG_WARN(network, "internal init send failed, sock id : %llu, socket name : %s, peer : %s", 
             _sockID, GetName(), GetPeer());
-
-        return true;
+        Close();
+        return false;
     }
 
     return true;
@@ -106,7 +106,7 @@ bool SocketTCPMessenger::InitSend(std::string&& buf)
 
 bool SocketTCPMessenger::ContinueSend()
 {
-    return initSend();
+    return this->send();
 }
 
 bool SocketTCPMessenger::PostReceive()
