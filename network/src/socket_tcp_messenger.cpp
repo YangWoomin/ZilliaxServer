@@ -24,6 +24,13 @@ bool SocketTCPMessenger::InitSend(std::string& buf)
         return false;
     }
 
+    if (DEFAULT_TCP_SENDING_BUFFER_SIZE < buf.size())
+    {
+        ZS_LOG_ERROR(network, "sending data is too big, check DEFAULT_TCP_SENDING_BUFFER_SIZE in common.h, sock id : %llu, socket name : %s, peer : %s", 
+            _sockID, GetName(), GetPeer());
+        return false;
+    }
+
     return initSend(buf, buf.size());
 }
 
@@ -32,6 +39,13 @@ bool SocketTCPMessenger::InitSend(const char* buf, std::size_t len)
     if (nullptr == buf || 0 == len)
     {
         ZS_LOG_ERROR(network, "invalid bufffer in init send, sock id : %llu, socket name : %s, peer : %s", 
+            _sockID, GetName(), GetPeer());
+        return false;
+    }
+
+    if (DEFAULT_TCP_SENDING_BUFFER_SIZE < len)
+    {
+        ZS_LOG_ERROR(network, "sending data is too big, check DEFAULT_TCP_SENDING_BUFFER_SIZE in common.h, sock id : %llu, socket name : %s, peer : %s", 
             _sockID, GetName(), GetPeer());
         return false;
     }
@@ -75,13 +89,14 @@ bool SocketTCPMessenger::PostReceive()
         return false;
     }
 
-    // get received data from socket
     // ** TCP **
+    // get received data from socket
     // append the data to received data buffer 
     // if the buffer is enough to make a message
     // then invoke onReceived with the message
 
-    std::unique_lock<std::mutex> locker(_recvLock);
+    // no need for lock when receiving data
+    //std::unique_lock<std::mutex> locker(_recvLock);
 
     _recvBuf.insert(_recvBuf.end(), _rCtx->_buf, _rCtx->_buf + _rCtx->_bytes);
 

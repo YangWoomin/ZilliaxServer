@@ -34,16 +34,13 @@ namespace network
         bool initSend();
         bool send();
 
-        //std::queue<std::string>     _sendBuf;
         std::queue<std::vector<uint8_t>>    _sendBuf;
-        //std::deque<std::string>     _sendBufPool;
         std::deque<std::vector<uint8_t>>    _sendBufPool;
-        std::mutex                  _sendLock;
+        std::mutex                          _sendLock;
 
-        //std::string                 _recvBuf;
         std::vector<uint8_t>                _recvBuf;
-        uint32_t                    _curMsgLen = 0;
-        std::mutex                  _recvLock;
+        uint32_t                            _curMsgLen = 0;
+        //std::mutex                          _recvLock;
 
         SocketTCPMessenger(Manager& manager, SocketID sockID, IPVer ipVer, bool nonBlocking);
         SocketTCPMessenger(Manager& manager, SocketID sockID, Socket sock, const std::string& name, const std::string& peer, IPVer ipVer);
@@ -71,7 +68,6 @@ namespace network
 
             uint32_t len2 = static_cast<uint32_t>(len);
             len2 = htonl(len2);
-            //std::string lenStr((const char*)&len2, sizeof(u_long));
 
             {
                 std::unique_lock<std::mutex> locker(_sendLock);
@@ -127,14 +123,13 @@ namespace network
                     return true;
                 }
             }
-            
-            // this thread sends the remote the buffer directly and asynchronously
+
             if (nullptr == _sCtx)
             {
                 _sCtx = new SendRecvContext();
             }
             _sCtx->Reset();
-
+            
             if (false == initSend())
             {
                 ZS_LOG_WARN(network, "internal init send failed, sock id : %llu, socket name : %s, peer : %s", 

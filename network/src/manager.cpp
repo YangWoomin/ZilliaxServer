@@ -218,30 +218,45 @@ bool Manager::Connect(IPVer ipVer, Protocol protocol, const std::string& host, i
         return false;
     }
 
-    // bind the socket on dispatcher
-#if defined(_POSIX_) 
-    std::size_t workerID = 0;
-    workerID = _workerAllocator++ % _dispatcherWorkers.size();
-    if (false == _dispatcher->Bind(workerID, sock.get(), BindType::BIND, EventType::OUTBOUND))
-#elif defined(_WIN64_)
+    // bind the socket on dispatcher 
+    // this work must proceed before calling connectex in windows
+#if defined(_WIN64_)
     if (false == _dispatcher->Bind(sock.get()))
-#endif // defined(_POSIX_) 
     {
         ZS_LOG_ERROR(network, "binding connect socket on dispatcher failed, sock id : %llu, socket name : %s, ip ver : %d, protocol : %d, host : %s, port : %d",
             sock->GetID(), sock->GetName(), ipVer, protocol, host.c_str(), port);
         RemoveSocket(sock->GetID()); // not bound yet
         return false;
     }
+#endif // defined(_WIN64_)
 
     sock->SetCallback(onConnected, onReceived, onClosed);
 
     if (false == sock->InitConnect(host, port))
     {
-        ZS_LOG_ERROR(network, "inserting connect socket failed, sock id : %llu, ip ver : %d, protocol : %d, host : %s, port : %d",
+        ZS_LOG_ERROR(network, "init connect socket failed, sock id : %llu, socket name : %s, ip ver : %d, protocol : %d",
             sock->GetID(), sock->GetName(), ipVer, protocol);
+#if defined(_WIN64_)
         sock->Close();
+#elif defined(_POSIX_) 
+        RemoveSocket(sock->GetID()); // not bound yet
+#endif // defined(_WIN64_)
         return false;
     }
+
+    // bind the socket on dispatcher
+    // this work must proceed after calling connect for epoll in linux
+#if defined(_POSIX_) 
+    std::size_t workerID = 0;
+    workerID = _workerAllocator++ % _dispatcherWorkers.size();
+    if (false == _dispatcher->Bind(workerID, sock.get(), BindType::BIND, EventType::OUTBOUND))
+    {
+        ZS_LOG_ERROR(network, "binding connect socket on dispatcher failed, sock id : %llu, socket name : %s, ip ver : %d, protocol : %d, host : %s, port : %d",
+            sock->GetID(), sock->GetName(), ipVer, protocol, host.c_str(), port);
+        RemoveSocket(sock->GetID()); // not bound yet
+        return false;
+    }
+#endif // defined(_POSIX_) 
 
     ZS_LOG_INFO(network, "connecting succeeded, sock id : %llu, socket name : %s, ip ver : %d, protocol : %d, host : %s, port : %d",
         sock->GetID(), sock->GetName(), ipVer, protocol, host.c_str(), port);

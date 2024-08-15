@@ -58,6 +58,7 @@ bool SocketTCPMessenger::PostSend()
 
     if (true == _sendBuf.empty())
     {
+        // already processed
         return false;
     }
 
@@ -72,7 +73,7 @@ bool SocketTCPMessenger::PostSend()
     // but the capacity of the buffer is reserved
     buf.clear();
 
-    // move the buffer back to the back of the queue so that it would be reused
+    // move the buffer back to front of the queue so that it would be reused
     if (DEFAULT_TCP_SENDING_BUFFER_COUNT > _sendBufPool.size())
     {
         _sendBufPool.push_front(std::move(buf));
@@ -94,8 +95,7 @@ bool SocketTCPMessenger::send()
 {
     WSABUF wsabuf;
     std::vector<uint8_t>& buf = _sendBuf.front();
-    std::memcpy(_sCtx->_buf, buf.data(), buf.size());
-    wsabuf.buf = _sCtx->_buf;
+    wsabuf.buf = (char*)buf.data();
     wsabuf.len = (ULONG)buf.size();
 
     int res = WSASend(_sock, &wsabuf, 1, &_sCtx->_bytes, 0, &_sCtx->_ol, NULL);

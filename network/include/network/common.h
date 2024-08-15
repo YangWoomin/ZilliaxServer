@@ -60,9 +60,8 @@ namespace network
         UDP         = 2,
     };
 
-    static const uint32_t           DEFAULT_TCP_RECVING_BUFFER_SIZE = 4000; // 4KiB (approximately)
-    static const uint32_t           DEFAULT_TCP_SENDING_BUFFER_SIZE = 1024;
-    static const uint32_t           DEFAULT_TCP_SENDING_BUFFER_COUNT = 8; // maximum 4KiB * DEFAULT_TCP_SENDING_BUFFER_COUNT
+    static const uint32_t           DEFAULT_TCP_SENDING_BUFFER_SIZE = 4000;
+    static const uint32_t           DEFAULT_TCP_SENDING_BUFFER_COUNT = 8; // DEFAULT_TCP_SENDING_BUFFER_SIZE * DEFAULT_TCP_SENDING_BUFFER_COUNT
 }
 }
 

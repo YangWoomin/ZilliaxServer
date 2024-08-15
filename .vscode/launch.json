@@ -53,13 +53,13 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "Attach network_test",
+            "name": "Attach to network_test",
             "type": "cppvsdbg",
             "request": "attach",
             "processId": "${command:pickProcess}"
         },
         {
-            "name": "Launch network_test on WSL2(Ubuntu)",
+            "name": "Launch network_test on WSL2",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/output/bin/network_testd.out",
@@ -68,6 +68,43 @@
             "miDebuggerPath": "/usr/bin/gdb",
             //"preLaunchTask": "Rebuild network network_test as Debug",
             "internalConsoleOptions": "openOnSessionStart"
+        },
+        {
+            "name": "Launch network_test on WSL2 (client)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/output/bin/network_testd.out",
+            "args": ["--mode", "client"],
+            "cwd": "${workspaceFolder}/output/bin",
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            //"preLaunchTask": "Rebuild network network_test as Debug",
+            "internalConsoleOptions": "openOnSessionStart"
+        },
+        {
+            "name": "Attach to network_test on WSL2",
+            "type": "cppdbg",
+            "request": "attach",
+            "program": "${workspaceFolder}/output/bin/network_testd.out",
+            "processId": "${command:pickProcess}",
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            // "setupCommands": [
+            //     {
+            //         "description": "Enable pretty-printing for gdb",
+            //         "text": "-enable-pretty-printing",
+            //         "ignoreFailures": true
+            //     }
+            // ],
+            // "pipeTransport": {
+            //     "pipeProgram": "C:\\Windows\\System32\\wsl.exe",
+            //     "pipeArgs": [],
+            //     "debuggerPath": "/usr/bin/gdb",
+            //     "pipeCwd": ""
+            // },
+            "sourceFileMap": {
+                "/mnt/c": "C:\\"
+            }
         }
     ]
 }

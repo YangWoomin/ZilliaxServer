@@ -204,6 +204,8 @@ assistant worker 구조 설계
 				윈도우보다 좀 더 복잡할듯
 	-> assistant worker 불필요
 
+callback 함수를 꼭 shared_ptr 사용해야하나?
+	굳이?
 
 
 

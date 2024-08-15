@@ -187,7 +187,6 @@ namespace network
         void Reset()
         {
             IOContext::Reset();
-            //_buf.clear();
             std::memset(_buf, 0, sizeof(_buf));
             _bytes = 0;
             _addrInfo.Reset();

@@ -17,7 +17,6 @@ bool SocketTCPMessenger::InitReceive()
     if (nullptr == _rCtx)
     {
         _rCtx = new SendRecvContext();
-        _rCtx->_buf.resize(DEFAULT_TCP_RECVING_BUFFER_SIZE);
     }
     _rCtx->Reset();
     
@@ -40,10 +39,10 @@ bool SocketTCPMessenger::OnReceived(bool& later)
         return false;
     }
 
-    _rCtx->_bytes = recv(_sock, _rCtx->_buf.data(), _rCtx->_buf.size(), 0);
-    int err = errno;
+    _rCtx->_bytes = recv(_sock, _rCtx->_buf, sizeof(_rCtx->_buf), 0);
     if (SOCKET_ERROR == _rCtx->_bytes)
     {
+        int err = errno;
         if (EAGAIN == err || EWOULDBLOCK == err)
         {
             ZS_LOG_WARN(network, "no data for recv, sock id : %llu, socket name : %s, peer : %s",
@@ -71,13 +70,13 @@ bool SocketTCPMessenger::PostSend()
         return false;
     }
 
-    std::string& buf = _sendBuf.front();
-    if ((int)buf.size() <= _sCtx->_bytes)
+    std::vector<uint8_t>& buf = _sendBuf.front();
+    if ((ssize_t)buf.size() <= _sCtx->_bytes)
     {
         // all data is sent in the buffer
         buf.clear();
 
-        if (Network::DEFAULT_TCP_SENDING_BUFFER_COUNT > _sendBufPool.size())
+        if (DEFAULT_TCP_SENDING_BUFFER_COUNT > _sendBufPool.size())
         {
             _sendBufPool.push_front(std::move(buf));
         }
@@ -110,12 +109,13 @@ bool SocketTCPMessenger::initSend()
         return false;
     }
 
-    return this->send();
+    //return this->send();
+    return true; // hand over this sending work to dispatcher thread
 }
 
 bool SocketTCPMessenger::send()
 {
-    std::string& buf = _sendBuf.front();
+    std::vector<uint8_t>& buf = _sendBuf.front();
 
     ssize_t bytes = ::send(_sock, buf.data() + _sCtx->_bytes, buf.size() - _sCtx->_bytes, MSG_NOSIGNAL);
     if (SOCKET_ERROR == bytes)
@@ -123,8 +123,8 @@ bool SocketTCPMessenger::send()
         int err = errno;
         if (EAGAIN != err && EWOULDBLOCK != err)
         {
-            ZS_LOG_ERROR(network, "send failed in init send, sock id : %llu, socket name : %s, peer : %s", 
-                _sockID, GetName(), GetPeer());
+            ZS_LOG_ERROR(network, "send failed in init send, sock id : %llu, socket name : %s, peer : %s, err : %d", 
+                _sockID, GetName(), GetPeer(), err);
             return false;
         }
     }
