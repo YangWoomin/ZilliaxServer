@@ -157,7 +157,7 @@ bool Epoll::Dequeue(std::queue<IOResult>& resList)
             if (CLOSE_SIGNAL == u)
             {
                 // closing noti event
-                ZS_LOG_WARN(network, "epoll is being closed");
+                ZS_LOG_WARN(network, "epoll is being closed in dispatcher");
                 return false;
             }
 
@@ -186,7 +186,7 @@ bool Epoll::Dequeue(std::queue<IOResult>& resList)
             {
                 if (Protocol::TCP == sock->GetProtocol())
                 {
-                    if (false == sock->OnAccepted())
+                    if (false == sock->Accept())
                     {
                         sock->Close();
                         continue;
@@ -202,7 +202,7 @@ bool Epoll::Dequeue(std::queue<IOResult>& resList)
             else if (SocketType::MESSENGER == sock->GetType())
             {
                 bool later = false;
-                if (false == sock->OnReceived(later))
+                if (false == sock->Receive(later))
                 {
                     sock->Close();
                     continue;
@@ -214,48 +214,6 @@ bool Epoll::Dequeue(std::queue<IOResult>& resList)
                         continue; // retry later
                     }
                 }
-
-                // // recv
-                // SendRecvContext* srCtx = new SendRecvContext();
-                // res._iCtx = srCtx;
-                // if (Protocol::TCP == sock->GetProtocol())
-                // {
-                //     srCtx->_bytes = recv(sock->GetSocket(), srCtx->_buf, BUFFER_SIZE, 0);
-                // }
-                // else if (Protocol::UDP == sock->GetProtocol())
-                // {
-                //     srCtx->_addrInfo._len = sizeof(sockaddr_storage);
-                //     srCtx->_bytes = recvfrom(sock->GetSocket(), srCtx->_buf, BUFFER_SIZE, 0, (struct sockaddr*)srCtx->_addrInfo._addr, (socklen_t*)&srCtx->_addrInfo._len);
-                // }
-                // else
-                // {
-                //     ZS_LOG_WARN(network, "unknown protocol, socket name : %s, protocol : %d", 
-                //         sock->GetName(), sock->GetProtocol());
-                //     delete srCtx;
-                //     continue;
-                // }
-
-                // int err = errno;
-                // if (SOCKET_ERROR == srCtx->_bytes)
-                // {
-                //     if (EAGAIN == err || EWOULDBLOCK == err)
-                //     {
-                //         ZS_LOG_WARN(network, "no data for recv, socket name : %s", 
-                //             sock->GetName());
-                //         delete srCtx;
-                //         continue;
-                //     }
-
-                //     ZS_LOG_ERROR(network, "recv failed, socket name : %s, err : %d", 
-                //         sock->GetName(), err);
-                //     res._release = true;
-                // }
-                // else if (0 == srCtx->_bytes)
-                // {
-                //     ZS_LOG_WARN(network, "socket closed, socket name : %s", 
-                //         sock->GetName());
-                //     res._release = true;
-                // }
             }
             else
             {

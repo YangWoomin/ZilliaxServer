@@ -29,8 +29,8 @@ namespace network
         virtual bool        InitReceive();
 
 #if defined(_POSIX_) 
-        virtual bool        OnAccepted();
-        virtual bool        OnReceived(bool& later);
+        virtual bool        Accept();
+        virtual bool        Receive(bool& later);
 #endif // defined(_POSIX_) 
 
         virtual SocketSPtr  PostAccept();   
@@ -56,10 +56,10 @@ namespace network
         SendRecvContext*    GetSendContext()                    { return _sCtx; }
         SendRecvContext*    GetRecvContext()                    { return _rCtx; }
 
-        void SetCallback(OnConnectedSPtr onConnected, OnReceivedSPtr onReceived, OnClosedSPtr onClosed);
-        OnConnectedSPtr     GetOnConnected()                    { return _onConnected; }
-        OnReceivedSPtr      GetOnReceived()                     { return _onReceived; }
-        OnClosedSPtr        GetOnClosed()                       { return _onClosed; }
+        void SetCallback(OnConnected onConnected, OnReceived onReceived, OnClosed onClosed);
+        OnConnected         GetOnConnected()                    { return _onConnected; }
+        OnReceived          GetOnReceived()                     { return _onReceived; }
+        OnClosed            GetOnClosed()                       { return _onClosed; }
         void                SetConnection(ConnectionSPtr conn)  { _conn = conn; }
 
     protected:
@@ -82,9 +82,9 @@ namespace network
         SendRecvContext*    _sCtx = nullptr;
         SendRecvContext*    _rCtx = nullptr;
 
-        OnConnectedSPtr     _onConnected { nullptr };
-        OnReceivedSPtr      _onReceived { nullptr };
-        OnClosedSPtr        _onClosed { nullptr };
+        OnConnected         _onConnected { nullptr };
+        OnReceived          _onReceived { nullptr };
+        OnClosed            _onClosed { nullptr };
 
         ConnectionSPtr      _conn { nullptr };
 

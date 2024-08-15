@@ -125,7 +125,7 @@ bool Manager::Bind(IPVer ipVer, Protocol protocol, int32_t port, SocketID& sockI
     return true;
 }
 
-bool Manager::Listen(SocketID sockID, int32_t backlog, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived, OnClosedSPtr onClosed)
+bool Manager::Listen(SocketID sockID, int32_t backlog, OnConnected onConnected, OnReceived onReceived, OnClosed onClosed)
 {
     if (nullptr == _dispatcher)
     {
@@ -187,7 +187,7 @@ bool Manager::Close(SocketID sockID)
     return true;
 }
 
-bool Manager::Connect(IPVer ipVer, Protocol protocol, const std::string& host, int32_t port, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived, OnClosedSPtr onClosed)
+bool Manager::Connect(IPVer ipVer, Protocol protocol, const std::string& host, int32_t port, OnConnected onConnected, OnReceived onReceived, OnClosed onClosed)
 {
     if (nullptr == _dispatcher)
     {
@@ -219,7 +219,7 @@ bool Manager::Connect(IPVer ipVer, Protocol protocol, const std::string& host, i
     }
 
     // bind the socket on dispatcher 
-    // this work must proceed before calling connectex in windows
+    // this work must be done before calling connectex in windows
 #if defined(_WIN64_)
     if (false == _dispatcher->Bind(sock.get()))
     {

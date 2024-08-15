@@ -140,7 +140,7 @@ bool Dispatcher::Dequeue(std::size_t, std::queue<IOResult>& resList)
     // normal close
     if (NULL == key)
     {
-        ZS_LOG_WARN(network, "iocp is being closed from dequeue");
+        ZS_LOG_WARN(network, "iocp is being closed in dispatcher");
         return false;
     }
 

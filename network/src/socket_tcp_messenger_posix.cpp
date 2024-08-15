@@ -23,7 +23,7 @@ bool SocketTCPMessenger::InitReceive()
     return true;
 }
 
-bool SocketTCPMessenger::OnReceived(bool& later)
+bool SocketTCPMessenger::Receive(bool& later)
 {
     if (INVALID_SOCKET == _sock)
     {

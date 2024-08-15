@@ -24,7 +24,7 @@ bool SocketTCPAceepter::InitAccept()
     return true;
 }
 
-bool SocketTCPAceepter::OnAccepted()
+bool SocketTCPAceepter::Accept()
 {
     if (INVALID_SOCKET == _sock)
     {

@@ -101,7 +101,7 @@ bool SocketTCPConnector::PostConnect(bool& retry)
     // invoke onConnected with the connection as a parameter
     if (nullptr != _onConnected)
     {
-        (*_onConnected)(conn);
+        _onConnected(conn);
     }
 
     // change the socket type from connector to messenger

@@ -56,7 +56,7 @@ ISocket::~ISocket()
 
 void ISocket::Close()
 {
-    OnClosedSPtr onClosed { nullptr };
+    OnClosed onClosed { nullptr };
     {
         if (INVALID_SOCKET != _sock)
         {
@@ -66,13 +66,13 @@ void ISocket::Close()
         std::lock_guard<std::mutex> locker(_lock);
 
         onClosed = _onClosed;
-        _onClosed.reset();
+        _onClosed = nullptr;
     }
 
     // invoke onClosed
     if (nullptr != onClosed && SocketType::ACCEPTER != _type)
     {
-        (*onClosed)(_conn);
+        onClosed(_conn);
 
         ZS_LOG_WARN(network, "socket is being destroyed, sock id : %llu, socket name : %s, peer : %s",
             _sockID, GetName(), GetPeer());
@@ -151,17 +151,17 @@ bool ISocket::InitReceive()
 }
 
 #if defined(_POSIX_) 
-bool ISocket::OnAccepted()
+bool ISocket::Accept()
 {
-    ZS_LOG_FATAL(network, "being accepted on this socket is not implemented, sock id : %llu, name : %s", 
+    ZS_LOG_FATAL(network, "accepting on this socket is not implemented, sock id : %llu, name : %s", 
         _sockID, _name.c_str());
 
     return false;
 }
 
-bool ISocket::OnReceived(bool&)
+bool ISocket::Receive(bool&)
 {
-    ZS_LOG_FATAL(network, "being received on this socket is not implemented, sock id : %llu, name : %s", 
+    ZS_LOG_FATAL(network, "receiving on this socket is not implemented, sock id : %llu, name : %s", 
         _sockID, _name.c_str());
 
     return false;
@@ -200,7 +200,7 @@ bool ISocket::PostReceive()
     return false;
 }
 
-void ISocket::SetCallback(OnConnectedSPtr onConnected, OnReceivedSPtr onReceived, OnClosedSPtr onClosed)
+void ISocket::SetCallback(OnConnected onConnected, OnReceived onReceived, OnClosed onClosed)
 {
     _onConnected = onConnected;
     _onReceived = onReceived;

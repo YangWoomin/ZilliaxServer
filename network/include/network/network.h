@@ -26,11 +26,11 @@ namespace network
         // DO NOT call these functions simultaneously for one socket
         // these functions are available for simultaneous call for different sockets
         static bool Bind(IPVer ipVer, Protocol protocol, int32_t port, SocketID& sockID);
-        static bool Listen(SocketID sockID, int32_t backlog, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived, OnClosedSPtr onClosed);
+        static bool Listen(SocketID sockID, int32_t backlog, OnConnected onConnected, OnReceived onReceived, OnClosed onClosed);
         static bool Close(SocketID sockID);
         
-        static bool ConnectTCP(IPVer ipVer, std::string host, int32_t port, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived, OnClosedSPtr onClosed);
-        static ConnectionSPtr ConnectUDP(IPVer ipVer, std::string host, int32_t port, OnReceivedSPtr onReceived);
+        static bool ConnectTCP(IPVer ipVer, std::string host, int32_t port, OnConnected onConnected, OnReceived onReceived, OnClosed onClosed);
+        static ConnectionSPtr ConnectUDP(IPVer ipVer, std::string host, int32_t port, OnReceived onReceived);
 
         static const std::size_t        MAX_WORKER_COUNT = 128;
         static const int32_t            AVAILABLE_MINIMUM_PORT = 1024;

@@ -115,7 +115,7 @@ bool SocketTCPMessenger::PostReceive()
             {
                 //(*_onReceived)(_conn, (const char*)_recvBuf.data(), _curMsgLen);
                 std::string data((const char*)_recvBuf.data(), _curMsgLen);
-                (*_onReceived)(_conn, data.c_str(), data.size());
+                _onReceived(_conn, data.c_str(), data.size());
             }
 
             _recvBuf.erase(_recvBuf.begin(), _recvBuf.begin() + _curMsgLen);

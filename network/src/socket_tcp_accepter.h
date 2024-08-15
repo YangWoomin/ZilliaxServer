@@ -24,7 +24,7 @@ namespace network
         virtual bool InitAccept() override;
 
 #if defined(_POSIX_) 
-        virtual bool OnAccepted() override;
+        virtual bool Accept() override;
 #endif // defined(_POSIX_) 
 
         virtual SocketSPtr PostAccept() override;

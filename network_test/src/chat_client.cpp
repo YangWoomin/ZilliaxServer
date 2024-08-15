@@ -22,7 +22,7 @@ void ChatClient(Logger::Messenger msgr, IPVer ipVer, Protocol protocol, std::str
     std::atomic<ConnectionSPtr> server { nullptr };
 
     // OnConnected
-    OnConnectedSPtr onConnected = std::make_shared<OnConnected>([&server](ConnectionSPtr conn) {
+    OnConnected onConnected = [&server](ConnectionSPtr conn) {
         server = conn;
         if (nullptr != conn)
         {
@@ -33,22 +33,22 @@ void ChatClient(Logger::Messenger msgr, IPVer ipVer, Protocol protocol, std::str
         {
             ZS_LOG_ERROR(network_test, "connetion is nullptr in ChatClient");
         }
-    });
+    };
 
     // OnReceived
-    OnReceivedSPtr onReceived = std::make_shared<OnReceived>([](ConnectionSPtr conn, const char* buf, std::size_t len) {
+    OnReceived onReceived = [](ConnectionSPtr conn, const char* buf, std::size_t len) {
         ZS_LOG_INFO(network_test, "data received, conn id : %llu, peer : %s, data : %s",
             conn ? conn->GetID() : 0, conn ? conn->GetPeer() : "unknown", buf);
-    });
+    };
 
     // OnClosed
     std::atomic<bool> run { true };
-    OnClosedSPtr onClosed = std::make_shared<OnClosed>([&run](ConnectionSPtr conn) {
+    OnClosed onClosed = [&run](ConnectionSPtr conn) {
         ZS_LOG_WARN(network_test, "the connection closed, conn id : %llu, peer : %s", 
             conn ? conn->GetID() : 0, conn ? conn->GetPeer() : "unknown");
         
         run = false;
-    });
+    };
 
     if (Protocol::TCP == protocol)
     {
@@ -65,17 +65,17 @@ void ChatClient(Logger::Messenger msgr, IPVer ipVer, Protocol protocol, std::str
         return;
     }
 
-    std::this_thread::sleep_for(std::chrono::seconds(3));
+    std::this_thread::sleep_for(std::chrono::seconds(1));
 
     std::string input;
     while (true == run)
     {
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
         std::cout << "Enter a line of text (type 'exit' to quit): ";
         std::getline(std::cin, input);
 
         if ("exit" == input)
         {
-            
             break;
         }
 

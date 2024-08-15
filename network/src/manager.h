@@ -23,9 +23,9 @@ namespace network
         bool IsStopped();
 
         bool Bind(IPVer ipVer, Protocol protocol, int32_t port, SocketID& sockID);
-        bool Listen(SocketID sockID, int32_t backlog, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived, OnClosedSPtr onClosed);
+        bool Listen(SocketID sockID, int32_t backlog, OnConnected onConnected, OnReceived onReceived, OnClosed onClosed);
         bool Close(SocketID sockID);
-        bool Connect(IPVer ipVer, Protocol protocol, const std::string& host, int32_t port, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived, OnClosedSPtr onClosed);
+        bool Connect(IPVer ipVer, Protocol protocol, const std::string& host, int32_t port, OnConnected onConnected, OnReceived onReceived, OnClosed onClosed);
 
         void HandleAccepted(SocketSPtr sock);
         bool HandleConnected(SocketSPtr sock);

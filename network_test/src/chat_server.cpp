@@ -94,7 +94,7 @@ void ChatServer(Logger::Messenger msgr, IPVer ipVer, Protocol protocol, int32_t 
     ZS_LOG_INFO(network_test, "Network::Bind succeeded in ChatServer, sock id : %llu", sockID);
 
     // OnConnected
-    OnConnectedSPtr onConnected = std::make_shared<OnConnected>([](ConnectionSPtr conn) {
+    OnConnected onConnected = [](ConnectionSPtr conn) {
         if (nullptr != conn)
         {
             ZS_LOG_INFO(network_test, "a new connection is created in ChatServer, conn id : %llu, peer : %s",
@@ -110,10 +110,10 @@ void ChatServer(Logger::Messenger msgr, IPVer ipVer, Protocol protocol, int32_t 
         {
             ZS_LOG_ERROR(network_test, "connetion is nullptr in ChatServer");
         }
-    });
+    };
 
     // OnReceived
-    OnReceivedSPtr onReceived = std::make_shared<OnReceived>([](ConnectionSPtr conn, const char* buf, std::size_t len) {
+    OnReceived onReceived = [](ConnectionSPtr conn, const char* buf, std::size_t len) {
         if (nullptr != conn)
         {
             ConnectionID connID = conn->GetID();
@@ -132,10 +132,10 @@ void ChatServer(Logger::Messenger msgr, IPVer ipVer, Protocol protocol, int32_t 
             ZS_LOG_ERROR(network_test, "data received from the unknown, data : %s", 
                 buf);
         }
-    });
+    };
 
     // OnClosed
-    OnClosedSPtr onClosed = std::make_shared<OnClosed>([](ConnectionSPtr conn) {
+    OnClosed onClosed = [](ConnectionSPtr conn) {
         if (nullptr != conn)
         {
             ZS_LOG_INFO(network_test, "the connection closed, conn id : %llu, peer : %s", 
@@ -152,7 +152,7 @@ void ChatServer(Logger::Messenger msgr, IPVer ipVer, Protocol protocol, int32_t 
         {
             ZS_LOG_ERROR(network_test, "someone closed");
         }
-    });
+    };
 
     if (false == Network::Listen(sockID, 64, onConnected, onReceived, onClosed))
     {

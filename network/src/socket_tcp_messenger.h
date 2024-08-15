@@ -23,7 +23,7 @@ namespace network
         virtual bool InitReceive() override;
 
 #if defined(_POSIX_) 
-        virtual bool OnReceived(bool& later) override;
+        virtual bool Receive(bool& later) override;
 #endif // defined(_POSIX_) 
 
         virtual bool PostSend() override;

@@ -33,13 +33,10 @@ namespace network
     using ConnectionID = uint64_t;
 
     using OnConnected = std::function<void(ConnectionSPtr)>;
-    using OnConnectedSPtr = std::shared_ptr<OnConnected>;
 
     using OnReceived = std::function<void(ConnectionSPtr, const char*, std::size_t)>;
-    using OnReceivedSPtr = std::shared_ptr<OnReceived>;
 
     using OnClosed = std::function<void(ConnectionSPtr)>;
-    using OnClosedSPtr = std::shared_ptr<OnClosed>;
 
     class ISocket;
     using SocketSPtr = std::shared_ptr<ISocket>;

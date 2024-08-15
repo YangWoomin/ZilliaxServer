@@ -99,7 +99,7 @@ SocketSPtr SocketTCPAceepter::PostAccept()
     // invoke onConnected with the connection as a parameter
     if (nullptr != _onConnected)
     {
-        (*_onConnected)(conn);
+        _onConnected(conn);
     }
 
     return sock;

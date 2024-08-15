@@ -124,7 +124,7 @@ bool Network::Bind(IPVer ipVer, Protocol protocol, int32_t port, SocketID& sockI
     return true;
 }
 
-bool Network::Listen(SocketID sockID, int32_t backlog, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived, OnClosedSPtr onClosed)
+bool Network::Listen(SocketID sockID, int32_t backlog, OnConnected onConnected, OnReceived onReceived, OnClosed onClosed)
 {
     if (nullptr == manager)
     {
@@ -163,7 +163,7 @@ bool Network::Close(SocketID sockID)
     return true;
 }
 
-bool Network::ConnectTCP(IPVer ipVer, std::string host, int32_t port, OnConnectedSPtr onConnected, OnReceivedSPtr onReceived, OnClosedSPtr onClosed)
+bool Network::ConnectTCP(IPVer ipVer, std::string host, int32_t port, OnConnected onConnected, OnReceived onReceived, OnClosed onClosed)
 {
     if (nullptr == manager)
     {
@@ -192,7 +192,7 @@ bool Network::ConnectTCP(IPVer ipVer, std::string host, int32_t port, OnConnecte
     return true;
 }
 
-ConnectionSPtr Network::ConnectUDP(IPVer ipVer, std::string host, int32_t port, OnReceivedSPtr onReceived)
+ConnectionSPtr Network::ConnectUDP(IPVer ipVer, std::string host, int32_t port, OnReceived onReceived)
 {
     // implement soon
     return ConnectionSPtr(nullptr);
