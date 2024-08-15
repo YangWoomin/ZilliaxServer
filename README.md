@@ -27,8 +27,17 @@
 * C/C++(20)
 * Cross platform (Windows/Linux)
 * Database module (ODBC connector)
-* Asynchronous network module (IOCP, epoll) ===> in progress (completed up to TCP)
-* Seamless open world framework (geographical separating shards synchronized by inter-server, which means technologically distributed system) ===> after Asynchronous network module
+* Asynchronous network module (IOCP, epoll) ===> in progress (completed up to TCP of IPv4)
+
+## TO-DO Features
+* Network module - RIO, io_uring, TLS, HTTP(S) Server
+* Server framework - ECS(?)
+* Physics system
+* NavMesh & Navigation
+* AI System (Behavior Tree)
+* Memory database module - redis(reids++)
+* Message queue client module - kafka(librdkafka)
+* Distributed System - inter-server communication
 
 ## Build Tool and Driver
 * Make/CMake
