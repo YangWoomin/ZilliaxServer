@@ -4,7 +4,7 @@
 #### [Purpose](#Purpose)
 #### [Introduction](#Introduction)
 #### [Features](#Features)
-#### [Build Tool / Driver](#Build-Tool)
+#### [Build Tool & Driver](#Build-Tool-&-Driver)
 
 ## Purpose
 * MMO (RPG) Game Server
@@ -24,7 +24,7 @@
 * Asynchronous network module (IOCP, epoll) ===> in progress (completed up to TCP)
 * Seamless open world framework (geographical separating shards synchronized by inter-server, which means technologically distributed system) ===> after Asynchronous network module
 
-## Build Tool
+## Build Tool & Driver
 * Make/CMake
 * MSVC/g++
 * ODBC Driver (MySQL)
