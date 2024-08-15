@@ -1,8 +1,10 @@
 # ZilliaxServer
 
 ## Contents Table
-### [1. Purpose](#Purpose)
-### [2. Introduction](#Introduction)
+#### [Purpose](#Purpose)
+#### [Introduction](#Introduction)
+#### [Features](#Features)
+#### [Build Tool / Driver](#Build-Tool-/-Driver)
 
 ## Purpose
 * MMO (RPG) Game Server
