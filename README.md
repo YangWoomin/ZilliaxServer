@@ -7,6 +7,10 @@
 * [Build Tool and Driver](#Build-Tool-and-Driver)
 * [License](#License)
 * [Development Environment](#Development-Environment)
+* [Build](#Build)
+* [Debugging](#Debugging)
+* [Database](#Database)
+* [Network](#Network)
 
 ## Purpose
 * MMO (RPG) Game Server
@@ -36,7 +40,7 @@
 * spdlog-1.14.1 (https://github.com/gabime/spdlog/tree/v1.14.1) - MIT License
 * cxxopts-3.2.0 (https://github.com/jarro2783/cxxopts/tree/v3.2.0) - MIT License
 
-## Development Envrionment
+## Development Environment
 
 ### IDE
 * Visual Studio 2022
