@@ -4,7 +4,9 @@
 #### [Purpose](#Purpose)
 #### [Introduction](#Introduction)
 #### [Features](#Features)
-#### [Build Tool & Driver](#Build-Tool-and-Driver)
+#### [Build Tool and Driver](#Build-Tool-and-Driver)
+#### [License](#License)
+#### [Development Environment](#Development-Environment)
 
 ## Purpose
 * MMO (RPG) Game Server
