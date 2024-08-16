@@ -39,6 +39,8 @@
 * Memory database module - redis(reids++)
 * Message queue client module - kafka(librdkafka)
 * Distributed System - inter-server communication
+* Containerize
+* Google Breakpad
 
 ## Build Tool and Driver
 * Make/CMake
