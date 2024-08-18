@@ -15,7 +15,7 @@ bool SocketTCPMessenger::InitSend(std::string&& buf)
     return InitSend(buf);
 }
 
-bool SocketTCPMessenger::InitSend(std::string& buf)
+bool SocketTCPMessenger::InitSend(const std::string& buf)
 {
     if (0 >= buf.size())
     {
@@ -95,8 +95,11 @@ bool SocketTCPMessenger::PostReceive()
     // if the buffer is enough to make a message
     // then invoke onReceived with the message
 
-    // no need for lock when receiving data
-    //std::unique_lock<std::mutex> locker(_recvLock);
+    // only in windows, lock on receiving buffer
+    // because 
+#if defined(_WIN64_)
+    AutoScopeLock locker(&_recvLock);
+#endif // defined(_WIN64_)
 
     _recvBuf.insert(_recvBuf.end(), _rCtx->_buf, _rCtx->_buf + _rCtx->_bytes);
 
@@ -125,7 +128,7 @@ bool SocketTCPMessenger::PostReceive()
 
         break;
     }
-    
+
     // ** UDP **
     // just invoke onReceived with the received data as a message
 
@@ -134,17 +137,17 @@ bool SocketTCPMessenger::PostReceive()
 
 SocketTCPMessenger::~SocketTCPMessenger()
 {
-    Close();
+    
 }
 
 SocketTCPMessenger::SocketTCPMessenger(Manager& manager, SocketID sockID, IPVer ipVer, bool nonBlocking)
     : ISocket(manager, sockID, SocketType::MESSENGER, ipVer, Protocol::TCP, nonBlocking)
 {
-
+    
 }
 
 SocketTCPMessenger::SocketTCPMessenger(Manager& manager, SocketID sockID, Socket sock, const std::string& name, const std::string& peer, IPVer ipVer)
     : ISocket(manager, sockID, sock, name, peer, SocketType::MESSENGER, ipVer, Protocol::TCP)
 {
-
+    
 }

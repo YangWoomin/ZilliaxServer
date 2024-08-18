@@ -69,8 +69,8 @@ bool Dispatcher::Bind(ISocket* sock)
         return false;
     }
 
-    ZS_LOG_INFO(network, "binding socket on dispatcher succeeded, socket name : %s", 
-        sock->GetName());
+    // ZS_LOG_INFO(network, "binding socket on dispatcher succeeded, socket name : %s", 
+    //     sock->GetName());
 
     return true;
 }
@@ -151,7 +151,7 @@ bool Dispatcher::Dequeue(std::size_t, std::queue<IOResult>& resList)
     if (nullptr != sCtx && pOl == &(sCtx->_ol))
     {
         res._eventType = EventType::OUTBOUND;
-        sCtx->_bytes = bytes;
+        sCtx->_bytes += bytes;
     }
 
     SendRecvContext* rCtx = sock->GetRecvContext();

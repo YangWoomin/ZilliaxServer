@@ -27,7 +27,7 @@ bool Connection::Send(std::string&& buf)
     return true;
 }
 
-bool Connection::Send(std::string& buf)
+bool Connection::Send(const std::string& buf)
 {
     SocketSPtr sock = _sock.lock();
     if (nullptr == sock)
@@ -70,7 +70,7 @@ void Connection::Close()
     SocketSPtr sock = _sock.lock();
     if (nullptr == sock)
     {
-        ZS_LOG_ERROR(network, "invalid socket for send in connection");
+        ZS_LOG_ERROR(network, "invalid socket for close in connection");
         return;
     }
 
@@ -101,17 +101,11 @@ Protocol Connection::GetProtocol() const
 
 const char* Connection::GetPeer() const
 {
-    SocketSPtr sock = _sock.lock();
-    if (nullptr != sock)
-    {
-        return sock->GetPeer();
-    }
-
-    return "unknown";
+    return _peer.c_str();
 }
 
-Connection::Connection(ConnectionID id, SocketWPtr sock)
-    : _id(id), _sock(sock)
+Connection::Connection(ConnectionID id, SocketWPtr sock, const std::string& peer)
+    : _id(id), _sock(sock), _peer(peer)
 {
     
 }

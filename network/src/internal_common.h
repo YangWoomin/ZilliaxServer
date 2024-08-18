@@ -29,6 +29,7 @@
 #endif // _WIN64_
 
 
+#include    "common/lock.h"
 #include    "network/common.h"
 
 #include    <vector>

@@ -53,6 +53,18 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "Launch network_test (massive test client)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/output/bin/network_testd.exe",
+            "args": ["--mode", "mtc"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/output/bin",
+            "environment": [],
+            //"preLaunchTask": "Rebuild network network_test as Debug",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Attach to network_test",
             "type": "cppvsdbg",
             "request": "attach",
@@ -75,6 +87,18 @@
             "request": "launch",
             "program": "${workspaceFolder}/output/bin/network_testd.out",
             "args": ["--mode", "client"],
+            "cwd": "${workspaceFolder}/output/bin",
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            //"preLaunchTask": "Rebuild network network_test as Debug",
+            "internalConsoleOptions": "openOnSessionStart"
+        },
+        {
+            "name": "Launch network_test on WSL2 (massive test client)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/output/bin/network_testd.out",
+            "args": ["--mode", "mtc"],
             "cwd": "${workspaceFolder}/output/bin",
             "MIMode": "gdb",
             "miDebuggerPath": "/usr/bin/gdb",

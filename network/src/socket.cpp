@@ -27,6 +27,19 @@ ISocket::ISocket(Manager& manager, SocketID sockID, Socket sock, const std::stri
 
 ISocket::~ISocket()
 {
+    if (INVALID_SOCKET != _sock)
+    {
+        CloseSocket(_sock);
+    }
+    _sock = INVALID_SOCKET;
+
+    //if (nullptr != _onClosed && SocketType::ACCEPTER != _type)
+    if (nullptr != _onClosed)
+    {
+        // invoke the callback function on accepter
+        _onClosed(_conn);
+    }
+
     if (nullptr != _aCtx)
     {
         delete _aCtx;
@@ -50,32 +63,24 @@ ISocket::~ISocket()
         delete _rCtx;
         _rCtx = nullptr;
     }
-
-    _sock = INVALID_SOCKET;
 }
 
 void ISocket::Close()
 {
-    OnClosed onClosed { nullptr };
+    if (false == _isClosing.exchange(true))
     {
-        if (INVALID_SOCKET != _sock)
-        {
-            CloseSocket(_sock);
-        }
-
-        std::lock_guard<std::mutex> locker(_lock);
-
-        onClosed = _onClosed;
-        _onClosed = nullptr;
-    }
-
-    // invoke onClosed
-    if (nullptr != onClosed && SocketType::ACCEPTER != _type)
-    {
-        onClosed(_conn);
+#if defined(_POSIX_)
+        _manager.Bind(_workerID, this, BindType::UNBIND, EventType::INBOUND);
+        _manager.RemoveSocket(_sockID);
+#endif //     defined(_POSIX_)
 
         ZS_LOG_WARN(network, "socket is being destroyed, sock id : %llu, socket name : %s, peer : %s",
             _sockID, GetName(), GetPeer());
+    }
+
+    if (INVALID_SOCKET != _sock)
+    {
+        CloseSocket(_sock);
     }
 }
 
@@ -118,7 +123,7 @@ bool ISocket::InitSend(std::string&&)
     return false;
 }
 
-bool ISocket::InitSend(std::string&)
+bool ISocket::InitSend(const std::string&)
 {
     ZS_LOG_FATAL(network, "init sending on this socket is not implemented, sock id : %llu, name : %s", 
         _sockID, _name.c_str());
@@ -234,6 +239,22 @@ bool ISocket::bind(int32_t port)
 
     return true;
 }
+
+#if defined(_POSIX_) 
+bool ISocket::modifyBindingOnDispatcher(EventType eventType)
+{
+    if (false == _isClosing.load())
+    {
+        return _manager.Bind(_workerID, this, BindType::MODIFY, eventType);
+    }
+    else
+    {
+        ZS_LOG_ERROR(network, "this socket is being closed, socket id : %llu, socket name : %s, peer : %s", 
+            _sockID, GetName(), GetPeer());
+        return false;
+    }
+}
+#endif // defined(_POSIX_)
 
 /////////////////////////////////////////////////////////////////////////////
 // SocketGenerator

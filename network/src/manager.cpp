@@ -300,6 +300,9 @@ void Manager::HandleAccepted(SocketSPtr sock)
     }
 
     newSock->SetCallback(sock->GetOnConnected(), sock->GetOnReceived(), sock->GetOnClosed());
+
+    // invoke onConnected with the connection as a parameter
+    newSock->InvokeOnConnected();
     
     // if in windows reinitiate async accept for the next socket 
     if (false == sock->InitAccept())
@@ -335,7 +338,10 @@ bool Manager::HandleConnected(SocketSPtr sock)
     if (true == retry)
     {
         return true;
-    }   
+    }
+
+    // invoke onConnected with the connection as a parameter
+    sock->InvokeOnConnected();
 
     // if windows, initiate async receive on the connected socket
     if (false == sock->InitReceive())
@@ -437,8 +443,8 @@ bool Manager::Bind(std::size_t workerID, ISocket* sock, BindType bindType, Event
 {
     if (false == _dispatcher->Bind(workerID, sock, bindType, eventType))
     {
-        ZS_LOG_ERROR(network, "binding socket on dispatcher failed, sock id : %llu, socket name : %s, peer : %s",
-            sock->GetID(), sock->GetName(), sock->GetPeer());
+        ZS_LOG_ERROR(network, "binding socket on dispatcher failed, sock id : %llu, worker id : %llu, socket name : %s, peer : %s",
+            sock->GetID(), workerID, sock->GetName(), sock->GetPeer());
         return false;
     }
 

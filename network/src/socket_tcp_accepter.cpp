@@ -93,14 +93,15 @@ SocketSPtr SocketTCPAceepter::PostAccept()
     }
 
     // create a connection for the accepted socket
-    ConnectionSPtr conn = ConnectionSPtr(new Connection(++_connIDGen, sock));
+    ConnectionSPtr conn = ConnectionSPtr(new Connection(++_connIDGen, sock, peer));
     sock->SetConnection(conn);
 
+    // invoke onConnected after binding the socket
     // invoke onConnected with the connection as a parameter
-    if (nullptr != _onConnected)
-    {
-        _onConnected(conn);
-    }
+    // if (nullptr != _onConnected)
+    // {
+    //     _onConnected(conn);
+    // }
 
     return sock;
 }
@@ -119,5 +120,5 @@ SocketTCPAceepter::SocketTCPAceepter(Manager& manager, SocketID sockID, Socket s
 
 SocketTCPAceepter::~SocketTCPAceepter()
 {
-    Close();
+    
 }

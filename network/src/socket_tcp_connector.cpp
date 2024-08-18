@@ -95,14 +95,14 @@ bool SocketTCPConnector::PostConnect(bool& retry)
     _peer += (":" + std::to_string(remotePort));
 
     // create a connection for the connected socket
-    ConnectionSPtr conn = ConnectionSPtr(new Connection(++_connIDGen, GetSPtr()));
+    ConnectionSPtr conn = ConnectionSPtr(new Connection(++_connIDGen, GetSPtr(), _peer));
     _conn = conn;
 
     // invoke onConnected with the connection as a parameter
-    if (nullptr != _onConnected)
-    {
-        _onConnected(conn);
-    }
+    // if (nullptr != _onConnected)
+    // {
+    //     _onConnected(conn);
+    // }
 
     // change the socket type from connector to messenger
     ChangeType(SocketType::MESSENGER);
@@ -187,5 +187,5 @@ SocketTCPConnector::SocketTCPConnector(Manager& manager, SocketID sockID, Socket
 
 SocketTCPConnector::~SocketTCPConnector()
 {
-    Close();
+    
 }

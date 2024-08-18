@@ -89,6 +89,8 @@ bool Epoll::Bind(ISocket* sock, BindType bindType, EventType eventType)
     if (BindType::BIND == bindType)
     {
         event.events |= eventType;
+
+        sock->SetWorkerID(_workerID);
     }
     else if (BindType::MODIFY == bindType)
     {
@@ -98,18 +100,13 @@ bool Epoll::Bind(ISocket* sock, BindType bindType, EventType eventType)
     if (INVALID_RESULT == epoll_ctl(_epoll, bindType, sock->GetSocket(), 
         BindType::UNBIND == bindType ? NULL : &event))
     {
-        ZS_LOG_ERROR(network, "epoll_ctl failed for bind, bind type : %d, event type : %d, socket name : %s, peer : %s, err : %d",
-            bindType, eventType, sock->GetName(), sock->GetPeer(), errno);
+        ZS_LOG_ERROR(network, "epoll_ctl failed for bind, sock id : %llu, worker id : %llu, bind type : %d, event type : %d, socket name : %s, peer : %s, err : %d",
+            sock->GetID(), _workerID, bindType, eventType, sock->GetName(), sock->GetPeer(), errno);
         return false;   
     }
 
-    if (BindType::BIND == bindType)
-    {
-        sock->SetWorkerID(_workerID);
-    }
-
-    ZS_LOG_INFO(network, "binding socket on dispatcher succeeded, bind type : %d, event Type : %d, socket name : %s, peer : %s", 
-        bindType, eventType, sock->GetName(), sock->GetPeer());
+    // ZS_LOG_INFO(network, "binding socket on dispatcher succeeded, sock id : %llu, worker id : %llu, bind type : %d, event Type : %d, socket name : %s, peer : %s", 
+    //     sock->GetID(), _workerID, bindType, eventType, sock->GetName(), sock->GetPeer());
 
     return true;
 }
@@ -166,6 +163,12 @@ bool Epoll::Dequeue(std::queue<IOResult>& resList)
 
         ISocket* sock = static_cast<ISocket*>(_events[i].data.ptr);
         res._sock = sock->GetSPtr();
+        if (nullptr == res._sock)
+        {
+            ZS_LOG_WARN(network, "invalid socket in epoll, events : %d",
+                _events[i].events);
+            continue;
+        }
 
         if (_events[i].events & (EPOLLERR | EPOLLHUP | EPOLLRDHUP))
         {
@@ -173,9 +176,7 @@ bool Epoll::Dequeue(std::queue<IOResult>& resList)
                 _events[i].events, sock->GetName(), sock->GetPeer());
             
             // unbind this socket from epoll object
-            epoll_ctl(_epoll, BindType::UNBIND, sock->GetSocket(), NULL);
-
-            res._release = true;
+            res._sock->Close();
         }
         
         if (0 != (EPOLLIN & _events[i].events))
@@ -209,10 +210,7 @@ bool Epoll::Dequeue(std::queue<IOResult>& resList)
                 }
                 if (true == later)
                 {
-                    if (true != res._release)
-                    {
-                        continue; // retry later
-                    }
+                    continue; // retry later
                 }
             }
             else
@@ -223,14 +221,14 @@ bool Epoll::Dequeue(std::queue<IOResult>& resList)
             }
 
             resList.push(res);
-            res.Reset();
+            //res.Reset();
         }
 
         if (0 != (EPOLLOUT & _events[i].events))
         {
             res._eventType = EventType::OUTBOUND;
             resList.push(res);
-            res.Reset();
+            //res.Reset();
         }
     }
 
@@ -311,8 +309,8 @@ bool Dispatcher::Bind(std::size_t workerID, ISocket* sock, BindType bindType, Ev
         return false;
     }
 
-    ZS_LOG_INFO(network, "binding socket on dispatcher succeeded, worker id : %llu, socket name : %s, peer : %s", 
-        workerID, sock->GetName(), sock->GetPeer());
+    // ZS_LOG_INFO(network, "binding socket on dispatcher succeeded, worker id : %llu, socket name : %s, peer : %s", 
+    //     workerID, sock->GetName(), sock->GetPeer());
 
     return true;
 }

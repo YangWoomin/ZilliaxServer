@@ -43,45 +43,41 @@ bool SocketTCPMessenger::InitReceive()
             return false;
         }
     }
-    else if (NO_ERROR == res && 0 < _rCtx->_bytes)
-    {
-        PostReceive();
-        return InitReceive();
-    }
 
     return true;
 }
 
 bool SocketTCPMessenger::PostSend()
 {
-    std::unique_lock<std::mutex> locker(_sendLock);
+    AutoScopeLock locker(&_sendLock);
 
     if (true == _sendBuf.empty())
     {
-        // already processed
         return false;
     }
 
-    std::vector<uint8_t>& buf = _sendBuf.front();
-    if (buf.size() != _sCtx->_bytes)
+    if (0 == _sCtx->_bytes)
     {
-        ZS_LOG_ERROR(network, "sending buffer size is not equal with sent byte size, sock id : %llu, socket name : %s, peer : %s",
+        ZS_LOG_WARN(network, "sent byte size is invalid(0), sock id : %llu, socket name : %s, peer : %s",
             _sockID, GetName(), GetPeer());
+        return true; // retry to send
     }
 
-    // reset the buffer just being completed for sending work
-    // but the capacity of the buffer is reserved
-    buf.clear();
-
-    // move the buffer back to front of the queue so that it would be reused
-    if (DEFAULT_TCP_SENDING_BUFFER_COUNT > _sendBufPool.size())
+    std::vector<uint8_t>& buf = _sendBuf.front();
+    if (buf.size() <= _sCtx->_bytes)
     {
-        _sendBufPool.push_front(std::move(buf));
-    }
-    
-    _sendBuf.pop();
+        // all data is sent in the buffer
+        buf.clear();
 
-    _sCtx->Reset();
+        if (DEFAULT_TCP_SENDING_BUFFER_COUNT > _sendBufPool.size())
+        {
+            _sendBufPool.push_front(std::move(buf));
+        }
+
+        _sendBuf.pop();
+
+        _sCtx->Reset();
+    }
 
     return !_sendBuf.empty();
 }
@@ -94,11 +90,12 @@ bool SocketTCPMessenger::initSend()
 bool SocketTCPMessenger::send()
 {
     WSABUF wsabuf;
+    DWORD sentBytes = 0;
     std::vector<uint8_t>& buf = _sendBuf.front();
-    wsabuf.buf = (char*)buf.data();
-    wsabuf.len = (ULONG)buf.size();
+    wsabuf.buf = (char*)buf.data() + _sCtx->_bytes;
+    wsabuf.len = (ULONG)buf.size() - _sCtx->_bytes;
 
-    int res = WSASend(_sock, &wsabuf, 1, &_sCtx->_bytes, 0, &_sCtx->_ol, NULL);
+    int res = WSASend(_sock, &wsabuf, 1, &sentBytes, 0, &_sCtx->_ol, NULL);
     if (SOCKET_ERROR == res)
     {
         int err = errno;
@@ -107,14 +104,6 @@ bool SocketTCPMessenger::send()
             ZS_LOG_ERROR(network, "WSASend failed, sock id : %llu, socket name : %s, peer : %s", 
                 _sockID, GetName(), GetPeer());
             return false;
-        }
-    }
-    else if (NO_ERROR == res && 0 < _sCtx->_bytes)
-    {
-        // processed directly
-        if (true == PostSend())
-        {
-            return this->send();
         }
     }
 

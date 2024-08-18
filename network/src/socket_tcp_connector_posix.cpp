@@ -78,7 +78,7 @@ bool SocketTCPConnector::postConnect(bool& retry)
 
     // unbind the connected socket from dispatcher for connected event
     // bind the connected socket to dispatcher for data received event
-    if (false == _manager.Bind(_workerID, this, BindType::MODIFY, EventType::INBOUND))
+    if (false == modifyBindingOnDispatcher(EventType::INBOUND))
     {
         ZS_LOG_ERROR(network, "binding connector socket on dispatcher failed, sock id : %llu, socket name : %s, peer : %s",
             _sockID, GetName(), GetPeer());

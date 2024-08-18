@@ -8,6 +8,8 @@ namespace zs
 {
 namespace network
 {
+    using namespace zs::common;
+    
     class Manager;
 
     class ISocket : public std::enable_shared_from_this<ISocket>
@@ -23,7 +25,7 @@ namespace network
                 void        Close();
         virtual bool        InitConnect(const std::string& host, int32_t port);
         virtual bool        InitSend(std::string&& buf);
-        virtual bool        InitSend(std::string& buf);
+        virtual bool        InitSend(const std::string& buf);
         virtual bool        InitSend(const char* buf, std::size_t len);
         virtual bool        ContinueSend();
         virtual bool        InitReceive();
@@ -58,35 +60,39 @@ namespace network
 
         void SetCallback(OnConnected onConnected, OnReceived onReceived, OnClosed onClosed);
         OnConnected         GetOnConnected()                    { return _onConnected; }
+        void                InvokeOnConnected()                 { if (_onConnected) _onConnected(_conn); }
         OnReceived          GetOnReceived()                     { return _onReceived; }
         OnClosed            GetOnClosed()                       { return _onClosed; }
         void                SetConnection(ConnectionSPtr conn)  { _conn = conn; }
 
     protected:
-        bool                bind(int32_t port);
+        bool                    bind(int32_t port);
+#if defined(_POSIX_) 
+        bool                    modifyBindingOnDispatcher(EventType eventType);
+#endif // defined(_POSIX_) 
 
-        Manager&            _manager;
-        SocketID            _sockID;
-        SocketType          _type;
-        Socket              _sock = INVALID_SOCKET;
-        IPVer               _ipVer;
-        Protocol            _protocol;
-        int32_t             _port = 0;
-        std::size_t         _workerID = 0;
-        std::string         _name;
-        std::string         _peer;
-        std::mutex          _lock;
+        Manager&                _manager;
+        SocketID                _sockID;
+        SocketType              _type;
+        Socket                  _sock = INVALID_SOCKET;
+        IPVer                   _ipVer;
+        Protocol                _protocol;
+        int32_t                 _port = 0;
+        std::size_t             _workerID = 0;
+        std::string             _name;
+        std::string             _peer;
+        std::atomic<bool>       _isClosing { false };
         
-        AcceptContext*      _aCtx = nullptr;
-        ConnectContext*     _cCtx = nullptr;
-        SendRecvContext*    _sCtx = nullptr;
-        SendRecvContext*    _rCtx = nullptr;
+        AcceptContext*          _aCtx = nullptr;
+        ConnectContext*         _cCtx = nullptr;
+        SendRecvContext*        _sCtx = nullptr;
+        SendRecvContext*        _rCtx = nullptr;
 
-        OnConnected         _onConnected { nullptr };
-        OnReceived          _onReceived { nullptr };
-        OnClosed            _onClosed { nullptr };
+        OnConnected             _onConnected { nullptr };
+        OnReceived              _onReceived { nullptr };
+        OnClosed                _onClosed { nullptr };
 
-        ConnectionSPtr      _conn { nullptr };
+        ConnectionSPtr          _conn { nullptr };
 
         ISocket(const ISocket&) = delete;
         ISocket(const ISocket&&) = delete;

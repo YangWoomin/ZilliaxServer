@@ -18,8 +18,6 @@
 using namespace zs::common;
 using namespace zs::network;
 
-static std::mutex mtx;
-static std::unordered_map<ConnectionID, ConnectionSPtr> clients;
 static std::atomic<bool> run { true };
 
 #if defined(_WIN64_)
@@ -42,19 +40,17 @@ static void signalHandler(int signum)
     if (signum == SIGINT)
     {
         ZS_LOG_WARN(network_test, "Interrupt signal (SIGINT) received in ChatServer. Exiting gracefully...");
-
-        Network::Finalize();
     }
     else
     {
         ZS_LOG_ERROR(network_test, "Unhandled interrupt signal %d received in ChatServer", signum);
     }
     
-    exit(signum);
+    run = false;
 }
 #endif // defined(_WIN64_)
 
-void ChatServer(Logger::Messenger msgr, IPVer ipVer, Protocol protocol, int32_t port)
+void ChatServer(Logger::Messenger msgr, IPVer ipVer, Protocol protocol, int32_t port, bool isBroadcasting)
 {
 
 #if defined(_WIN64_)
@@ -93,15 +89,20 @@ void ChatServer(Logger::Messenger msgr, IPVer ipVer, Protocol protocol, int32_t 
 
     ZS_LOG_INFO(network_test, "Network::Bind succeeded in ChatServer, sock id : %llu", sockID);
 
+    std::recursive_mutex mtx;
+    std::unordered_map<ConnectionID, ConnectionSPtr> clients;
+    std::atomic<std::size_t> totalMsgCount { 0 };
+    std::atomic<std::size_t> totalMsgSize { 0 };
+
     // OnConnected
-    OnConnected onConnected = [](ConnectionSPtr conn) {
+    OnConnected onConnected = [&mtx, &clients](ConnectionSPtr conn) {
         if (nullptr != conn)
         {
             ZS_LOG_INFO(network_test, "a new connection is created in ChatServer, conn id : %llu, peer : %s",
                 conn->GetID(), conn->GetPeer());
             
             {
-                std::lock_guard<std::mutex> locker(mtx);
+                std::lock_guard<std::recursive_mutex> locker(mtx);
 
                 clients.insert(std::make_pair(conn->GetID(), conn));
             }
@@ -113,18 +114,29 @@ void ChatServer(Logger::Messenger msgr, IPVer ipVer, Protocol protocol, int32_t 
     };
 
     // OnReceived
-    OnReceived onReceived = [](ConnectionSPtr conn, const char* buf, std::size_t len) {
+    OnReceived onReceived = [&mtx, &clients, &totalMsgCount, &totalMsgSize, isBroadcasting](ConnectionSPtr conn, const char* buf, std::size_t len) {
         if (nullptr != conn)
         {
-            ConnectionID connID = conn->GetID();
-            ZS_LOG_INFO(network_test, "data received, conn id : %llu, peer : %s, data : %s", 
-                connID, conn->GetPeer(), buf);
+            // ConnectionID connID = conn->GetID();
+            // ZS_LOG_INFO(network_test, "data received, conn id : %llu, peer : %s, data : %s", 
+            //     connID, conn->GetPeer(), buf);
             
-            std::lock_guard<std::mutex> locker(mtx);
+            ++totalMsgCount;
 
-            for (auto& ele : clients)
+            totalMsgSize += len;
+
+            // broadcasting
+            if (true == isBroadcasting)
             {
-                ele.second->Send(buf, len);
+                std::lock_guard<std::recursive_mutex> locker(mtx);
+                for (auto& ele : clients)
+                {
+                    ele.second->Send(buf, len);
+                }
+            }
+            else
+            {
+                conn->Send(buf, len);
             }
         }
         else
@@ -135,7 +147,7 @@ void ChatServer(Logger::Messenger msgr, IPVer ipVer, Protocol protocol, int32_t 
     };
 
     // OnClosed
-    OnClosed onClosed = [](ConnectionSPtr conn) {
+    OnClosed onClosed = [&mtx, &clients](ConnectionSPtr conn) {
         if (nullptr != conn)
         {
             ZS_LOG_INFO(network_test, "the connection closed, conn id : %llu, peer : %s", 
@@ -143,14 +155,14 @@ void ChatServer(Logger::Messenger msgr, IPVer ipVer, Protocol protocol, int32_t 
 
             ConnectionID connID = conn->GetID();
             {
-                std::lock_guard<std::mutex> locker(mtx);
+                std::lock_guard<std::recursive_mutex> locker(mtx);
 
                 clients.erase(connID);
             }
         }
         else
         {
-            ZS_LOG_ERROR(network_test, "someone closed");
+            ZS_LOG_WARN(network_test, "listener or someone is closed");
         }
     };
 
@@ -166,4 +178,7 @@ void ChatServer(Logger::Messenger msgr, IPVer ipVer, Protocol protocol, int32_t 
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
+
+    ZS_LOG_INFO(network_test, "total processed message count : %llu, size : %llu", 
+        totalMsgCount.load(), totalMsgSize.load());
 }

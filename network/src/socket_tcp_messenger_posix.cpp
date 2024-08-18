@@ -61,13 +61,18 @@ bool SocketTCPMessenger::Receive(bool& later)
 
 bool SocketTCPMessenger::PostSend()
 {
-    std::unique_lock<std::mutex> locker(_sendLock);
+    AutoScopeLock locker(&_sendLock);
 
     if (true == _sendBuf.empty())
     {
-        // the first time the socket is registered on epoll
-        // it receives signal that the socket sending buffer is available
         return false;
+    }
+
+    if (0 == _sCtx->_bytes)
+    {
+        // ZS_LOG_WARN(network, "sent byte size is invalid(0), sock id : %llu, socket name : %s, peer : %s",
+        //     _sockID, GetName(), GetPeer());
+        return true; // retry to send
     }
 
     std::vector<uint8_t>& buf = _sendBuf.front();
@@ -89,10 +94,11 @@ bool SocketTCPMessenger::PostSend()
     if (true == _sendBuf.empty())
     {
         // unbind out-bound event on dispatcher
-        if (false == _manager.Bind(_workerID, this, BindType::MODIFY, EventType::INBOUND))
+        if (false == modifyBindingOnDispatcher(EventType::INBOUND))
         {
             ZS_LOG_ERROR(network, "binding failed in post send, sock id : %llu, socket name : %s, peer : %s", 
                 _sockID, GetName(), GetPeer());
+            return false;
         }
     }
 
@@ -102,7 +108,7 @@ bool SocketTCPMessenger::PostSend()
 bool SocketTCPMessenger::initSend()
 {
     // bind on dispatcher to trigger sending buffer available event
-    if (false == _manager.Bind(_workerID, this, BindType::MODIFY, (EventType)(EventType::INBOUND | EventType::OUTBOUND)))
+    if (false == modifyBindingOnDispatcher((EventType)(EventType::INBOUND | EventType::OUTBOUND)))
     {
         ZS_LOG_ERROR(network, "binding failed in init send, sock id : %llu, socket name : %s, peer : %s", 
             _sockID, GetName(), GetPeer());
@@ -131,10 +137,6 @@ bool SocketTCPMessenger::send()
     else if (0 < bytes)
     {
         _sCtx->_bytes += bytes;
-        if (true == PostSend())
-        {
-            return this->send();
-        }
     }
 
     return true;

@@ -15,7 +15,7 @@ namespace network
     {
     public:
         __ZS_NETWORK_API bool Send(std::string&& buf);
-        __ZS_NETWORK_API bool Send(std::string& buf);
+        __ZS_NETWORK_API bool Send(const std::string& buf);
         __ZS_NETWORK_API bool Send(const char* buf, std::size_t len);
         __ZS_NETWORK_API void Close();
 
@@ -29,8 +29,9 @@ namespace network
     private:
         ConnectionID    _id;
         SocketWPtr      _sock;
+        std::string     _peer;
 
-        Connection(ConnectionID id, SocketWPtr sock);
+        Connection(ConnectionID id, SocketWPtr sock, const std::string& peer);
 
         Connection(const Connection&) = delete;
         Connection(const Connection&&) = delete;

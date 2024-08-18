@@ -15,7 +15,7 @@ namespace network
     {
     public:
         virtual bool InitSend(std::string&& buf) override;
-        virtual bool InitSend(std::string& buf) override;
+        virtual bool InitSend(const std::string& buf) override;
         virtual bool InitSend(const char* buf, std::size_t len) override;
 
         virtual bool ContinueSend() override;
@@ -36,11 +36,11 @@ namespace network
 
         std::queue<std::vector<uint8_t>>    _sendBuf;
         std::deque<std::vector<uint8_t>>    _sendBufPool;
-        std::mutex                          _sendLock;
+        Lock                                _sendLock;
 
         std::vector<uint8_t>                _recvBuf;
         uint32_t                            _curMsgLen = 0;
-        //std::mutex                          _recvLock;
+        Lock                                _recvLock;
 
         SocketTCPMessenger(Manager& manager, SocketID sockID, IPVer ipVer, bool nonBlocking);
         SocketTCPMessenger(Manager& manager, SocketID sockID, Socket sock, const std::string& name, const std::string& peer, IPVer ipVer);
@@ -70,7 +70,7 @@ namespace network
             len2 = htonl(len2);
 
             {
-                std::unique_lock<std::mutex> locker(_sendLock);
+                AutoScopeLock locker(&_sendLock);
 
                 bool isNewBufferNeeded = false;
 
@@ -122,13 +122,13 @@ namespace network
                     // just hand over sending work to the currently working thread
                     return true;
                 }
-            }
 
-            if (nullptr == _sCtx)
-            {
-                _sCtx = new SendRecvContext();
+                if (nullptr == _sCtx)
+                {
+                    _sCtx = new SendRecvContext();
+                }
+                _sCtx->Reset();
             }
-            _sCtx->Reset();
             
             if (false == initSend())
             {
