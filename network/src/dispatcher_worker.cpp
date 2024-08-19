@@ -84,5 +84,7 @@ void DispatcherWorker::handle(IOResult& res)
     {
         // release the socket
         _manager.RemoveSocket(res._sock->GetID());
+
+        res._sock->InvokeOnClosed();
     }
 }

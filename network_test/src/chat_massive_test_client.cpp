@@ -211,7 +211,7 @@ void ChatMassiveTester::Send(const std::vector<std::string>& text)
 {
     if (nullptr == _server)
     {
-        ZS_LOG_ERROR(network_test, "invalid server connection");
+        ZS_LOG_WARN(network_test, "server is not connected yet");
         return;
     }
 

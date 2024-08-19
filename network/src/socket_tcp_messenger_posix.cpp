@@ -107,6 +107,13 @@ bool SocketTCPMessenger::PostSend()
 
 bool SocketTCPMessenger::initSend()
 {
+    if (false == _isBound.load())
+    {
+        ZS_LOG_WARN(network, "the socket is being bound or being closed, sock id : %llu, socket name : %s, peer : %s",
+            _sockID, GetName(), GetPeer());
+        return true;
+    }
+
     // bind on dispatcher to trigger sending buffer available event
     if (false == modifyBindingOnDispatcher((EventType)(EventType::INBOUND | EventType::OUTBOUND)))
     {

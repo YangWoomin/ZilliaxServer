@@ -69,6 +69,8 @@ bool Dispatcher::Bind(ISocket* sock)
         return false;
     }
 
+    sock->SetBound(true);
+
     // ZS_LOG_INFO(network, "binding socket on dispatcher succeeded, socket name : %s", 
     //     sock->GetName());
 
@@ -105,14 +107,19 @@ bool Dispatcher::Dequeue(std::size_t, std::queue<IOResult>& resList)
         {
             if (ERROR_ABANDONED_WAIT_0 == err)
             {
-                ZS_LOG_ERROR(network, "iocp closed, socket name : %s",
-                    res._sock ? res._sock->GetName() : "unknown");
+                ZS_LOG_ERROR(network, "iocp closed, sock id : %llu, socket name : %s, peer : %s",
+                    res._sock ? res._sock->GetID() : 0,
+                    res._sock ? res._sock->GetName() : "unknown", 
+                    res._sock ? res._sock->GetPeer() : "unknown");
                 return false;
             }
             else
             {
-                ZS_LOG_ERROR(network, "iocp error, socket name : %s, error : %lu", 
-                    res._sock ? res._sock->GetName() : "unknown", err);
+                ZS_LOG_ERROR(network, "iocp error, sock id : %llu, socket name : %s, peer : %s, error : %lu", 
+                    res._sock ? res._sock->GetID() : 0,
+                    res._sock ? res._sock->GetName() : "unknown", 
+                    res._sock ? res._sock->GetPeer() : "unknown", 
+                    err);
                 res._release = true;
             }
 
@@ -123,13 +130,18 @@ bool Dispatcher::Dequeue(std::size_t, std::queue<IOResult>& resList)
         // when using ConnectEx
         if (ERROR_CONNECTION_REFUSED == err)
         {
-            ZS_LOG_ERROR(network, "connection refused, socket name : %s",
-                res._sock ? res._sock->GetName() : "unknown");
+            ZS_LOG_ERROR(network, "connection refused, sock id : %llu, socket name : %s, peer : %s",
+                res._sock ? res._sock->GetID() : 0,
+                res._sock ? res._sock->GetName() : "unknown",
+                res._sock ? res._sock->GetPeer() : "unknown");
         }
         else
         {
-            ZS_LOG_ERROR(network, "GetQueuedCompletionStatus for dequeue failed, socket name : %s, err : %lu",
-                res._sock ? res._sock->GetName() : "unknown", err);
+            ZS_LOG_ERROR(network, "GetQueuedCompletionStatus for dequeue failed, sock id : %llu, socket name : %s, peer : %s, err : %lu",
+                res._sock ? res._sock->GetID() : 0,
+                res._sock ? res._sock->GetName() : "unknown", 
+                res._sock ? res._sock->GetPeer() : "unknown", 
+                err);
         }
 
         res._release = true;

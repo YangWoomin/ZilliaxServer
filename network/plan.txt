@@ -208,6 +208,31 @@ callback 함수를 꼭 shared_ptr 사용해야하나?
 	굳이?
 
 
+리눅스에서 accept 문제
+	onConnected를 recv를 위한 dispatcher bind보다 먼저 호출해줄 경우 바로 Send 호출이 되어서 send를 위한 dispatcher에 bind 요청이 먼저 처리될 수 있음
+		onConnected 호출 후에 recv를 위한 bind가 나중에 덮어 씌워지면 epoll에서 send를 위한 이벤트를 못 받게 됨
+			ㄴㄴ send를 위한 bind는 처음 recv를 위한 bind가 먼저 수행되지 않으면 실패함
+			send를 위한 bind는 modify이기 떄문임
+			여기서 실패하면 socket close를 하지 않을 것임
+				타이밍 문제라고 보고..
+			이 과정에서 실패하면 보낼 데이터는 send buffer에 남음
+			버퍼링 되다가 recv bind가 된 후 send 요청 시 버퍼링 되던 데이터와 함께 보내지게 됨
+				이게.. 맞나? 뭐 잘못된건 아닌데 예전 데이터를 보내는게 항상 옳은 것은 아닐 수도..
+	onConnected를 나중에 호출해줄 경우 dispatcher bind 순서는 보장이 됨
+		그러나 onConnected가 onReceived 보다 늦게 호출될 가능성이 있음
+		network_test의 chat_server처럼 connection들을 map에 관리할 경우 map에 없는 connectino에 대한 onReceived 호출이 됨
+	윈도우는 iocp 객체에 한번만 bind 해주면 되니깐 dispatcher bind 순서 문제가 않음
+	윈도우는 InitReceive를 호출해야 이벤트를 전달받을 수 있으므로 문제 없음
+
+리눅스에서 onReceived 호출 시 모든 connection iteration 하다가 죽는 이슈
+	broadcasting 한다고 map에 있는 모든 connection.Send 호출하다가 오류가 발생하면 socket close를 함
+	socket close 시 onClosed가 호출되는데 이 때 모든 connectino이 있는 map에서 해당 connection 제거
+	다시 Send 수행하던 곳에서는 이미 자기가 건드린 (왜냐면 recursive lock이니깐) map을 이어서 돌다가 죽음
+	윈도우는 raw socket close를 통해 iocp에서 별도 스레드가 깨어나 onClosed를 호출해줌
+		connection.Send를 호출하다가 오류가 발생한 스레드와 다른 스레드가 onClosed를 호출하니 문제없음
+	리눅스는 epoll에서 해당 소켓 unbind하고 close하려고 했으나 위처럼 close 호출을 유저 스레드가 하는 문제가 발생
+	좀 더 찾아보니깐 리눅스도 그냥 소켓을 닫아버리면 epoll에서도 예외 이벤트 발생시키고 interest list에서 제거한다고 함
+		https://man7.org/linux/man-pages/man7/epoll.7.html
 
 
 

@@ -45,6 +45,8 @@ static void signalHandler(int signum)
     {
         ZS_LOG_ERROR(network_test, "Unhandled interrupt signal %d received in ChatServer", signum);
     }
+
+    Network::Finalize();
     
     run = false;
 }
@@ -89,7 +91,7 @@ void ChatServer(Logger::Messenger msgr, IPVer ipVer, Protocol protocol, int32_t 
 
     ZS_LOG_INFO(network_test, "Network::Bind succeeded in ChatServer, sock id : %llu", sockID);
 
-    std::recursive_mutex mtx;
+    std::mutex mtx;
     std::unordered_map<ConnectionID, ConnectionSPtr> clients;
     std::atomic<std::size_t> totalMsgCount { 0 };
     std::atomic<std::size_t> totalMsgSize { 0 };
@@ -102,7 +104,7 @@ void ChatServer(Logger::Messenger msgr, IPVer ipVer, Protocol protocol, int32_t 
                 conn->GetID(), conn->GetPeer());
             
             {
-                std::lock_guard<std::recursive_mutex> locker(mtx);
+                std::lock_guard<std::mutex> locker(mtx);
 
                 clients.insert(std::make_pair(conn->GetID(), conn));
             }
@@ -128,7 +130,7 @@ void ChatServer(Logger::Messenger msgr, IPVer ipVer, Protocol protocol, int32_t 
             // broadcasting
             if (true == isBroadcasting)
             {
-                std::lock_guard<std::recursive_mutex> locker(mtx);
+                std::lock_guard<std::mutex> locker(mtx);
                 for (auto& ele : clients)
                 {
                     ele.second->Send(buf, len);
@@ -155,7 +157,7 @@ void ChatServer(Logger::Messenger msgr, IPVer ipVer, Protocol protocol, int32_t 
 
             ConnectionID connID = conn->GetID();
             {
-                std::lock_guard<std::recursive_mutex> locker(mtx);
+                std::lock_guard<std::mutex> locker(mtx);
 
                 clients.erase(connID);
             }

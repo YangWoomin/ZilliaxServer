@@ -51,8 +51,8 @@ void Epoll::Close()
     if (INVALID_FD_VALUE < _notiFd)
     {
         // send closing noti event
-        uint64_t u = CLOSE_SIGNAL;
-        write(_notiFd, &u, sizeof(u));
+        uint64_t sig = CLOSE_SIGNAL;
+        write(_notiFd, &sig, sizeof(sig));
     }
 }
 
@@ -105,6 +105,11 @@ bool Epoll::Bind(ISocket* sock, BindType bindType, EventType eventType)
         return false;   
     }
 
+    if (BindType::BIND == bindType)
+    {
+        sock->SetBound(true);
+    }
+
     // ZS_LOG_INFO(network, "binding socket on dispatcher succeeded, sock id : %llu, worker id : %llu, bind type : %d, event Type : %d, socket name : %s, peer : %s", 
     //     sock->GetID(), _workerID, bindType, eventType, sock->GetName(), sock->GetPeer());
 
@@ -142,8 +147,8 @@ bool Epoll::Dequeue(std::queue<IOResult>& resList)
         if (_notiFd == _events[i].data.fd)
         {
             // noti event
-            uint64_t u;
-            int32_t bytes = read(_events[i].data.fd, &u, sizeof(u));
+            uint64_t data;
+            int32_t bytes = read(_events[i].data.fd, &data, sizeof(data));
             if (0 >= bytes)
             {
                 ZS_LOG_ERROR(network, "read for noti event failed, err : %d", 
@@ -151,14 +156,9 @@ bool Epoll::Dequeue(std::queue<IOResult>& resList)
                 continue; // ignore this event at this time
             }
 
-            if (CLOSE_SIGNAL == u)
-            {
-                // closing noti event
-                ZS_LOG_WARN(network, "epoll is being closed in dispatcher");
-                return false;
-            }
-
-            continue;
+            // this event should be close event
+            ZS_LOG_WARN(network, "epoll is being closed in dispatcher");
+            return false;
         }
 
         ISocket* sock = static_cast<ISocket*>(_events[i].data.ptr);
@@ -172,11 +172,16 @@ bool Epoll::Dequeue(std::queue<IOResult>& resList)
 
         if (_events[i].events & (EPOLLERR | EPOLLHUP | EPOLLRDHUP))
         {
-            ZS_LOG_WARN(network, "epoll error occurred, events : %d, socket name : %s, peer : %s",
-                _events[i].events, sock->GetName(), sock->GetPeer());
+            if (SocketType::CONNECTOR == res._sock->GetType())
+            {
+                continue; // trying to connect...
+            }
+
+            ZS_LOG_WARN(network, "epoll error occurred, events : %d, sock id : %llu, socket name : %s, peer : %s",
+                _events[i].events, sock->GetID(), sock->GetName(), sock->GetPeer());
             
-            // unbind this socket from epoll object
-            res._sock->Close();
+            res._release = true;
+            resList.push(res);
         }
         
         if (0 != (EPOLLIN & _events[i].events))
@@ -208,9 +213,12 @@ bool Epoll::Dequeue(std::queue<IOResult>& resList)
                     sock->Close();
                     continue;
                 }
-                if (true == later)
+                if (false == res._release)
                 {
-                    continue; // retry later
+                    if (true == later)
+                    {
+                        continue; // retry later
+                    }
                 }
             }
             else
@@ -221,14 +229,12 @@ bool Epoll::Dequeue(std::queue<IOResult>& resList)
             }
 
             resList.push(res);
-            //res.Reset();
         }
 
         if (0 != (EPOLLOUT & _events[i].events))
         {
             res._eventType = EventType::OUTBOUND;
             resList.push(res);
-            //res.Reset();
         }
     }
 
@@ -281,6 +287,18 @@ void Dispatcher::Finalize()
     ZS_LOG_INFO(network, "epolls finalized");
 }
 
+bool Dispatcher::Dequeue(std::size_t workerID, std::queue<IOResult>& resList)
+{
+    if (_epolls.size() <= workerID)
+    {
+        ZS_LOG_ERROR(network, "invalid worker id for dequeue, worker id : %llu",
+            workerID);
+        return false;
+    }
+
+    return _epolls[workerID]->Dequeue(resList);
+}
+
 void Dispatcher::SetOwner(std::size_t workerID)
 {
     if (_epolls.size() <= workerID)
@@ -297,15 +315,15 @@ bool Dispatcher::Bind(std::size_t workerID, ISocket* sock, BindType bindType, Ev
 {
     if (_epolls.size() <= workerID)
     {
-        ZS_LOG_ERROR(network, "invalid worker id for bind, worker id : %llu, socket name : %s, peer : %s", 
-            workerID, sock->GetName(), sock->GetPeer());
+        ZS_LOG_ERROR(network, "invalid worker id for bind, worker id : %llu, sock id : %llu, socket name : %s, peer : %s", 
+            workerID, sock->GetID(), sock->GetName(), sock->GetPeer());
         return false;
     }
 
     if (false == _epolls[workerID]->Bind(sock, bindType, eventType))
     {
-        ZS_LOG_ERROR(network, "binding socket failed, worker id : %llu, socket name : %s, peer : %s",
-            workerID, sock->GetName(), sock->GetPeer());
+        ZS_LOG_ERROR(network, "binding socket failed, worker id : %llu, sock id : %llu, socket name : %s, peer : %s",
+            workerID, sock->GetID(), sock->GetName(), sock->GetPeer());
         return false;
     }
 
@@ -313,18 +331,6 @@ bool Dispatcher::Bind(std::size_t workerID, ISocket* sock, BindType bindType, Ev
     //     workerID, sock->GetName(), sock->GetPeer());
 
     return true;
-}
-
-bool Dispatcher::Dequeue(std::size_t workerID, std::queue<IOResult>& resList)
-{
-    if (_epolls.size() <= workerID)
-    {
-        ZS_LOG_ERROR(network, "invalid worker id for dequeue, worker id : %llu",
-            workerID);
-        return false;
-    }
-
-    return _epolls[workerID]->Dequeue(resList);
 }
 
 #endif // defined(_POSIX_) 

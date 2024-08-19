@@ -132,7 +132,7 @@ namespace network
             
             if (false == initSend())
             {
-                ZS_LOG_WARN(network, "internal init send failed, sock id : %llu, socket name : %s, peer : %s", 
+                ZS_LOG_ERROR(network, "internal init send failed, sock id : %llu, socket name : %s, peer : %s", 
                     _sockID, GetName(), GetPeer());
                 Close();
                 return false;

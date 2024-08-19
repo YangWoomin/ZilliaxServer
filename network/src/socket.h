@@ -63,7 +63,10 @@ namespace network
         void                InvokeOnConnected()                 { if (_onConnected) _onConnected(_conn); }
         OnReceived          GetOnReceived()                     { return _onReceived; }
         OnClosed            GetOnClosed()                       { return _onClosed; }
+        void                InvokeOnClosed()                    { if (_onClosed) _onClosed(_conn); }
         void                SetConnection(ConnectionSPtr conn)  { _conn = conn; }
+        void                SetBound(bool val)                  { _isBound = val; }
+        bool                GetBound()          const           { return _isBound.load(); }
 
     protected:
         bool                    bind(int32_t port);
@@ -81,7 +84,7 @@ namespace network
         std::size_t             _workerID = 0;
         std::string             _name;
         std::string             _peer;
-        std::atomic<bool>       _isClosing { false };
+        std::atomic<bool>       _isBound { false };
         
         AcceptContext*          _aCtx = nullptr;
         ConnectContext*         _cCtx = nullptr;

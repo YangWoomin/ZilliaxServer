@@ -34,11 +34,11 @@ ISocket::~ISocket()
     _sock = INVALID_SOCKET;
 
     //if (nullptr != _onClosed && SocketType::ACCEPTER != _type)
-    if (nullptr != _onClosed)
-    {
-        // invoke the callback function on accepter
-        _onClosed(_conn);
-    }
+    // if (nullptr != _onClosed)
+    // {
+    //     // invoke the callback function on accepter
+    //     _onClosed(_conn);
+    // }
 
     if (nullptr != _aCtx)
     {
@@ -65,25 +65,6 @@ ISocket::~ISocket()
     }
 }
 
-void ISocket::Close()
-{
-    if (false == _isClosing.exchange(true))
-    {
-#if defined(_POSIX_)
-        _manager.Bind(_workerID, this, BindType::UNBIND, EventType::INBOUND);
-        _manager.RemoveSocket(_sockID);
-#endif //     defined(_POSIX_)
-
-        ZS_LOG_WARN(network, "socket is being destroyed, sock id : %llu, socket name : %s, peer : %s",
-            _sockID, GetName(), GetPeer());
-    }
-
-    if (INVALID_SOCKET != _sock)
-    {
-        CloseSocket(_sock);
-    }
-}
-
 bool ISocket::Bind(int32_t)
 {
     ZS_LOG_FATAL(network, "binding on this socket is not implemented, sock id : %llu, name : %s", 
@@ -105,6 +86,20 @@ bool ISocket::InitAccept()
         _sockID, _name.c_str());
 
     return false;
+}
+
+void ISocket::Close()
+{
+    if (true == _isBound.exchange(false))
+    {
+        ZS_LOG_WARN(network, "socket is being destroyed, sock id : %llu, socket name : %s, peer : %s",
+            _sockID, GetName(), GetPeer());
+    }
+
+    if (INVALID_SOCKET != _sock)
+    {
+        CloseSocket(_sock);
+    }
 }
 
 bool ISocket::InitConnect(const std::string&, int32_t)
@@ -243,13 +238,13 @@ bool ISocket::bind(int32_t port)
 #if defined(_POSIX_) 
 bool ISocket::modifyBindingOnDispatcher(EventType eventType)
 {
-    if (false == _isClosing.load())
+    if (true == _isBound.load())
     {
         return _manager.Bind(_workerID, this, BindType::MODIFY, eventType);
     }
     else
     {
-        ZS_LOG_ERROR(network, "this socket is being closed, socket id : %llu, socket name : %s, peer : %s", 
+        ZS_LOG_ERROR(network, "this socket is being closed or not bound yet, socket id : %llu, socket name : %s, peer : %s", 
             _sockID, GetName(), GetPeer());
         return false;
     }

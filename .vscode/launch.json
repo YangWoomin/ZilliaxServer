@@ -75,6 +75,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/output/bin/network_testd.out",
+            "args": ["--broadcast"],
             "cwd": "${workspaceFolder}/output/bin",
             "MIMode": "gdb",
             "miDebuggerPath": "/usr/bin/gdb",
