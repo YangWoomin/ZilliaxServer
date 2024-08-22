@@ -369,3 +369,32 @@ bool Helper::ConvertAddrInfoToSockAdddr(IPVer ipVer, addrinfo* in, int32_t port,
 
     return false;
 }
+
+bool Helper::CheckSocketConnected(SocketID id, Socket sock)
+{
+    int err;
+    socklen_t len = sizeof(err);
+    if (SOCKET_ERROR == getsockopt(sock, SOL_SOCKET, SO_ERROR, (char*)&err, &len))
+    {
+        ZS_LOG_ERROR(network, "getsockopt failed in check for socket connected, sock id : %llu, err : %d",
+            id, errno);
+        return false;
+    }
+
+    if (NO_ERROR != err)
+    {
+        if (CONN_REFUSED == err || CONN_TIMEOUT == err || 
+            CONN_HOSTUNREACH == err || CONN_NETUNREACH == err)
+        {
+            ZS_LOG_WARN(network, "the socket is not connected, sock id : %llu, err : %d",
+                id, err);
+            return false;
+        }
+
+        ZS_LOG_WARN(network, "the socket has an error, sock id : %llu, err : %d",
+            id, err);
+        return false;
+    }
+
+    return true;
+}

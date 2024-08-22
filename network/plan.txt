@@ -234,9 +234,44 @@ callback 함수를 꼭 shared_ptr 사용해야하나?
 	좀 더 찾아보니깐 리눅스도 그냥 소켓을 닫아버리면 epoll에서도 예외 이벤트 발생시키고 interest list에서 제거한다고 함
 		https://man7.org/linux/man-pages/man7/epoll.7.html
 
+WER 등록 방법
+	REG ADD "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps\network_testd.exe" /v DumpFolder /t REG_EXPAND_SZ /d C:\dumps
+	REG ADD "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps\network_testd.exe" /v DumpType /t REG_DWORD /d 2 /f
+	REG ADD "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps\network_testd.exe" /v DumpCount /t REG_DWORD /d 256 /f
 
+epoll_wait 쪽 release 맞춰주기
+	가능하면 EPOLLIN 이벤트 먼저 처리 후 release하도록 수정
+epoll_wait 쪽 accept 예외 처리 확인
+	실패한다고 해도 리슨 소켓 제거는 하지 않도록
 
+이 네트워크 모듈은 TCP 메시지에 대한 자체 프로토콜을 사용하고 있기 때문에 이 모듈을 사용하지 않는 다른 연결과는 제대로 통신이 안 됨
+	이 네트워크 모듈의 프로토콜에 맞춰서 보내거나 받아야 함
+	또는 이 네트워크 모듈에서 옵션으로 자체 TCP 메시징 프로토콜 on/off가 가능하게 해야 함
 
-
-
+리눅스 환경에서 몇몇 socket 정리가 안되는 이슈
+	두 번째 클라로 추가로 100개 접속시키다가 종료시키면 몇몇 소켓들이 정리가 안되는 이슈가 있음
+	:33779
+		epoll_ctl에 대한 에러 로그는 없고 continue send 호출했다가 실패함
+		continue send 호출할 때 실패하면 소켓을 닫아서 epoll_wait에서 깨어나 정리하길 바랐지만 깨어나지 않음
+			애초에 소켓에 문제가 있는 걸로 판단해서 이벤트가 발생하지 않는 것 같음
+	:41233
+		얘는 init send 할 때 epoll_ctl 호출했다가 실패함
+		마찬가지로 소켓을 닫고 epoll_wait에서 깨어나 정리하길 바랐지만 깨어나지 않음
+	:48045
+		얘는 연결 잘 되고 모든 epoll_ctl 호출도 문제 없었는데 epoll_wait에서 이벤트가 발생하지 않았음
+			init send 버퍼에는 데이터가 차는데 정작 sent bytes는 0임
+		이런 애들은 어떻게 처리해야해??
+	윈도우와 마찬가지로 epoll_wait에 대기하던 스레드가 처리할 수 있도록 이벤트 전달
+		소켓마다 전용 이벤트 생성?
+			ㄴㄴ 자원 낭비에 비효율적임
+	init send할 때 소켓 상태 확인 후 이상 시 소켓 종료
+		또는 send buffer 크기가 일정 크기를 넘어서면 종료
+			이건.. 맞나? 랜선 뽑힌 경우를 고려한건데 랜선 뽑혀도 send 해보면 알 수 있어서..
+			일단 비동기는 이게 맞긴함
+	-> 결과적으로 dispatcher 스레드가 socket close 호출 시 manager의 remove socket 호출
+	-> 외부 스레드가 socket close 호출 시 dispatcher에게 release 요청
+	-> 1차 수정하니깐 epoll_ctl 호출하다 실패하면 dispatcher에게 release 요청하는 부분 잘 수행됨
+		continue send 하다 실패하는 녀석들도 잘 정리됨
+		근데 아무 에러도 뱉지 않는 녀석들은 해제가 안됨
+	
 	

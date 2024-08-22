@@ -103,6 +103,8 @@ bool SocketTCPMessenger::PostReceive()
 
     _recvBuf.insert(_recvBuf.end(), _rCtx->_buf, _rCtx->_buf + _rCtx->_bytes);
 
+    _totalReceivedBytes += _rCtx->_bytes;
+
     while (true)
     {
         if (0 == _curMsgLen && sizeof(_curMsgLen) < _recvBuf.size())
@@ -123,6 +125,7 @@ bool SocketTCPMessenger::PostReceive()
 
             _recvBuf.erase(_recvBuf.begin(), _recvBuf.begin() + _curMsgLen);
             _curMsgLen = 0;
+            _totalReceivedMsgCount += 1;
             continue;
         }
 
@@ -137,7 +140,8 @@ bool SocketTCPMessenger::PostReceive()
 
 SocketTCPMessenger::~SocketTCPMessenger()
 {
-    
+    ZS_LOG_INFO(network, "total sending buffer bytes : %llu, total sent bytes : %llu, total sending message count : %llu,  total received bytes : %llu, total received message count : %llu, sock id : %llu, socket name : %s, peer : %s",
+        _totalBufferedBytes, _totalSentBytes, _totalBufferedMsgCount, _totalReceivedBytes, _totalReceivedMsgCount, _sockID, GetName(), GetPeer());
 }
 
 SocketTCPMessenger::SocketTCPMessenger(Manager& manager, SocketID sockID, IPVer ipVer, bool nonBlocking)

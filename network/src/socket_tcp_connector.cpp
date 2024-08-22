@@ -27,6 +27,11 @@ bool SocketTCPConnector::Bind(int32_t)
         return false;
     }
 
+    int32_t port = 0;
+    Helper::GetSockLocalAddr(_sock, _ipVer, _name, port);
+    _name = _name.c_str();
+    _name += (":" + std::to_string(port));
+
     ZS_LOG_INFO(network, "binding connect socket succeeded, socket id : %llu, socket name : %s", 
         _sockID, GetName());
 
@@ -86,8 +91,18 @@ bool SocketTCPConnector::PostConnect(bool& retry)
     Helper::GetSockRemoteAddr(_sock, _ipVer, _peer, remotePort);
     if (true == _peer.empty())
     {
-        ZS_LOG_ERROR(network, "GetSockRemoteAddr failed in post connect, sock id : %llu, socket name : %s",
-            _sockID, GetName());
+        int err = errno;
+        if (err == CONN_NOTCONN)
+        {
+            ZS_LOG_WARN(network, "connection is not established yet, sock id : %llu, socket name : %s",
+                _sockID, GetName());
+            
+            retry = true;
+            return true;
+        }
+
+        ZS_LOG_ERROR(network, "GetSockRemoteAddr failed in post connect, sock id : %llu, socket name : %s, err : %d",
+            _sockID, GetName(), err);
         return false;
     }
 

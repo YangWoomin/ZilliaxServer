@@ -15,7 +15,7 @@ DispatcherWorker::DispatcherWorker(Manager& manager, DispatcherSPtr dispatcher, 
     , _workerID(workerID)
 {
 #if defined(_POSIX_) 
-    _dispatcher->SetOwner(_workerID);
+    _dispatcher->SetOwner(_workerID, std::this_thread::get_id());
 #endif // defined(_POSIX_) 
 }
 
@@ -50,41 +50,42 @@ void DispatcherWorker::handle(IOResult& res)
         return;
     }
 
-    if (SocketType::ACCEPTER == res._sock->GetType())
+    if (false == res._release)
     {
-        _manager.HandleAccepted(res._sock);
-    }
-    else if (SocketType::CONNECTOR == res._sock->GetType())
-    {
-        res._release = !_manager.HandleConnected(res._sock);
-    }
-    else if (SocketType::MESSENGER == res._sock->GetType())
-    {
-        if (EventType::INBOUND == res._eventType)
+        if (SocketType::ACCEPTER == res._sock->GetType())
         {
-            _manager.HandleReceived(res._sock);
+            _manager.HandleAccepted(res._sock);
         }
-        else if (EventType::OUTBOUND == res._eventType)
+        else if (SocketType::CONNECTOR == res._sock->GetType())
         {
-            _manager.HandleSent(res._sock);
+            _manager.HandleConnected(res._sock);
+        }
+        else if (SocketType::MESSENGER == res._sock->GetType())
+        {
+            if (EventType::INBOUND == res._eventType)
+            {
+                _manager.HandleReceived(res._sock);
+            }
+            else if (EventType::OUTBOUND == res._eventType)
+            {
+                _manager.HandleSent(res._sock);
+            }
+            else
+            {
+                ZS_LOG_ERROR(network, "invalid event type of messenger, type : %d, socket name : %s",
+                    res._eventType, res._sock->GetName());
+            }
         }
         else
         {
-            ZS_LOG_ERROR(network, "invalid event type of messenger, type : %d, socket name : %s",
-                res._eventType, res._sock->GetName());
+            ZS_LOG_ERROR(network, "invalid socket type, type : %d, socket name : %s",
+                res._sock->GetType(), res._sock->GetName());
         }
     }
-    else
-    {
-        ZS_LOG_ERROR(network, "invalid socket type, type : %d, socket name : %s",
-            res._sock->GetType(), res._sock->GetName());
-    }
-
+    
     if (true == res._release)
     {
         // release the socket
         _manager.RemoveSocket(res._sock->GetID());
-
-        res._sock->InvokeOnClosed();
     }
 }

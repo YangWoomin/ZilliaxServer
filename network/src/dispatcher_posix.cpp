@@ -8,7 +8,7 @@
 using namespace zs::common;
 using namespace zs::network;
 
-#if defined(_POSIX_) 
+#if defined(_POSIX_)
 
 bool Epoll::Initialize()
 {
@@ -24,20 +24,15 @@ bool Epoll::Initialize()
         return false;
     }
 
-    // set epoll noti event
-    _notiFd = eventfd(0, 0);
-    if (INVALID_FD_VALUE == _notiFd)
+    if (false == bindEvent(_closeNotiFd))
     {
-        ZS_LOG_ERROR(network, "eventfd for noti event failed, err : %d", errno);
+        ZS_LOG_ERROR(network, "binding for close noti event failed");
         return false;
     }
 
-    struct epoll_event event;
-    event.events = EPOLLIN;
-    event.data.fd = _notiFd;
-    if (INVALID_RESULT == epoll_ctl(_epoll, EPOLL_CTL_ADD, _notiFd, &event))
+    if (false == bindEvent(_releaseNotiFd))
     {
-        ZS_LOG_ERROR(network, "epoll_ctl for noti event failed, err : %d", errno);
+        ZS_LOG_ERROR(network, "binding for socket release noti event failed");
         return false;
     }
 
@@ -48,11 +43,11 @@ bool Epoll::Initialize()
 
 void Epoll::Close()
 {
-    if (INVALID_FD_VALUE < _notiFd)
+    if (INVALID_FD_VALUE < _closeNotiFd)
     {
-        // send closing noti event
+        // send close noti event
         uint64_t sig = CLOSE_SIGNAL;
-        write(_notiFd, &sig, sizeof(sig));
+        write(_closeNotiFd, &sig, sizeof(sig));
     }
 }
 
@@ -63,6 +58,16 @@ void Epoll::Finalize()
         free(_events);
     }
 
+    if (INVALID_FD_VALUE < _closeNotiFd)
+    {
+        close(_closeNotiFd);
+    }
+
+    if (INVALID_FD_VALUE < _releaseNotiFd)
+    {
+        close(_releaseNotiFd);
+    }
+
     if (INVALID_FD_VALUE != _epoll)
     {
         close(_epoll);
@@ -70,9 +75,10 @@ void Epoll::Finalize()
     }
 }
 
-void Epoll::SetOwner(std::size_t workerID)
+void Epoll::SetOwner(std::size_t workerID, std::thread::id tid)
 {
     _workerID = workerID;
+    _tid = tid;
 }
 
 bool Epoll::Bind(ISocket* sock, BindType bindType, EventType eventType)
@@ -84,6 +90,7 @@ bool Epoll::Bind(ISocket* sock, BindType bindType, EventType eventType)
         return false;
     }
     
+    // bind the socket
     struct epoll_event event;
     std::memset(&event, 0, sizeof(event));
     if (BindType::BIND == bindType)
@@ -91,6 +98,7 @@ bool Epoll::Bind(ISocket* sock, BindType bindType, EventType eventType)
         event.events |= eventType;
 
         sock->SetWorkerID(_workerID);
+        sock->SetOwner(_tid);
     }
     else if (BindType::MODIFY == bindType)
     {
@@ -144,14 +152,14 @@ bool Epoll::Dequeue(std::queue<IOResult>& resList)
     {
         IOResult res;
 
-        if (_notiFd == _events[i].data.fd)
+        if (_closeNotiFd == _events[i].data.fd)
         {
-            // noti event
+            // close noti event
             uint64_t data;
             int32_t bytes = read(_events[i].data.fd, &data, sizeof(data));
             if (0 >= bytes)
             {
-                ZS_LOG_ERROR(network, "read for noti event failed, err : %d", 
+                ZS_LOG_ERROR(network, "read for close noti event failed, err : %d", 
                     errno);
                 continue; // ignore this event at this time
             }
@@ -159,6 +167,31 @@ bool Epoll::Dequeue(std::queue<IOResult>& resList)
             // this event should be close event
             ZS_LOG_WARN(network, "epoll is being closed in dispatcher");
             return false;
+        }
+
+        if (_releaseNotiFd == _events[i].data.fd)
+        {
+            uint64_t data;
+            int32_t bytes = read(_events[i].data.fd, &data, sizeof(data));
+            if (0 >= bytes)
+            {
+                ZS_LOG_ERROR(network, "read for socket release noti event failed, err : %d", 
+                    errno);
+                continue; // ignore this event at this time
+            }
+
+            // socket release noti event
+            std::lock_guard<std::mutex> locker(_lock);
+
+            while (false == _releaseSocks.empty())
+            {
+                res._sock = _releaseSocks.front();
+                res._release = true;
+                resList.push(res);
+                _releaseSocks.pop();
+            }
+
+            continue;
         }
 
         ISocket* sock = static_cast<ISocket*>(_events[i].data.ptr);
@@ -170,21 +203,7 @@ bool Epoll::Dequeue(std::queue<IOResult>& resList)
             continue;
         }
 
-        if (_events[i].events & (EPOLLERR | EPOLLHUP | EPOLLRDHUP))
-        {
-            if (SocketType::CONNECTOR == res._sock->GetType())
-            {
-                continue; // trying to connect...
-            }
-
-            ZS_LOG_WARN(network, "epoll error occurred, events : %d, sock id : %llu, socket name : %s, peer : %s",
-                _events[i].events, sock->GetID(), sock->GetName(), sock->GetPeer());
-            
-            res._release = true;
-            resList.push(res);
-        }
-        
-        if (0 != (EPOLLIN & _events[i].events))
+        if (EPOLLIN & _events[i].events)
         {
             res._eventType = EventType::INBOUND;
 
@@ -194,7 +213,8 @@ bool Epoll::Dequeue(std::queue<IOResult>& resList)
                 {
                     if (false == sock->Accept())
                     {
-                        sock->Close();
+                        // continue listening
+                        //sock->Close();
                         continue;
                     }
                 }
@@ -211,12 +231,15 @@ bool Epoll::Dequeue(std::queue<IOResult>& resList)
                 if (false == sock->Receive(later))
                 {
                     sock->Close();
+                    //res._release = true;
                     continue;
                 }
                 if (false == res._release)
                 {
                     if (true == later)
                     {
+                        ZS_LOG_WARN(network, "receiving is deferred in dispatcher, sock id : %llu, socket name : %s, peer : %s",
+                            sock->GetID(), sock->GetName(), sock->GetPeer());
                         continue; // retry later
                     }
                 }
@@ -231,11 +254,68 @@ bool Epoll::Dequeue(std::queue<IOResult>& resList)
             resList.push(res);
         }
 
-        if (0 != (EPOLLOUT & _events[i].events))
+        if (EPOLLOUT & _events[i].events)
         {
             res._eventType = EventType::OUTBOUND;
             resList.push(res);
         }
+
+        if ((EPOLLERR | EPOLLHUP | EPOLLRDHUP) & _events[i].events)
+        {
+            if (SocketType::CONNECTOR == res._sock->GetType())
+            {
+                ZS_LOG_WARN(network, "connector is not trying to connect yet, sock id : %llu, socket name : %s, peer : %s",
+                    sock->GetID(), sock->GetName(), sock->GetPeer());
+                continue; // trying to connect...
+            }
+
+            ZS_LOG_WARN(network, "epoll error occurred, events : %d, sock id : %llu, socket name : %s, peer : %s",
+                _events[i].events, sock->GetID(), sock->GetName(), sock->GetPeer());
+            
+            sock->Close();
+            // res._release = true;
+            // resList.push(res);
+        }
+    }
+
+    return true;
+}
+
+void Epoll::Release(SocketSPtr sock)
+{
+    if (INVALID_FD_VALUE < _releaseNotiFd)
+    {
+        {
+            std::lock_guard<std::mutex> locker(_lock);
+
+            _releaseSocks.push(sock);
+        }
+        
+        // send socket release noti event
+        uint64_t sig = RELEASE_SIGNAL;
+        write(_releaseNotiFd, &sig, sizeof(sig));
+    }
+}
+
+bool Epoll::bindEvent(int32_t& fd)
+{
+    fd = eventfd(0, 0);
+    if (INVALID_FD_VALUE == fd)
+    {
+        ZS_LOG_ERROR(network, "eventfd for noti event failed, err : %d", errno);
+        return false;
+    }
+
+    struct epoll_event event;
+    std::memset(&event, 0, sizeof(event));
+    event.events = EPOLLIN;
+    event.data.fd = fd;
+    if (INVALID_RESULT == epoll_ctl(_epoll, EPOLL_CTL_ADD, fd, &event))
+    {
+        ZS_LOG_ERROR(network, "epoll_ctl for noti event failed, err : %d", errno);
+        close(fd);
+        fd = INVALID_FD_VALUE;
+        return false;
     }
 
     return true;
@@ -299,7 +379,7 @@ bool Dispatcher::Dequeue(std::size_t workerID, std::queue<IOResult>& resList)
     return _epolls[workerID]->Dequeue(resList);
 }
 
-void Dispatcher::SetOwner(std::size_t workerID)
+void Dispatcher::SetOwner(std::size_t workerID, std::thread::id tid)
 {
     if (_epolls.size() <= workerID)
     {
@@ -308,7 +388,7 @@ void Dispatcher::SetOwner(std::size_t workerID)
         return;
     }
 
-    _epolls[workerID]->SetOwner(workerID);
+    _epolls[workerID]->SetOwner(workerID, tid);
 }
 
 bool Dispatcher::Bind(std::size_t workerID, ISocket* sock, BindType bindType, EventType eventType)
@@ -331,6 +411,18 @@ bool Dispatcher::Bind(std::size_t workerID, ISocket* sock, BindType bindType, Ev
     //     workerID, sock->GetName(), sock->GetPeer());
 
     return true;
+}
+
+void Dispatcher::Release(std::size_t workerID, SocketSPtr sock)
+{
+    if (_epolls.size() <= workerID)
+    {
+        ZS_LOG_ERROR(network, "invalid worker id for socket release, worker id : %llu",
+            workerID);
+        return;
+    }
+
+    _epolls[workerID]->Release(sock);
 }
 
 #endif // defined(_POSIX_) 

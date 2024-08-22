@@ -38,8 +38,8 @@ bool SocketTCPMessenger::InitReceive()
         int err = errno;
         if (WSA_IO_PENDING != err)
         {
-            ZS_LOG_ERROR(network, "WSARecv failed, sock id : %llu, socket name : %s, peer : %s", 
-                _sockID, GetName(), GetPeer());
+            ZS_LOG_ERROR(network, "WSARecv failed, sock id : %llu, socket name : %s, peer : %s, err : %d", 
+                _sockID, GetName(), GetPeer(), err);
             return false;
         }
     }
@@ -66,6 +66,9 @@ bool SocketTCPMessenger::PostSend()
     std::vector<uint8_t>& buf = _sendBuf.front();
     if (buf.size() <= _sCtx->_bytes)
     {
+        // debug
+        _totalSentBytes += _sCtx->_bytes;
+
         // all data is sent in the buffer
         buf.clear();
 
@@ -101,8 +104,8 @@ bool SocketTCPMessenger::send()
         int err = errno;
         if (WSA_IO_PENDING != err)
         {
-            ZS_LOG_ERROR(network, "WSASend failed, sock id : %llu, socket name : %s, peer : %s", 
-                _sockID, GetName(), GetPeer());
+            ZS_LOG_ERROR(network, "WSASend failed, sock id : %llu, socket name : %s, peer : %s, err : %d", 
+                _sockID, GetName(), GetPeer(), err);
             return false;
         }
     }

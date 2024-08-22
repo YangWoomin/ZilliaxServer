@@ -55,6 +55,12 @@ bool SocketTCPMessenger::Receive(bool& later)
             _sockID, GetName(), GetPeer(), err);
         return false;
     }
+    else if (0 == _rCtx->_bytes)
+    {
+        ZS_LOG_WARN(network, "0 byte received, sock id : %llu, socket name : %s, peer : %s",
+            _sockID, GetName(), GetPeer());
+        return false;
+    }
 
     return true;
 }
@@ -78,6 +84,9 @@ bool SocketTCPMessenger::PostSend()
     std::vector<uint8_t>& buf = _sendBuf.front();
     if ((ssize_t)buf.size() <= _sCtx->_bytes)
     {
+        // debug
+        _totalSentBytes += _sCtx->_bytes;
+
         // all data is sent in the buffer
         buf.clear();
 

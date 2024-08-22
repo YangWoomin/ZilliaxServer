@@ -67,35 +67,37 @@ namespace network
         void                SetConnection(ConnectionSPtr conn)  { _conn = conn; }
         void                SetBound(bool val)                  { _isBound = val; }
         bool                GetBound()          const           { return _isBound.load(); }
+        void                SetOwner(std::thread::id tid)       { _owner = tid; }
 
     protected:
-        bool                    bind(int32_t port);
-#if defined(_POSIX_) 
-        bool                    modifyBindingOnDispatcher(EventType eventType);
-#endif // defined(_POSIX_) 
+        bool                bind(int32_t port);
+#if defined(_POSIX_)
+        bool                modifyBindingOnDispatcher(EventType eventType);
+#endif // defined(_POSIX_)
 
-        Manager&                _manager;
-        SocketID                _sockID;
-        SocketType              _type;
-        Socket                  _sock = INVALID_SOCKET;
-        IPVer                   _ipVer;
-        Protocol                _protocol;
-        int32_t                 _port = 0;
-        std::size_t             _workerID = 0;
-        std::string             _name;
-        std::string             _peer;
-        std::atomic<bool>       _isBound { false };
+        Manager&                        _manager;
+        SocketID                        _sockID;
+        SocketType                      _type;
+        Socket                          _sock = INVALID_SOCKET;
+        IPVer                           _ipVer;
+        Protocol                        _protocol;
+        int32_t                         _port = 0;
+        std::size_t                     _workerID = 0;
+        std::string                     _name;
+        std::string                     _peer;
+        std::atomic<bool>               _isBound { false };
+        std::atomic<std::thread::id>    _owner;
         
-        AcceptContext*          _aCtx = nullptr;
-        ConnectContext*         _cCtx = nullptr;
-        SendRecvContext*        _sCtx = nullptr;
-        SendRecvContext*        _rCtx = nullptr;
+        AcceptContext*                  _aCtx = nullptr;
+        ConnectContext*                 _cCtx = nullptr;
+        SendRecvContext*                _sCtx = nullptr;
+        SendRecvContext*                _rCtx = nullptr;
 
-        OnConnected             _onConnected { nullptr };
-        OnReceived              _onReceived { nullptr };
-        OnClosed                _onClosed { nullptr };
+        OnConnected                     _onConnected { nullptr };
+        OnReceived                      _onReceived { nullptr };
+        OnClosed                        _onClosed { nullptr };
 
-        ConnectionSPtr          _conn { nullptr };
+        ConnectionSPtr                  _conn { nullptr };
 
         ISocket(const ISocket&) = delete;
         ISocket(const ISocket&&) = delete;

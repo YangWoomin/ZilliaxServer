@@ -4,6 +4,7 @@
 
 #include    "network/network.h"
 #include    "socket.h"
+#include    "helper.h"
 
 namespace zs
 {
@@ -38,6 +39,13 @@ namespace network
         std::deque<std::vector<uint8_t>>    _sendBufPool;
         Lock                                _sendLock;
 
+        // debug
+        std::size_t                         _totalBufferedBytes = 0;
+        std::size_t                         _totalBufferedMsgCount = 0;
+        std::size_t                         _totalSentBytes = 0;
+        std::size_t                         _totalReceivedBytes = 0;
+        std::size_t                         _totalReceivedMsgCount = 0;
+
         std::vector<uint8_t>                _recvBuf;
         uint32_t                            _curMsgLen = 0;
         Lock                                _recvLock;
@@ -63,6 +71,14 @@ namespace network
             {
                 ZS_LOG_ERROR(network, "invalid messenger socket in init send, sock id : %llu, socket name : %s, peer : %s", 
                     _sockID, GetName(), GetPeer());
+                return false;
+            }
+
+            if (false == Helper::CheckSocketConnected(_sockID, _sock))
+            {
+                ZS_LOG_ERROR(network, "the socket is not connected in init send, sock id : %llu, socket name : %s, peer : %s", 
+                    _sockID, GetName(), GetPeer());
+                Close();
                 return false;
             }
 
@@ -116,6 +132,9 @@ namespace network
                     newBuf.insert(newBuf.end(), (uint8_t*)&buf[0], (uint8_t*)&buf[0] + len);
                     _sendBuf.push(std::move(newBuf));
                 }
+
+                _totalBufferedBytes += (len + sizeof(len2));
+                _totalBufferedMsgCount += 1;
 
                 if (1 < _sendBuf.size())
                 {

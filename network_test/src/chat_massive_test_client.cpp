@@ -143,15 +143,9 @@ void ChatMassiveTestClient(Logger::Messenger msgr, IPVer ipVer, Protocol protoco
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
-    for (std::size_t i = 0; i < clientCount; ++i)
-    {
-        std::size_t recvMsgCount = testers[i]->GetRecvMsgCount();
-        std::size_t recvMsgSize = testers[i]->GetRecvMsgSize();
-        ZS_LOG_INFO(network_test, "client : %llu, received message count : %llu, size : %llu", 
-            i, recvMsgCount, recvMsgSize);
-    }
-
     Network::Finalize();
+
+    std::this_thread::sleep_for(std::chrono::seconds(5));
 }
 
 bool ChatMassiveTester::Connect(IPVer ipVer, Protocol protocol, const std::string& serverHost, int32_t serverPort)
@@ -172,8 +166,6 @@ bool ChatMassiveTester::Connect(IPVer ipVer, Protocol protocol, const std::strin
     // OnReceived
     OnReceived onReceived = [this](ConnectionSPtr conn, const char* buf, std::size_t len) {
         ++_recvMsgCount;
-
-        _recvMsgSize += len;
 
         if (0 == _recvMsgCount.load() % 1000)
         {

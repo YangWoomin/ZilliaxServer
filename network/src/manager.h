@@ -28,7 +28,7 @@ namespace network
         bool Connect(IPVer ipVer, Protocol protocol, const std::string& host, int32_t port, OnConnected onConnected, OnReceived onReceived, OnClosed onClosed);
 
         void HandleAccepted(SocketSPtr sock);
-        bool HandleConnected(SocketSPtr sock);
+        void HandleConnected(SocketSPtr sock);
         void HandleReceived(SocketSPtr sock);
         void HandleSent(SocketSPtr sock);
 
@@ -38,6 +38,9 @@ namespace network
         SocketID GenSockID();
 #if defined(_POSIX_)
         bool Bind(std::size_t workerID, ISocket* sock, BindType bindType, EventType eventType);
+        void ReleaseSocket(std::size_t workerID, SocketSPtr sock);
+#elif defined (_WIN64_)
+        bool ReleaseSocket(SocketSPtr sock);
 #endif // defined(_POSIX_) 
 
     private:

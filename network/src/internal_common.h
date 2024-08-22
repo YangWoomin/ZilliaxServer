@@ -77,6 +77,7 @@ namespace network
 #define CONN_TIMEOUT            ETIMEDOUT
 #define CONN_HOSTUNREACH        EHOSTUNREACH
 #define CONN_NETUNREACH         ENETUNREACH
+#define CONN_NOTCONN            ENOTCONN
 #define INFINITE                -1
 #define CloseSocket             close
 
@@ -91,6 +92,7 @@ namespace network
 #define CONN_TIMEOUT            WSAETIMEDOUT
 #define CONN_HOSTUNREACH        WSAEHOSTUNREACH
 #define CONN_NETUNREACH         WSAENETUNREACH
+#define CONN_NOTCONN            WSAENOTCONN
 #define errno                   WSAGetLastError()
 #define CloseSocket             closesocket
 
@@ -124,6 +126,11 @@ namespace network
         void Reset()
         {}
 #endif // _WIN64_
+    };
+
+    struct ReleaseContext : public IOContext
+    {
+        SocketSPtr      _sock { nullptr };
     };
 
     struct AcceptContext : public IOContext

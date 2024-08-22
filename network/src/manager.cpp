@@ -80,6 +80,12 @@ void Manager::Stop()
         _dispatcher->Finalize();
         _dispatcher.reset();
     }
+
+    for (auto& ele : _sockets)
+    {
+        ele.second->InvokeOnClosed();
+    }
+    _sockets.clear();
 }
 
 bool Manager::IsStopped()
@@ -210,6 +216,8 @@ bool Manager::Connect(IPVer ipVer, Protocol protocol, const std::string& host, i
         return false;
     }
 
+    sock->SetCallback(onConnected, onReceived, onClosed);
+
     if (false == sock->Bind(0))
     {
         ZS_LOG_ERROR(network, "binding connect socket failed, sock id : %llu, ip ver : %d, protocol : %d, host : %s, port : %d",
@@ -233,7 +241,14 @@ bool Manager::Connect(IPVer ipVer, Protocol protocol, const std::string& host, i
         return false;
     }
 
-    sock->SetCallback(onConnected, onReceived, onClosed);
+    // test
+    // std::string host2;
+    // int32_t port2;
+    // Helper::GetSockRemoteAddr(sock->GetSocket(), sock->GetIPVer(), host2, port2);
+    // if (true == host2.empty())
+    // {
+    //     ZS_LOG_ERROR(network, "GetSockRemoteAddr, err : %d", errno);
+    // }
 
     if (false == sock->InitConnect(host, port))
     {
@@ -257,8 +272,8 @@ void Manager::HandleAccepted(SocketSPtr sock)
     {
         ZS_LOG_ERROR(network, "post accepting failed, sock id : %llu, socket name : %s",
             sock->GetID(), sock->GetName());
-        sock->Close();
-        return;
+        // sock->Close();
+        // return;
     }
 
     // if in windows reinitiate async accept for the next socket 
@@ -268,6 +283,13 @@ void Manager::HandleAccepted(SocketSPtr sock)
             sock->GetID(), sock->GetName());
         sock->Close(); // close the listen socket
         //return; // continue for the new socket
+    }
+
+    // accepting failed
+    // continue listening
+    if (nullptr == newSock)
+    {
+        return;
     }
 
     if (false == InsertSocket(newSock))
@@ -296,7 +318,7 @@ void Manager::HandleAccepted(SocketSPtr sock)
     // bind the accepted socket to dispatcher for data received event
     std::size_t workerID = 0;
     workerID = _workerAllocator++ % _dispatcherWorkers.size();
-    if (false == _dispatcher->Bind(workerID, newSock.get(), BindType::BIND, EventType::INBOUND))
+    if (false == _dispatcher->Bind(workerID, newSock.get(), BindType::BIND, (EventType)(EventType::INBOUND | EventType::OUTBOUND)))
 #elif defined(_WIN64_)
     if (false == _dispatcher->Bind(newSock.get()))
 #endif // defined(_POSIX_) 
@@ -318,10 +340,13 @@ void Manager::HandleAccepted(SocketSPtr sock)
     }
 #endif // defined(_WIN64_)
 
+    ZS_LOG_INFO(network, "accepting succeeded, sock id : %llu, socket name : %s, peer : %s",
+        newSock->GetID(), newSock->GetName(), newSock->GetPeer());
+
     return;
 }
 
-bool Manager::HandleConnected(SocketSPtr sock)
+void Manager::HandleConnected(SocketSPtr sock)
 {
     bool retry = false;
     if (false == sock->PostConnect(retry))
@@ -329,11 +354,11 @@ bool Manager::HandleConnected(SocketSPtr sock)
         ZS_LOG_ERROR(network, "post connect failed, sock id : %llu, socket name : %s",
             sock->GetID(), sock->GetName());
         sock->Close();
-        return false;
+        return;
     }
     if (true == retry)
     {
-        return true;
+        return;
     }
 
     // invoke onConnected with the connection as a parameter
@@ -345,10 +370,10 @@ bool Manager::HandleConnected(SocketSPtr sock)
         ZS_LOG_ERROR(network, "init receiving failed in handling connected, sock id : %llu, socket name : %s, peer : %s",
             sock->GetID(), sock->GetName(), sock->GetPeer());
         sock->Close();
-        return false;
+        return;
     }
 
-    return true;
+    return;
 }
 
 void Manager::HandleReceived(SocketSPtr sock)
@@ -412,9 +437,22 @@ bool Manager::InsertSocket(SocketSPtr sock)
 
 void Manager::RemoveSocket(SocketID sockID)
 {
-    std::lock_guard<std::mutex> locker(_lock);
+    SocketSPtr sock { nullptr };
+    {
+        std::lock_guard<std::mutex> locker(_lock);
 
-    _sockets.erase(sockID);
+        auto finder = _sockets.find(sockID);
+        if (_sockets.end() != finder)
+        {
+            sock = finder->second;
+            _sockets.erase(finder);
+        }
+    }
+    
+    if (nullptr != sock)
+    {
+        sock->InvokeOnClosed();
+    }
 }
 
 SocketSPtr Manager::GetSocket(SocketID sockID)
@@ -446,6 +484,18 @@ bool Manager::Bind(std::size_t workerID, ISocket* sock, BindType bindType, Event
     }
 
     return true;
+}
+
+void Manager::ReleaseSocket(std::size_t workerID, SocketSPtr sock)
+{
+    _dispatcher->Release(workerID, sock);
+}
+
+#elif defined(_WIN64_)
+
+bool Manager::ReleaseSocket(SocketSPtr sock)
+{
+    return _dispatcher->Release(sock);
 }
 
 #endif // defined(_POSIX_) 

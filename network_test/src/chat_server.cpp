@@ -131,9 +131,16 @@ void ChatServer(Logger::Messenger msgr, IPVer ipVer, Protocol protocol, int32_t 
             if (true == isBroadcasting)
             {
                 std::lock_guard<std::mutex> locker(mtx);
-                for (auto& ele : clients)
+                for (auto it = clients.begin(); clients.end() != it; )
                 {
-                    ele.second->Send(buf, len);
+                    if (false == it->second->Send(buf, len))
+                    {
+                        it = clients.erase(it);
+                    }
+                    else
+                    {
+                        ++it;
+                    }
                 }
             }
             else

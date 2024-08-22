@@ -19,8 +19,7 @@ class ChatMassiveTester
 public:
     bool Connect(IPVer ipVer, Protocol protocol, const std::string& serverHost, int32_t serverPort);
     void Send(const std::vector<std::string>& text);
-    std::size_t GetRecvMsgCount() const { return _recvMsgCount; }
-    std::size_t GetRecvMsgSize() const { return _recvMsgSize; }
+    std::size_t GetConnID() const { return _server->GetID(); }
     
     ChatMassiveTester() = default;
     ~ChatMassiveTester() = default;
@@ -28,6 +27,5 @@ public:
 private:
     ConnectionSPtr              _server;
     std::atomic<std::size_t>    _recvMsgCount { 0 };
-    std::atomic<std::size_t>    _recvMsgSize { 0 };
 };
 

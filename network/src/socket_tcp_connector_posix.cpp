@@ -76,6 +76,27 @@ bool SocketTCPConnector::postConnect(bool& retry)
         return false;
     }
 
+    // if trying to connect never happens
+    int32_t remotePort = 0;
+    std::string remoteHost;
+    Helper::GetSockRemoteAddr(_sock, _ipVer, remoteHost, remotePort);
+    if (true == remoteHost.empty())
+    {
+        int err = errno;
+        if (err == CONN_NOTCONN)
+        {
+            ZS_LOG_WARN(network, "connection is not established yet in internal post connect, sock id : %llu, socket name : %s",
+                _sockID, GetName());
+            
+            retry = true;
+            return true;
+        }
+
+        ZS_LOG_ERROR(network, "GetSockRemoteAddr failed in internal post connect, sock id : %llu, socket name : %s, err : %d",
+            _sockID, GetName(), err);
+        return false;
+    }
+
     // unbind the connected socket from dispatcher for connected event
     // bind the connected socket to dispatcher for data received event
     if (false == modifyBindingOnDispatcher(EventType::INBOUND))

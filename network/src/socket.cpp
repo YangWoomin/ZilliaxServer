@@ -90,15 +90,28 @@ bool ISocket::InitAccept()
 
 void ISocket::Close()
 {
+    if (INVALID_SOCKET != _sock)
+    {
+        CloseSocket(_sock);
+    }
+
     if (true == _isBound.exchange(false))
     {
         ZS_LOG_WARN(network, "socket is being destroyed, sock id : %llu, socket name : %s, peer : %s",
             _sockID, GetName(), GetPeer());
-    }
 
-    if (INVALID_SOCKET != _sock)
-    {
-        CloseSocket(_sock);
+#if defined(_WIN64_)
+        _manager.ReleaseSocket(GetSPtr());
+#elif defined(_POSIX_)
+        if (std::this_thread::get_id() == _owner)
+        {
+            _manager.RemoveSocket(_sockID);
+        }
+        else
+        {
+            _manager.ReleaseSocket(_workerID, GetSPtr());
+        }
+#endif // defined(_WIN64_)
     }
 }
 

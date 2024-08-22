@@ -94,6 +94,13 @@
         "string_view": "cpp",
         "numbers": "cpp",
         "semaphore": "cpp",
-        "regex": "cpp"
+        "regex": "cpp",
+        "internet": "cpp",
+        "buffer": "cpp",
+        "executor": "cpp",
+        "io_context": "cpp",
+        "netfwd": "cpp",
+        "socket": "cpp",
+        "timer": "cpp"
     }
 }
