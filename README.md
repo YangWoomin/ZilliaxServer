@@ -264,7 +264,7 @@ make rebuild_debug
 ./network_testd.out --broadcast # you can quit by ctrl + c
 ```
 
-![image](https://github.com/user-attachments/assets/e6494c9a-0a50-43e5-b8d5-ef791c640470)
+![image](https://github.com/user-attachments/assets/77daaa69-e68f-4693-a4d9-1bfb179d4f9d)
 
 #### Chat Client
 * you can send messages one by one to the chat server on console stdin
@@ -275,7 +275,7 @@ make rebuild_debug
 ./network_testd.out --mode client # you can quit by typing "exit"
 ```
 
-![image](https://github.com/user-attachments/assets/f7067f36-36af-4279-a3c1-0a48a6109948)
+![image](https://github.com/user-attachments/assets/79d3c13f-d407-453e-882e-73a01e6cbf16)
 
 #### Chat Massive Test Client
 * this mode automatically sends text of sample test files in ./network_test/test_sample_files/* to the chat server
@@ -288,7 +288,8 @@ make rebuild_debug
 ./network_testd.out --mode mtc # you can quit by ctrl + c
 ```
 
-
+![image](https://github.com/user-attachments/assets/0fc8387f-df15-4e1b-b148-89ebfdb48a18)
+![image](https://github.com/user-attachments/assets/8bbb5be8-3c1c-4fa3-bd5e-72e6b3a0e32c)
 
 ### Additional Explanation and Notes
 #### 
