@@ -158,10 +158,10 @@
 
 | Feature | Implemented | Tested |
 |----------|----------|----------|
-| IPv4 | 	✅ | ✅ |
-| IPv6 | :heavy_check_mark: | :white_check_mark: |
-| TCP | :heavy_check_mark: | :heavy_check_mark: |
-| UDP | :white_check_mark: | :white_check_mark: |
+| IPv4 | ✅ | ✅ |
+| IPv6 | ✅ | ⬜ |
+| TCP | ✅ | ✅ |
+| UDP | ⬜ | ⬜ |
 
 * IP versions of IPv4 (tested) and IPv6 (untested) and protocols of TCP (tested) and UDP (not implemented yet) are supported
 * 
