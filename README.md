@@ -155,10 +155,9 @@
 ### "network" module
 * this moudle is core of sending and receiving data on network asynchronously
 * the following features are or would be supported
-|제목|내용|설명|
-|:---|---:|:---:|
-|왼쪽정렬|오른쪽정렬|중앙정렬|
-|왼쪽정렬|오른쪽정렬|중앙정렬|
-|왼쪽정렬|오른쪽정렬|중앙정렬|
+| Command | Description |
+| --- | --- |
+| git status | List all new or modified files |
+| git diff | Show file differences that haven't been staged |
 * IP versions of IPv4 (tested) and IPv6 (untested) and protocols of TCP (tested) and UDP (not implemented yet) are supported
 * 
