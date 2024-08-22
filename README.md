@@ -158,7 +158,7 @@
 
 | Feature | Implemented | Tested |
 |----------|----------|----------|
-| IPv4 | :heavy_check_mark: | :heavy_check_mark: |
+| IPv4 | 	✅ | ✅ |
 | IPv6 | :heavy_check_mark: | :white_check_mark: |
 | TCP | :heavy_check_mark: | :heavy_check_mark: |
 | UDP | :white_check_mark: | :white_check_mark: |
