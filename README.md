@@ -153,7 +153,7 @@
 
 ## Network
 ### "network" module
-* this moudle is core of sending and receiving data on network asynchronously
+* this moudle is core of sending and receiving data on network synchronously/asynchronously
 * the following features are or would be supported
 
 | Feature | Implemented | Tested |
@@ -162,6 +162,8 @@
 | IPv6 | ✅ | ⬜ |
 | TCP | ✅ | ✅ |
 | UDP | ⬜ | ⬜ |
+| Sync | ⬜ | ⬜ |
+| Async | ✅ | ✅ |
 
 * IP versions of IPv4 (tested) and IPv6 (untested) and protocols of TCP (tested) and UDP (not implemented yet) are supported
 * 
