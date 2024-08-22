@@ -261,13 +261,19 @@ make rebuild_debug
 * run example
 
 ```bash
-./network_testd.out --broadcast
+./network_testd.out --broadcast # you can quit by ctrl + c
 ```
+
+![image](https://github.com/user-attachments/assets/38aa9d24-e16b-4801-ba67-4fbb866c26d0)
 
 #### Chat Client
 * you can send messages one by one to the chat server on console stdin
-* a message received from the chat server is printed on console stdout
-* 
+* a message received from the chat server is printed on console stdout (1 per 1000, avoiding for large printing)
+* run example
+
+```bash
+./network_testd.out --mode client # you can quit by typing "exit"
+```
 
 ### Additional Explanation and Notes
 #### 
