@@ -264,7 +264,7 @@ make rebuild_debug
 ./network_testd.out --broadcast # you can quit by ctrl + c
 ```
 
-![image](https://github.com/user-attachments/assets/38aa9d24-e16b-4801-ba67-4fbb866c26d0)
+![image](https://github.com/user-attachments/assets/e6494c9a-0a50-43e5-b8d5-ef791c640470)
 
 #### Chat Client
 * you can send messages one by one to the chat server on console stdin
