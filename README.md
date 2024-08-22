@@ -71,6 +71,10 @@
 ### Linux (Ubuntu 24.04 on wsl2) Prerequisite
 * os : Ubuntu 24.04 LTS
 * make : sudo apt install make
+
+```bash
+sudo apt install make
+
 * cmake : sudo apt install cmake
 * gcc/g++ : sudo apt install build-essential
 * mysql odbc driver
@@ -170,8 +174,9 @@
 
 ### "network_test" module
 * this test program is for testing "network" module
-* this program has three components - chat server, chat client and chat massive test client
-* dsfsd
+* this program consists of three components - chat server, chat client and chat massive test client
+#### Chat Server
+* 
 
 ### Additional Explanation and Notes
 #### 
