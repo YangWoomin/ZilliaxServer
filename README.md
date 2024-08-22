@@ -152,4 +152,11 @@
 * some cases are testable such as simple select, update, delete, stored procedure, transaction
 
 ## Network
-(in progress)
+### "network" module
+* this moudle is core of sending and receiving data on network asynchronously
+* the following features are or would be supported
+Function | MySQL / MariaDB | PostgreSQL | SQLite
+:------------ | :-------------| :-------------| :-------------
+substr | :heavy_check_mark: |  :white_check_mark: | :heavy_check_mark:
+* IP versions of IPv4 (tested) and IPv6 (untested) and protocols of TCP (tested) and UDP (not implemented yet) are supported
+* 
