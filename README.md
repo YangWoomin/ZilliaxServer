@@ -102,13 +102,48 @@ sudo apt install -f
     
 ### Build 
 #### "x64 Native Tools Command Prompt for VS 2022" on Windows or bash shell on Linux
-* configure : make configure
-* reconfigure : make reconfigure
-* build debug : make build_debug
-* rebuild debug : make rebuild_debug
-* build release : make build_release
-* rebuild debug : make rebuild_release
-* distclean : make distclean
+* configure
+
+```bash
+make configure
+```
+
+* reconfigure
+
+```bash
+make reconfigure
+```
+
+* build debug
+
+```bash
+make build_debug
+```
+
+* rebuild debug
+
+```bash
+make rebuild_debug
+```
+
+* build release
+
+```bash
+make build_release
+```
+
+* rebuild debug
+
+```bash
+make rebuild_release
+```
+
+* distclean
+
+```bash
+make distclean
+```
+
 #### VS Code on Windows
 * Ctrl + Shift + B
 * select one of the list that you want to build
@@ -149,26 +184,56 @@ sudo apt install -f
 #### Docker & Docker Compose Installation 
 * docker-ce : https://docs.docker.com/engine/install/ubuntu/
 * docker-compose : https://docs.docker.com/compose/install/standalone/#on-linux
-* sudo usermod -aG docker $USER 
-* newgrp docker
+
+```bash
+sudo usermod -aG docker $USER
+newgrp docker
+```
 
 #### MySQL on Docker
 * move cmd(bash shell) current working directory to ./setting/database/mysql
-* docker-compose up -d
-* docker-compose ps
+
+```bash
+# docker user setting
+sudo usermod -aG docker $USER
+newgrp docker
+
+# run MySQL as a container
+docker-compose up -d
+docker-compose ps
+```
 
 ### "db" Module Test
 #### initial scripts
-* run ./setting/database/mysql/scripts/db_test/init.sql by MySQL Workbench 
+* run ./setting/database/mysql/scripts/db_test/init.sql at MySQL Workbench 
 #### "db" Module Build
 * move cmd current working directory to ./db
-* build db module by "make distclean && make rebuild_debug"
+* build db module by the following command or vs code task
+
+```bash
+make rebuild_debug
+```
+
 #### "db_test" Tester Build
 * move cmd current working directory to ./db_test
-* build db_test by "make rebuild_debug"
+* build db_test by the following command or vs code task
+
+```bash
+make rebuild_debug
+```
+
 #### Test
 * move cmd current working directory to ./output/bin
 * run db_test(d).exe or db_test(d).out
+
+```batch
+.\db_testd.exe
+```
+
+```bash
+./db_testd.out
+```
+
 * check log files in ./output/log directory
 * some cases are testable such as simple select, update, delete, stored procedure, transaction
 
