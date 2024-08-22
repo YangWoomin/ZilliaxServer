@@ -132,7 +132,7 @@ make rebuild_debug
 make build_release
 ```
 
-* rebuild debug
+* rebuild release
 
 ```bash
 make rebuild_release
@@ -291,7 +291,13 @@ make rebuild_debug
 ![image](https://github.com/user-attachments/assets/8bbb5be8-3c1c-4fa3-bd5e-72e6b3a0e32c)
 
 ### Additional Explanation and Notes
-#### 
-#### Options
-#### Windows (IOCP)
-#### Linux (Epoll)
+#### TCP Custom Message Format
+* the network module has a TCP custom message format
+  + a call for Connection.Send() make a message prefixed by its size
+  + TODO) we will also support stream communication on TCP socket
+#### Message Size
+* the maximum message size is approximately 4K (defined in network/common.h)
+#### Domain Name
+* you can use domain name as host ip when calling Network::Connect()
+  + the module tries to resolve domain name if "host" field is not ip
+
