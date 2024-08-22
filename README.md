@@ -195,10 +195,6 @@ newgrp docker
 
 ```bash
 # docker user setting
-sudo usermod -aG docker $USER
-newgrp docker
-
-# run MySQL as a container
 docker-compose up -d
 docker-compose ps
 ```
@@ -251,10 +247,26 @@ make rebuild_debug
 | Sync | ⬜ | ⬜ |
 | Async | ✅ | ✅ |
 
+#### "network" Module Build
+* same way as "db" module
 ### "network_test" module
 * this test program is for testing "network" module
 * this program consists of three components - chat server, chat client and chat massive test client
+#### "network_test" Tester Build
+* same way as "db_test" tester
 #### Chat Server
+* this is default mode of network_test
+* you can choose unicast(default) echo or broadcast echo mode
+* printing a received message from chat clients is skipped
+* run example
+
+```bash
+./network_testd.out --broadcast
+```
+
+#### Chat Client
+* you can send messages one by one to the chat server on console stdin
+* a message received from the chat server is printed on console stdout
 * 
 
 ### Additional Explanation and Notes
