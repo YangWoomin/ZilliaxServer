@@ -156,11 +156,12 @@
 * this moudle is core of sending and receiving data on network asynchronously
 * the following features are or would be supported
 
-| Header 1 | Header 2 | Header 3 |
+| Feature | Implemented | Tested |
 |----------|----------|----------|
-| Row 1 Col 1 | Row 1 Col 2 | Row 1 Col 3 |
-| Row 2 Col 1 | Row 2 Col 2 | Row 2 Col 3 |
-| Row 3 Col 1 | Row 3 Col 2 | Row 3 Col 3 |
+| IPv4 | :heavy_check_mark: | :heavy_check_mark: |
+| IPv6 | :heavy_check_mark: | :white_check_mark: |
+| TCP | :heavy_check_mark: | :heavy_check_mark: |
+| UDP | :white_check_mark: | :white_check_mark: |
 
 * IP versions of IPv4 (tested) and IPv6 (untested) and protocols of TCP (tested) and UDP (not implemented yet) are supported
 * 
