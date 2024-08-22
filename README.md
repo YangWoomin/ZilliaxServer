@@ -60,7 +60,7 @@
 
 ## Build
 
-### Windows Prerequisites
+### Windows Prerequisite
 * os : Windows 10 (latest build)
 * Visual Studio 2022 (Community)
 * make : make-3.8.1.exe (in ./setting/build_tool directory)
@@ -68,7 +68,7 @@
 * core utils : coreutils-5.3.0.exe (in ./setting/build_tool directory)
 * mysql odbc driver : mysql-connector-odbc-9.0.0-win64.msi (in ./setting/database/driver directory)
 
-### Linux (Ubuntu 24.04 on wsl2) Prerequisites
+### Linux (Ubuntu 24.04 on wsl2) Prerequisite
 * os : Ubuntu 24.04 LTS
 * make : sudo apt install make
 * cmake : sudo apt install cmake
@@ -120,15 +120,21 @@
 * click the play icon
 
 ## Database
-* env : Ubuntu 24.04 on wsl2 + docker + docker-compose + MySQL Workbench
+### "db" module
+* this module is core of interating with RDBMS such as MySQL and MSSQL by using ODBC Driver
+### "db_test" module
+* this test program is for testing "db" module by which some test cases from simple manipulation works(select, update, delete, sp) to some transactions run
+### Run Environment
+* Ubuntu 24.04 on wsl2 + docker + docker-compose + MySQL Workbench
 
-### Docker & Docker Compose Installation 
+### Prerequisite
+#### Docker & Docker Compose Installation 
 * docker-ce : https://docs.docker.com/engine/install/ubuntu/
 * docker-compose : https://docs.docker.com/compose/install/standalone/#on-linux
 * sudo usermod -aG docker $USER 
 * newgrp docker
 
-### MySQL on Docker
+#### MySQL on Docker
 * move cmd(bash shell) current working directory to ./setting/database/mysql
 * docker-compose up -d
 * docker-compose ps
