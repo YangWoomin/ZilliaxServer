@@ -70,22 +70,35 @@
 
 ### Linux (Ubuntu 24.04 on wsl2) Prerequisite
 * os : Ubuntu 24.04 LTS
-* make : sudo apt install make
+* make
 
 ```bash
 sudo apt install make
 ```
 
-* cmake : sudo apt install cmake
-* gcc/g++ : sudo apt install build-essential
+* cmake
+
+```bash
+sudo apt install cmake
+```
+
+* gcc/g++
+
+```bash
+sudo apt install build-essential
+```
+
 * mysql odbc driver
-  + sudo apt install unixodbc-dev unixodbc
-  + sudo dpkg -i mysql-community-client-plugins_9.0.0-1ubuntu22.04_amd64.deb (in ./setting/database/driver directory)
-  + sudo apt update
-  + sudo apt install -f
-  + sudo dpkg -i mysql-connector-odbc_9.0.0-1ubuntu22.04_amd64.deb (in ./setting/database/driver directory)
-  + sudo apt update
-  + sudo apt install -f
+
+```bash
+sudo apt install unixodbc-dev unixodbc
+sudo dpkg -i mysql-community-client-plugins_9.0.0-1ubuntu22.04_amd64.deb # (in ./setting/database/driver directory)
+sudo apt update
+sudo apt install -f
+sudo dpkg -i mysql-connector-odbc_9.0.0-1ubuntu22.04_amd64.deb # (in ./setting/database/driver directory)
+sudo apt update
+sudo apt install -f
+```
     
 ### Build 
 #### "x64 Native Tools Command Prompt for VS 2022" on Windows or bash shell on Linux
