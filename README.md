@@ -268,12 +268,27 @@ make rebuild_debug
 
 #### Chat Client
 * you can send messages one by one to the chat server on console stdin
-* a message received from the chat server is printed on console stdout (1 per 1000, avoiding for large printing)
+* a message received from the chat server is printed on console stdout 
 * run example
 
 ```bash
 ./network_testd.out --mode client # you can quit by typing "exit"
 ```
+
+![image](https://github.com/user-attachments/assets/f7067f36-36af-4279-a3c1-0a48a6109948)
+
+#### Chat Massive Test Client
+* this mode automatically sends text of sample test files in ./network_test/test_sample_files/* to the chat server
+* this mode creates a number of connections (default: 100) to the chat server and they send the sample text simultaneously (for making large traffic)
+* the text file contents are returned from the chat server and printed on console stdout (1 per 1000, avoiding for large printing)
+* 
+* run example
+
+```bash
+./network_testd.out --mode mtc # you can quit by ctrl + c
+```
+
+
 
 ### Additional Explanation and Notes
 #### 
