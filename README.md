@@ -74,6 +74,7 @@
 
 ```bash
 sudo apt install make
+`
 
 * cmake : sudo apt install cmake
 * gcc/g++ : sudo apt install build-essential
