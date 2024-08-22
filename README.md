@@ -149,6 +149,9 @@
 * move cmd current working directory to ./db_test
 * build db_test by "make rebuild_debug"
 #### Test
+* move cmd current working directory to ./output/bin
+* run db_test(d).exe or db_test(d).out
+* check log files in ./output/log directory
 * some cases are testable such as simple select, update, delete, stored procedure, transaction
 
 ## Network
@@ -165,5 +168,13 @@
 | Sync | ⬜ | ⬜ |
 | Async | ✅ | ✅ |
 
-* IP versions of IPv4 (tested) and IPv6 (untested) and protocols of TCP (tested) and UDP (not implemented yet) are supported
-* 
+### "network_test" module
+* this test program is for testing "network" module
+* this program has three components - chat server, chat client and chat massive test client
+* dsfsd
+
+### Additional Explanation and Notes
+#### 
+#### Options
+#### Windows (IOCP)
+#### Linux (Epoll)
