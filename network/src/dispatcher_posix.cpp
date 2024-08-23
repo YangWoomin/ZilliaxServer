@@ -264,8 +264,8 @@ bool Epoll::Dequeue(std::queue<IOResult>& resList)
         {
             if (SocketType::CONNECTOR == res._sock->GetType())
             {
-                ZS_LOG_WARN(network, "connector is not trying to connect yet, sock id : %llu, socket name : %s, peer : %s",
-                    sock->GetID(), sock->GetName(), sock->GetPeer());
+                // ZS_LOG_WARN(network, "connector is not trying to connect yet, sock id : %llu, socket name : %s, peer : %s",
+                //     sock->GetID(), sock->GetName(), sock->GetPeer());
                 continue; // trying to connect...
             }
 

@@ -202,7 +202,7 @@ assistant worker 구조 설계
 			async send 완료 signal이 아니라 그냥 여유 버퍼가 생겼음을 알리는 signal임
 				따라서 현재 메시지든 버퍼든 전송된 크기를 기준으로 이어서 전송하도록 구현
 				윈도우보다 좀 더 복잡할듯
-	-> assistant worker 불필요
+	-> assistant worker 불필요 (왜냐하면 외부 스레드는 send 버퍼에 데이터만 채우고 dispatcher 스레드가 보내도록 트리거가 가능해서)
 
 callback 함수를 꼭 shared_ptr 사용해야하나?
 	굳이?
@@ -273,5 +273,6 @@ epoll_wait 쪽 accept 예외 처리 확인
 	-> 1차 수정하니깐 epoll_ctl 호출하다 실패하면 dispatcher에게 release 요청하는 부분 잘 수행됨
 		continue send 하다 실패하는 녀석들도 잘 정리됨
 		근데 아무 에러도 뱉지 않는 녀석들은 해제가 안됨
+	-> 2차 수정 후 다 잡히는 것 확인
 	
 	

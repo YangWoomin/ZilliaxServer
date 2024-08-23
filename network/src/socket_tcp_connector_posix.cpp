@@ -85,8 +85,8 @@ bool SocketTCPConnector::postConnect(bool& retry)
         int err = errno;
         if (err == CONN_NOTCONN)
         {
-            ZS_LOG_WARN(network, "connection is not established yet in internal post connect, sock id : %llu, socket name : %s",
-                _sockID, GetName());
+            // ZS_LOG_WARN(network, "connection is not established yet in internal post connect, sock id : %llu, socket name : %s",
+            //     _sockID, GetName());
             
             retry = true;
             return true;
