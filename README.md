@@ -257,7 +257,7 @@ make rebuild_debug
 #### Chat Server
 * this is default mode of network_test
 * you can choose unicast(default) echo or broadcast echo mode
-* printing a received message from chat clients is skipped
+* printing received messages from chat clients is skipped
 * run example
 
 ```bash
