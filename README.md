@@ -280,7 +280,7 @@ make rebuild_debug
 #### Chat Massive Test Client
 * this mode automatically sends text of sample test files in ./network_test/test_sample_files/* to the chat server
 * this mode creates a number of connections (default: 100) to the chat server and they send the sample text simultaneously (for making the chat server handle large traffic)
-* the text file contents that sent from clients are returned from the chat server and printed on console stdout (1 per 1000, avoiding for large printing)
+* the text file contents are echoed from the chat server and printed on console stdout (1 per 1000, avoiding for large printing)
 * run example
 
 ```bash
