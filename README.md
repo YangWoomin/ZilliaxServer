@@ -28,7 +28,7 @@
 * C/C++(20)
 * Cross platform (Windows/Linux)
 * Database module (ODBC connector)
-* Asynchronous network module (IOCP, epoll) ===> in progress (completed up to TCP of IPv4)
+* Asynchronous network module (IOCP, epoll)
 
 ## TO-DO Features
 * Network module - RIO, io_uring, TLS, HTTP(S) Server
