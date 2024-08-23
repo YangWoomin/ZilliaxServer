@@ -186,6 +186,7 @@ make distclean
 * docker-compose : https://docs.docker.com/compose/install/standalone/#on-linux
 
 ```bash
+# docker user setting
 sudo usermod -aG docker $USER
 newgrp docker
 ```
@@ -194,7 +195,6 @@ newgrp docker
 * move cmd(bash shell) current working directory to ./setting/database/mysql
 
 ```bash
-# docker user setting
 docker-compose up -d
 docker-compose ps
 ```
