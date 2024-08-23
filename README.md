@@ -235,7 +235,7 @@ make rebuild_debug
 
 ## Network
 ### "network" module
-* this moudle is core of sending and receiving data on network synchronously/asynchronously
+* this module is core of sending and receiving data on network synchronously/asynchronously
 * the following features are or would be supported
 
 | Feature | Implemented | Tested |
