@@ -28,7 +28,7 @@
 * C/C++(20)
 * Cross platform (Windows/Linux)
 * Database module (ODBC connector)
-* Asynchronous network module (IOCP, epoll) ===> in progress (completed up to TCP of IPv4)
+* Asynchronous network module (IOCP, epoll)
 
 ## TO-DO Features
 * Network module - RIO, io_uring, TLS, HTTP(S) Server
@@ -186,6 +186,7 @@ make distclean
 * docker-compose : https://docs.docker.com/compose/install/standalone/#on-linux
 
 ```bash
+# docker user setting
 sudo usermod -aG docker $USER
 newgrp docker
 ```
@@ -194,7 +195,6 @@ newgrp docker
 * move cmd(bash shell) current working directory to ./setting/database/mysql
 
 ```bash
-# docker user setting
 docker-compose up -d
 docker-compose ps
 ```
@@ -235,7 +235,7 @@ make rebuild_debug
 
 ## Network
 ### "network" module
-* this moudle is core of sending and receiving data on network synchronously/asynchronously
+* this module is core of sending and receiving data on network synchronously/asynchronously
 * the following features are or would be supported
 
 | Feature | Implemented | Tested |
@@ -257,7 +257,7 @@ make rebuild_debug
 #### Chat Server
 * this is default mode of network_test
 * you can choose unicast(default) echo or broadcast echo mode
-* printing a received message from chat clients is skipped
+* printing received messages from chat clients is skipped
 * run example
 
 ```bash
@@ -280,7 +280,7 @@ make rebuild_debug
 #### Chat Massive Test Client
 * this mode automatically sends text of sample test files in ./network_test/test_sample_files/* to the chat server
 * this mode creates a number of connections (default: 100) to the chat server and they send the sample text simultaneously (for making the chat server handle large traffic)
-* the text file contents that sent from clients are returned from the chat server and printed on console stdout (1 per 1000, avoiding for large printing)
+* the text file contents are echoed from the chat server and printed on console stdout (1 per 1000, avoiding for large printing)
 * run example
 
 ```bash
