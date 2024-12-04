@@ -51,6 +51,7 @@
 * ZilliaxServer : Apache 2.0
 * spdlog-1.14.1 (https://github.com/gabime/spdlog/tree/v1.14.1) - MIT License
 * cxxopts-3.2.0 (https://github.com/jarro2783/cxxopts/tree/v3.2.0) - MIT License
+* librdkafka-2.6.1 (https://github.com/confluentinc/librdkafka/tree/v2.6.1) - Apache 2.0
 
 ## Development Environment
 
@@ -300,4 +301,14 @@ make rebuild_debug
 #### Domain Name
 * you can use domain name as host ip when calling Network::Connect()
   + the module tries to resolve domain name if "host" field is not ip
+
+
+## Message Queue
+### "mq" module
+* this module is core of producing and consuming messages to and from message queue(Kafka) asynchronously
+* the following features are or would be supported
+| Feature | Implemented | Tested |
+|----------|----------|----------|
+| Producer | ⬜ | ⬜ |
+| Consumer | ⬜ | ⬜ |
 
