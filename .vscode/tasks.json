@@ -143,6 +143,31 @@
         },
         {
             "type": "shell",
+            "label": "Rebuild mq as Debug",
+            "command": "make",
+            "args": [
+                "rebuild_debug"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/mq"
+            },
+            "group": "build"
+        },
+        {
+            "type": "shell",
+            "label": "Rebuild mq as Release",
+            "command": "make",
+            "args": [
+                "rebuild_release"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/mq"
+            },
+            "group": "build"
+        },
+
+        {
+            "type": "shell",
             "label": "Rebuild db db_test as Debug",
             "dependsOrder": "sequence",
             "dependsOn":[
@@ -176,6 +201,6 @@
                 "Rebuild network as Release",
                 "Rebuild network_test as Release"
             ]
-        }
+        },
     ]
 }

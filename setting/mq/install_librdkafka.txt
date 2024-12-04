@@ -1,0 +1,10 @@
+
+$ # install librdkafka in Windows
+$ # install vcpkg before progressing this step
+$ vcpkg install librdkafka
+
+$ # install librdkafka in Ubuntu
+$ sudo apt install librdkafka-dev
+$ # check /usr/include/librdkafka/
+$ # check /usr/lib/x86_64-linux-gnu/librdkafka*
+$ # if you want to build mq module you should download librdkafka repository and run ./configure for config.h file (default option)

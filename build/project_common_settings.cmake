@@ -35,4 +35,13 @@ endif ()
 
 # third party
 set( dir_third_party_root               ${CMAKE_SOURCE_DIR}/../third_party )
+set( dir_third_party_lib                ${CMAKE_SOURCE_DIR}/../third_party/lib )
 set( dir_third_party_include            ${dir_third_party_root}/include )
+set( dir_third_party_librdkafka_include ${dir_third_party_include}/librdkafka )
+if ( "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows" )
+set( bin_librdkafka_d                   ${dir_third_party_lib}/rdkafkad.lib )
+set( bin_librdkafka                     ${dir_third_party_lib}/rdkafka.lib )
+elseif ( "${CMAKE_SYSTEM_NAME}" STREQUAL "Linux" )
+set( bin_librdkafka_d                   ${dir_third_party_lib}/librdkafka.so.1 )
+set( bin_librdkafka                     ${dir_third_party_lib}/librdkafka.so.1 )
+endif ()

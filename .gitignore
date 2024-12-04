@@ -1,4 +1,8 @@
 log/example/build
 .msvc
 .make
-output
+output/*
+!output/bin
+output/bin/*
+!output/bin/rdkafka*
+!output/bin/librdkafka*
