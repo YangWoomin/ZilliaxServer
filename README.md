@@ -317,7 +317,7 @@ make rebuild_debug
 
 ### Prerequisite
 #### Docker & Docker Compose Installation 
-* refer to 
+* refer to https://github.com/YangWoomin/ZilliaxServer/blob/main/README.md#docker--docker-compose-installation
 
 #### Kafka and Conduktor on Docker
 * move cmd(bash shell) current working directory to ./setting/mq/kafka/docker-compose
@@ -329,6 +329,7 @@ docker-compose ps
 
 #### Setting Kafka Cluster on Conduktor
 * Conduktor Guide Page : https://docs.conduktor.io/platform/get-started/installation/get-started/docker/
+* http://localhost:8080
 * Add Kafka Cluster like the following picture
 
 ![conduktor_adding_kafka_cluster](https://github.com/user-attachments/assets/9f58d118-99a1-4da8-9f53-c7332f933c01)
