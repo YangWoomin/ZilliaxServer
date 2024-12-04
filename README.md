@@ -317,7 +317,7 @@ make rebuild_debug
 
 ### Prerequisite
 #### Docker & Docker Compose Installation 
-* refer to https://github.com/YangWoomin/ZilliaxServer/blob/main/README.md#docker--docker-compose-installation
+* refer to "Database - Prerequisite - Docker & Docker Compose Installation"
 
 #### Kafka and Conduktor on Docker
 * move cmd(bash shell) current working directory to ./setting/mq/kafka/docker-compose
