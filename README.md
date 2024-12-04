@@ -194,7 +194,7 @@ newgrp docker
 ```
 
 #### MySQL on Docker
-* move cmd(bash shell) current working directory to ./setting/database/mysql
+* move cmd(bash shell) current working directory to ./setting/database/mysql/docker-compose
 
 ```bash
 docker-compose up -d
@@ -313,4 +313,24 @@ make rebuild_debug
 |----------|----------|----------|
 | Producer | ⬜ | ⬜ |
 | Consumer | ⬜ | ⬜ |
+
+
+### Prerequisite
+#### Docker & Docker Compose Installation 
+* refer to 
+
+#### Kafka and Conduktor on Docker
+* move cmd(bash shell) current working directory to ./setting/mq/kafka/docker-compose
+
+```bash
+docker-compose up -d
+docker-compose ps
+```
+
+#### Setting Kafka Cluster on Conduktor
+* Conduktor Guide Page : https://docs.conduktor.io/platform/get-started/installation/get-started/docker/
+* Add Kafka Cluster like the following picture
+
+![conduktor_adding_kafka_cluster](https://github.com/user-attachments/assets/9f58d118-99a1-4da8-9f53-c7332f933c01)
+
 
