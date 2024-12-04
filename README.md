@@ -307,6 +307,7 @@ make rebuild_debug
 ### "mq" module
 * this module is core of producing and consuming messages to and from message queue(Kafka) asynchronously
 * the following features are or would be supported
+
 | Feature | Implemented | Tested |
 |----------|----------|----------|
 | Producer | ⬜ | ⬜ |
