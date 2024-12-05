@@ -40,8 +40,8 @@ target_include_directories( ${target} PRIVATE ${dir_third_party_include} )
 
 target_link_libraries( ${target} 
     PRIVATE 
-    $<$<CONFIG:Debug>:${bin_network_d}>
-    $<$<CONFIG:Release>:${bin_network}>
+    $<$<CONFIG:Debug>:${lib_network_d}>
+    $<$<CONFIG:Release>:${lib_network}>
 )
 
 set_target_properties( ${target} PROPERTIES SUFFIX ${TARGET_EXECUTABLE_SUFFIX})

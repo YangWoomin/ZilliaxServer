@@ -3,7 +3,7 @@
 cmake_minimum_required( VERSION 3.8 )
 
 
-set( target "db_test" )
+set( target "mq_test_producer" )
 
 
 file( GLOB sources
@@ -11,9 +11,9 @@ file( GLOB sources
     "*.h"
 )
 file( GLOB headers
-    "${dir_proj_include}/db_test/*.h"
+    #"${dir_proj_include}/mq_test_producer/*.h"
 )
-source_group( "Header Files" FILES ${headers} )
+#source_group( "Header Files" FILES ${headers} )
 source_group( "Source Files" FILES ${sources} )
 
 
@@ -35,13 +35,19 @@ set_target_properties( ${target} PROPERTIES
 target_include_directories( ${target} PRIVATE . )
 target_include_directories( ${target} PRIVATE ${dir_proj_include} )
 target_include_directories( ${target} PRIVATE ${dir_common_include} )
-target_include_directories( ${target} PRIVATE ${dir_db_include} )
+target_include_directories( ${target} PRIVATE ${dir_network_include} )
 target_include_directories( ${target} PRIVATE ${dir_third_party_include} )
 
 target_link_libraries( ${target} 
     PRIVATE 
-    $<$<CONFIG:Debug>:${lib_db_d}>
-    $<$<CONFIG:Release>:${lib_db}>
+    $<$<CONFIG:Debug>:${lib_network_d}>
+    $<$<CONFIG:Release>:${lib_network}>
+)
+
+target_link_libraries( ${target} 
+    PRIVATE 
+    $<$<CONFIG:Debug>:${lib_mq_d}>
+    $<$<CONFIG:Release>:${lib_mq}>
 )
 
 set_target_properties( ${target} PROPERTIES SUFFIX ${TARGET_EXECUTABLE_SUFFIX})

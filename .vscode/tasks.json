@@ -165,6 +165,30 @@
             },
             "group": "build"
         },
+        {
+            "type": "shell",
+            "label": "Rebuild mq test producer as Debug",
+            "command": "make",
+            "args": [
+                "rebuild_debug"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/mq_test_producer"
+            },
+            "group": "build"
+        },
+        {
+            "type": "shell",
+            "label": "Rebuild mq test producer as Release",
+            "command": "make",
+            "args": [
+                "rebuild_release"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/mq_test_producer"
+            },
+            "group": "build"
+        },
 
         {
             "type": "shell",

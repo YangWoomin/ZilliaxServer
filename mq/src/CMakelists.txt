@@ -42,8 +42,8 @@ target_include_directories( ${target} PRIVATE ${dir_third_party_librdkafka_inclu
 
 target_link_libraries( ${target} 
     PRIVATE 
-    $<$<CONFIG:Debug>:${bin_librdkafka_d}>
-    $<$<CONFIG:Release>:${bin_librdkafka}>
+    $<$<CONFIG:Debug>:${lib_librdkafka_d}>
+    $<$<CONFIG:Release>:${lib_librdkafka}>
 )
 
 add_compile_definitions( ZS_MQ_EXPORTS )
