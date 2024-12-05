@@ -4,6 +4,7 @@
 #include    "network/network.h"
 
 #include    "chat_server.h"
+#include    "mq_producer.h"
 
 #include    "spdlog/spdlog.h"
 #include    "spdlog/async.h"
@@ -25,7 +26,9 @@ int main(int argc, char** argv)
     options.add_options()
         ("p,port", "server port to listen or connect", cxxopts::value<int>()->default_value("3000"))
         ("b,broadcast", "broadcast or unicast echo mode in server", cxxopts::value<bool>()->default_value("false"))
-        ("d,dir", "massive test client sample file directory", cxxopts::value<std::string>()->default_value("../../network_test/test_sample_files/"))
+        ("s,servers", "mq servers delimited by comma", cxxopts::value<std::string>()->default_value("localhost:29092,localhost:39092,localhost:49092"))
+        ("d,debug", "mq producer debug mode", cxxopts::value<std::string>()->default_value("generic"))
+        ("t,topic", "mq topic", cxxopts::value<std::string>()->default_value("mq_test_topic"))
         ("h,help", "Print usage");
 
     auto result = options.parse(argc, argv);
@@ -37,7 +40,9 @@ int main(int argc, char** argv)
 
     int32_t port = result["port"].as<int32_t>();
     bool isBroadcasting = result["broadcast"].as<bool>();
-    std::string dir = result["dir"].as<std::string>();
+    std::string servers = result["servers"].as<std::string>();
+    std::string debug = result["debug"].as<std::string>();
+    std::string topic = result["topic"].as<std::string>();
 
     // spd async logger
     spdlog::init_thread_pool(8192, 1);
@@ -93,12 +98,27 @@ int main(int argc, char** argv)
     Logger::Messenger& origin = Logger::GetMessenger();
     origin = msgr;
 
+    ZS_LOG_INFO(mq_test_producer, "============ mq test producer start ============");
 
-    ZS_LOG_INFO(network_test, "============ mq test producer start ============");
+    MQProducer mp;
+    if (false == mp.Initialize(msgr, servers, debug))
+    {
+        return 0;
+    }
+    
+    if (false == mp.CreateProducer(topic))
+    {
+        return 0;
+    }
 
-    ChatServer(msgr, IPVer::IP_V4, Protocol::TCP, port, isBroadcasting, nullptr, nullptr, nullptr);
+    uint64_t sn = 0;
+    auto onMessageReceived = [&mp, &sn](const char* client, const char* msg, std::size_t len) {
+        mp.Produce(client, msg, len, ++sn);
+    };
 
-    ZS_LOG_INFO(network_test, "============ mq test producer end ============");
+    ChatServer(msgr, IPVer::IP_V4, Protocol::TCP, port, isBroadcasting, nullptr, nullptr, onMessageReceived);
+
+    ZS_LOG_INFO(mq_test_producer, "============ mq test producer end ============");
 
     return 0;
 }

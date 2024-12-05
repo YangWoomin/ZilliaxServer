@@ -24,7 +24,7 @@ static std::atomic<bool> run { true };
 static BOOL WINAPI ConsoleHandler(DWORD signal) {
     if (signal == CTRL_C_EVENT) 
     {
-        ZS_LOG_WARN(network_test, "Ctrl+C detected in ChatServer");
+        ZS_LOG_WARN(mq_test_producer, "Ctrl+C detected in ChatServer");
         
         Network::Finalize();
 
@@ -39,11 +39,11 @@ static void signalHandler(int signum)
 {
     if (signum == SIGINT)
     {
-        ZS_LOG_WARN(network_test, "Interrupt signal (SIGINT) received in ChatServer. Exiting gracefully...");
+        ZS_LOG_WARN(mq_test_producer, "Interrupt signal (SIGINT) received in ChatServer. Exiting gracefully...");
     }
     else
     {
-        ZS_LOG_ERROR(network_test, "Unhandled interrupt signal %d received in ChatServer", signum);
+        ZS_LOG_ERROR(mq_test_producer, "Unhandled interrupt signal %d received in ChatServer", signum);
     }
 
     Network::Finalize();
@@ -58,38 +58,38 @@ void ChatServer(Logger::Messenger msgr, IPVer ipVer, Protocol protocol, int32_t 
 #if defined(_WIN64_)
     if (SetConsoleCtrlHandler(ConsoleHandler, TRUE))
     {
-        ZS_LOG_INFO(network_test, "Ctrl+C handler installed in ChatServer");
+        ZS_LOG_INFO(mq_test_producer, "Ctrl+C handler installed in ChatServer");
     } 
     else 
     {
-        ZS_LOG_ERROR(network_test, "Failed to install Ctrl+C handler in ChatServer");
+        ZS_LOG_ERROR(mq_test_producer, "Failed to install Ctrl+C handler in ChatServer");
         return;
     }
 #elif defined(_POSIX_)
     signal(SIGINT, signalHandler);
-    ZS_LOG_INFO(network_test, "Ctrl+C handler installed.");
+    ZS_LOG_INFO(mq_test_producer, "Ctrl+C handler installed.");
 #endif // defined(_WIN64_)
 
     if (false == Network::Initialize(msgr))
     {
-        ZS_LOG_ERROR(network_test, "Network::Initialize failed in ChatServer");
+        ZS_LOG_ERROR(mq_test_producer, "Network::Initialize failed in ChatServer");
         return;
     }
     
     if (false == Network::Start())
     {
-        ZS_LOG_ERROR(network_test, "Network::Start failed in ChatServer");
+        ZS_LOG_ERROR(mq_test_producer, "Network::Start failed in ChatServer");
         return;
     }
 
     SocketID sockID;
     if (false == Network::Bind(ipVer, protocol, port, sockID))
     {
-        ZS_LOG_ERROR(network_test, "Network::Bind failed in ChatServer");
+        ZS_LOG_ERROR(mq_test_producer, "Network::Bind failed in ChatServer");
         return;
     }
 
-    ZS_LOG_INFO(network_test, "Network::Bind succeeded in ChatServer, sock id : %llu", sockID);
+    ZS_LOG_INFO(mq_test_producer, "Network::Bind succeeded in ChatServer, sock id : %llu", sockID);
 
     std::mutex mtx;
     std::unordered_map<ConnectionID, ConnectionSPtr> clients;
@@ -100,7 +100,7 @@ void ChatServer(Logger::Messenger msgr, IPVer ipVer, Protocol protocol, int32_t 
     OnConnected onConnected = [&mtx, &clients, onClientConnected](ConnectionSPtr conn) {
         if (nullptr != conn)
         {
-            ZS_LOG_INFO(network_test, "a new connection is created in ChatServer, conn id : %llu, peer : %s",
+            ZS_LOG_INFO(mq_test_producer, "a new connection is created in ChatServer, conn id : %llu, peer : %s",
                 conn->GetID(), conn->GetPeer());
             
             {
@@ -116,7 +116,7 @@ void ChatServer(Logger::Messenger msgr, IPVer ipVer, Protocol protocol, int32_t 
         }
         else
         {
-            ZS_LOG_ERROR(network_test, "connetion is nullptr in ChatServer");
+            ZS_LOG_ERROR(mq_test_producer, "connetion is nullptr in ChatServer");
         }
     };
 
@@ -125,7 +125,7 @@ void ChatServer(Logger::Messenger msgr, IPVer ipVer, Protocol protocol, int32_t 
         if (nullptr != conn)
         {
             // ConnectionID connID = conn->GetID();
-            // ZS_LOG_INFO(network_test, "data received, conn id : %llu, peer : %s, data : %s", 
+            // ZS_LOG_INFO(mq_test_producer, "data received, conn id : %llu, peer : %s, data : %s", 
             //     connID, conn->GetPeer(), buf);
             
             ++totalMsgCount;
@@ -155,12 +155,12 @@ void ChatServer(Logger::Messenger msgr, IPVer ipVer, Protocol protocol, int32_t 
 
             if (nullptr != onMessageReceived)
             {
-                onMessageReceived(conn->GetPeer(), buf);
+                onMessageReceived(conn->GetPeer(), buf, len);
             }
         }
         else
         {
-            ZS_LOG_ERROR(network_test, "data received from the unknown, data : %s", 
+            ZS_LOG_ERROR(mq_test_producer, "data received from the unknown, data : %s", 
                 buf);
         }
     };
@@ -169,7 +169,7 @@ void ChatServer(Logger::Messenger msgr, IPVer ipVer, Protocol protocol, int32_t 
     OnClosed onClosed = [&mtx, &clients, onClientClosed](ConnectionSPtr conn) {
         if (nullptr != conn)
         {
-            ZS_LOG_INFO(network_test, "the connection closed, conn id : %llu, peer : %s", 
+            ZS_LOG_INFO(mq_test_producer, "the connection closed, conn id : %llu, peer : %s", 
                 conn->GetID(), conn->GetPeer());
 
             ConnectionID connID = conn->GetID();
@@ -186,23 +186,23 @@ void ChatServer(Logger::Messenger msgr, IPVer ipVer, Protocol protocol, int32_t 
         }
         else
         {
-            ZS_LOG_WARN(network_test, "listener or someone is closed");
+            ZS_LOG_WARN(mq_test_producer, "listener or someone is closed");
         }
     };
 
     if (false == Network::Listen(sockID, 64, onConnected, onReceived, onClosed))
     {
-        ZS_LOG_ERROR(network_test, "Network::Listen failed");
+        ZS_LOG_ERROR(mq_test_producer, "Network::Listen failed");
         return;
     }
 
-    ZS_LOG_INFO(network_test, "Network::Listen succeeded, sock id : %llu", sockID);
+    ZS_LOG_INFO(mq_test_producer, "Network::Listen succeeded, sock id : %llu", sockID);
 
     while (run.load())
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
-    ZS_LOG_INFO(network_test, "total processed message count : %llu, size : %llu", 
+    ZS_LOG_INFO(mq_test_producer, "total processed message count : %llu, size : %llu", 
         totalMsgCount.load(), totalMsgSize.load());
 }

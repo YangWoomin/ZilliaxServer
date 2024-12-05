@@ -130,6 +130,18 @@
             "sourceFileMap": {
                 "/mnt/c": "C:\\"
             }
-        }
+        },
+        {
+            "name": "Launch mq_test_producer on WSL2",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/output/bin/mq_test_producerd.out",
+            "args": ["--broadcast"],
+            "cwd": "${workspaceFolder}/output/bin",
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            //"preLaunchTask": "Rebuild network network_test as Debug",
+            "internalConsoleOptions": "openOnSessionStart"
+        },
     ]
 }

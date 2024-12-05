@@ -58,5 +58,6 @@ namespace common
 #else // _DEBUG
 #define ZS_LOG_DEBUG(category, fmt, ...)
 #endif // _DEBUG
+#define ZS_LOG(category, level, fmt, ...)     zs::common::Logger::Write(#category, __FILE__, __LINE__, level, fmt, ##__VA_ARGS__)
 
 #endif // __ZS_COMMON_LOG_H__
