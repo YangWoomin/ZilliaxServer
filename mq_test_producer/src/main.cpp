@@ -15,6 +15,7 @@
 
 #include    <iostream>
 #include    <memory>
+#include    <atomic>
 
 
 using namespace zs::common;
@@ -116,7 +117,7 @@ int main(int argc, char** argv)
         return 0;
     }
 
-    uint64_t sn = 0;
+    std::atomic<uint64_t> sn{0};
     std::weak_ptr<MQProducer> tmpMp = mp;
     auto onMessageReceived = [tmpMp, &sn](const char* client, const char* msg, std::size_t len) {
         std::shared_ptr<MQProducer> mp = tmpMp.lock();

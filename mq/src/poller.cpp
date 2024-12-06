@@ -20,6 +20,7 @@ bool Poller::Initialize(int32_t timeoutMs, int32_t intervalMs)
 void Poller::Finalize()
 {
     Stop();
+    Join();
 }
 
 void Poller::AddPollingBox(PollingBoxWPtr box)
