@@ -11,6 +11,9 @@ bool MQProducer::Initialize(Logger::Messenger msgr, const std::string servers, c
     configs.push_back({"debug", debug});
     configs.push_back({"metadata.broker.list", servers});
 
+    // make the producer deliver messages idempotently
+    configs.push_back({"enable.idempotence", "true"});
+
     int32_t pollingTimeoutMs = 0;
 
     auto eventCallback = [](EventType type, LogLevel level, const std::string& msg) {
