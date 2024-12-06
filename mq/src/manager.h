@@ -6,6 +6,7 @@
 #include    "common/log.h"
 
 #include    "mq/mq.h"
+#include    "poller.h"
 #include    "rdkafkacpp.h"
 
 #include    <unordered_map>
@@ -19,7 +20,7 @@ namespace mq
     class Manager final
     {
     public:
-        bool Initialize(const ConfigList& configs, EventCallback ecb, ProducingCallback pcb);
+        bool Initialize(const ConfigList& configs, EventCallback ecb, ProducingCallback pcb, int32_t pollerCount, int32_t timeoutMs, int32_t intervalMs);
         void Finalize();
 
         ProducerSPtr CreateProducer(const std::string topic, const ConfigList& configs);
@@ -31,6 +32,9 @@ namespace mq
         EventCallback                                           _ecb = nullptr;
         ProducingCallback                                       _pcb = nullptr;
         std::unordered_map<std::string, InternalProducerSPtr>   _producers;
+
+        std::vector<PollerSPtr>                                 _pollers;
+        std::atomic<int32_t>                                    _allocator{0};
 
         struct EventCallbacker : public RdKafka::EventCb
         {
@@ -47,7 +51,7 @@ namespace mq
             ProducingCallbacker(Manager&);
             Manager& _manager;
 
-            void dr_cb(RdKafka::Message &message);
+            void dr_cb(RdKafka::Message& message);
         };
         ProducingCallbacker _producingCallbacker;
     

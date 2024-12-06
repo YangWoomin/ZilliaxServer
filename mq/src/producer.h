@@ -7,6 +7,7 @@
 
 #include    "mq/mq.h"
 #include    "manager.h"
+#include    "common.h"
 #include    "rdkafkacpp.h"
 
 namespace zs
@@ -15,13 +16,15 @@ namespace mq
 {
     using namespace zs::common;
 
-    class InternalProducer final
+    class InternalProducer final : public PollingBox
     {
     public:
         bool Initialize(const std::string& topic, RdKafka::Conf* gConfig, const ConfigList& configs);
         void Finalize();
 
         bool Produce(Message* msg);
+
+        virtual int32_t Poll(int32_t timeoutMs) override;
 
         InternalProducer(Manager& manager);
         ~InternalProducer();

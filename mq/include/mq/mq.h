@@ -90,7 +90,7 @@ namespace mq
     class __ZS_MQ_API MQ final
     {
     public:
-        static bool Initialize(Logger::Messenger msgr, const ConfigList& configs, EventCallback ecb, ProducingCallback pcb);
+        static bool Initialize(Logger::Messenger msgr, const ConfigList& configs, EventCallback ecb, ProducingCallback pcb, int32_t pollerCount, int32_t timeoutMs, int32_t intervalMs);
         static void Finalize();
 
         static ProducerSPtr CreateProducer(const std::string topic, const ConfigList& configs);

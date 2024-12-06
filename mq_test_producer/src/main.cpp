@@ -14,6 +14,7 @@
 #include    "cxxopts/cxxopts.hpp"
 
 #include    <iostream>
+#include    <memory>
 
 
 using namespace zs::common;
@@ -24,11 +25,13 @@ int main(int argc, char** argv)
     // parse parameters
     cxxopts::Options options("mq_test_producer", "mq test producer option");
     options.add_options()
-        ("p,port", "server port to listen or connect", cxxopts::value<int>()->default_value("3000"))
+        ("p,port", "server port to listen", cxxopts::value<int>()->default_value("3000"))
         ("b,broadcast", "broadcast or unicast echo mode in server", cxxopts::value<bool>()->default_value("false"))
         ("s,servers", "mq servers delimited by comma", cxxopts::value<std::string>()->default_value("localhost:29092,localhost:39092,localhost:49092"))
         ("d,debug", "mq producer debug mode", cxxopts::value<std::string>()->default_value("generic"))
         ("t,topic", "mq topic", cxxopts::value<std::string>()->default_value("mq_test_topic"))
+        ("c,count", "mq poller count", cxxopts::value<int>()->default_value("2"))
+        ("i,interval", "mq poller interval(ms)", cxxopts::value<int>()->default_value("10"))
         ("h,help", "Print usage");
 
     auto result = options.parse(argc, argv);
@@ -43,6 +46,8 @@ int main(int argc, char** argv)
     std::string servers = result["servers"].as<std::string>();
     std::string debug = result["debug"].as<std::string>();
     std::string topic = result["topic"].as<std::string>();
+    int32_t count = result["count"].as<int32_t>();
+    int32_t interval = result["interval"].as<int32_t>();
 
     // spd async logger
     spdlog::init_thread_pool(8192, 1);
@@ -100,23 +105,34 @@ int main(int argc, char** argv)
 
     ZS_LOG_INFO(mq_test_producer, "============ mq test producer start ============");
 
-    MQProducer mp;
-    if (false == mp.Initialize(msgr, servers, debug))
+    std::shared_ptr<MQProducer> mp = std::make_shared<MQProducer>();
+    if (false == mp->Initialize(msgr, servers, debug, count, interval))
     {
         return 0;
     }
     
-    if (false == mp.CreateProducer(topic))
+    if (false == mp->CreateProducer(topic))
     {
         return 0;
     }
 
     uint64_t sn = 0;
-    auto onMessageReceived = [&mp, &sn](const char* client, const char* msg, std::size_t len) {
-        mp.Produce(client, msg, len, ++sn);
+    std::weak_ptr<MQProducer> tmpMp = mp;
+    auto onMessageReceived = [tmpMp, &sn](const char* client, const char* msg, std::size_t len) {
+        std::shared_ptr<MQProducer> mp = tmpMp.lock();
+        if (nullptr != mp)
+        {
+            mp->Produce(client, msg, len, ++sn);
+        }
+        else
+        {
+            // TODO: buffer the messages
+        }
     };
 
     ChatServer(msgr, IPVer::IP_V4, Protocol::TCP, port, isBroadcasting, nullptr, nullptr, onMessageReceived);
+
+    mp.reset();
 
     ZS_LOG_INFO(mq_test_producer, "============ mq test producer end ============");
 

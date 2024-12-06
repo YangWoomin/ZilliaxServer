@@ -123,9 +123,20 @@ bool InternalProducer::Produce(Message* msg)
         return false;
     }
 
-    _producer->poll(0);
+    // polling is processed by pollers
+    //_producer->poll(0);
 
     return true;
+}
+
+int32_t InternalProducer::Poll(int32_t timeoutMs)
+{
+    if (nullptr != _producer)
+    {
+        return _producer->poll(timeoutMs);
+    }
+
+    return 0;
 }
 
 InternalProducer::InternalProducer(Manager& manager)

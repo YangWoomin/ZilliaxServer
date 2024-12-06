@@ -21,11 +21,18 @@ std::unordered_map<RdKafka::Event::Severity, LogLevel> Manager::EventCallbacker:
     {RdKafka::Event::EVENT_SEVERITY_DEBUG,      LOGLEVEL_DEBUG}
 };
 
-bool Manager::Initialize(const ConfigList& configs, EventCallback ecb, ProducingCallback pcb)
+bool Manager::Initialize(const ConfigList& configs, EventCallback ecb, ProducingCallback pcb, int32_t pollerCount, int32_t timeoutMs, int32_t intervalMs)
 {
     if (nullptr != _conf)
     {
         ZS_LOG_ERROR(mq, "internal producer already initialized");
+        return false;
+    }
+
+    if (0 >= pollerCount || 0 > timeoutMs || 0 > intervalMs)
+    {
+        ZS_LOG_ERROR(mq, "invalid poller count/timeout/interval in mq manager, count : %d, timeout : %d, interval : %d",
+            pollerCount, timeoutMs, intervalMs);
         return false;
     }
 
@@ -63,6 +70,23 @@ bool Manager::Initialize(const ConfigList& configs, EventCallback ecb, Producing
         return false;
     }
 
+    // start pollers
+    for (auto i = 0; i < pollerCount; ++i)
+    {
+        PollerSPtr poller = std::make_shared<Poller>();
+        if (false == poller->Initialize(timeoutMs, intervalMs) 
+            || false == poller->Start())
+        {
+            ZS_LOG_ERROR(mq, "starting poller in mq manager failed, idx : %d", 
+                i);
+            delete conf;
+            _pollers.clear();
+            return false;
+        }
+
+        _pollers.push_back(poller);
+    }
+
     _conf = conf;
     _ecb = ecb;
     _pcb = pcb;
@@ -74,6 +98,13 @@ bool Manager::Initialize(const ConfigList& configs, EventCallback ecb, Producing
 
 void Manager::Finalize()
 {
+    for (auto& poller : _pollers)
+    {
+        //poller->Stop();
+        poller->Finalize();
+    }
+    _pollers.clear();
+
     for (const auto& [topic, prod] : _producers)
     {
         prod->Finalize();
@@ -107,6 +138,9 @@ ProducerSPtr Manager::CreateProducer(const std::string topic, const ConfigList& 
     prod->setInternalProducer(intProd);
 
     _producers[topic] = intProd;
+
+    PollerSPtr poller = _pollers[(_allocator++) % _pollers.size()];
+    poller->AddPollingBox(intProd);
 
     return prod;
 }

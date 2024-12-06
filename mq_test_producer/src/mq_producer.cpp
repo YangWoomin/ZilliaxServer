@@ -5,11 +5,13 @@ using namespace zs::common;
 using namespace zs::mq;
 
 
-bool MQProducer::Initialize(Logger::Messenger msgr, const std::string servers, const std::string debug)
+bool MQProducer::Initialize(Logger::Messenger msgr, const std::string servers, const std::string debug, int32_t pollerCount, int32_t intervalMs)
 {
     ConfigList configs;
     configs.push_back({"debug", debug});
     configs.push_back({"metadata.broker.list", servers});
+
+    int32_t pollingTimeoutMs = 0;
 
     auto eventCallback = [](EventType type, LogLevel level, const std::string& msg) {
         if (LOGLEVEL_FATAL == level)
@@ -23,11 +25,22 @@ bool MQProducer::Initialize(Logger::Messenger msgr, const std::string servers, c
         }
     };
 
-    auto producingCallback = [](MessageStatus status, Message* msg, const std::string& err) {
-        if (!err.empty())
+    auto producingCallback = [this](MessageStatus status, Message* msg, const std::string& err) {
+        
+        if (MESSAGESTATUS_NOT_PERSISTED == status)
         {
-            ZS_LOG_ERROR(mq_test_producer, "something wrong in mq producer, status : %d, msg : %s",
-                status, err.c_str());
+            ZS_LOG_WARN(mq_test_producer, "something wrong in mq producer, key : %s, sn : %llu, err msg : %s",
+                msg ? msg->_key.c_str() : "", msg ? msg->_sn : 0, err.c_str());
+            
+            // TODO: buffering the unsaved messages in other storage such as Redis (DLQ)
+            // but now we just reproduce the message
+            if (nullptr != _producer)
+            {
+                if (false == _producer->Produce(msg))
+                {
+
+                }
+            }
         }
         else
         {
@@ -38,7 +51,7 @@ bool MQProducer::Initialize(Logger::Messenger msgr, const std::string servers, c
         delete msg;
     };
 
-    if (false == MQ::Initialize(msgr, configs, eventCallback, producingCallback))
+    if (false == MQ::Initialize(msgr, configs, eventCallback, producingCallback, pollerCount, pollingTimeoutMs, intervalMs))
     {
         return false;
     }
