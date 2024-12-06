@@ -129,11 +129,11 @@ bool InternalProducer::Produce(Message* msg)
     return true;
 }
 
-int32_t InternalProducer::Poll(int32_t timeoutMs)
+int32_t InternalProducer::Poll(int32_t pollingTimeoutMs)
 {
     if (nullptr != _producer)
     {
-        return _producer->poll(timeoutMs);
+        return _producer->poll(pollingTimeoutMs);
     }
 
     return 0;

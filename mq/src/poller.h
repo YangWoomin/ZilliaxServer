@@ -23,7 +23,7 @@ namespace mq
     class Poller final : public Thread<Poller>
     {
     public:
-        bool Initialize(int32_t timeoutMs, int32_t intervalMs);
+        bool Initialize(int32_t pollingTimeoutMs, int32_t pollingIntervalMs);
         void Finalize();
 
         void AddPollingBox(PollingBoxWPtr box);

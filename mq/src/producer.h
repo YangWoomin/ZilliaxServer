@@ -24,7 +24,7 @@ namespace mq
 
         bool Produce(Message* msg);
 
-        virtual int32_t Poll(int32_t timeoutMs) override;
+        virtual int32_t Poll(int32_t pollingTimeoutMs) override;
 
         InternalProducer(Manager& manager);
         ~InternalProducer();

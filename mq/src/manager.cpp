@@ -21,7 +21,7 @@ std::unordered_map<RdKafka::Event::Severity, LogLevel> Manager::EventCallbacker:
     {RdKafka::Event::EVENT_SEVERITY_DEBUG,      LOGLEVEL_DEBUG}
 };
 
-bool Manager::Initialize(const ConfigList& configs, EventCallback ecb, ProducingCallback pcb, int32_t pollerCount, int32_t timeoutMs, int32_t intervalMs)
+bool Manager::Initialize(const ConfigList& configs, EventCallback ecb, ProducingCallback pcb, int32_t pollerCount, int32_t pollingTimeoutMs, int32_t pollingIntervalMs)
 {
     if (nullptr != _conf)
     {
@@ -29,10 +29,10 @@ bool Manager::Initialize(const ConfigList& configs, EventCallback ecb, Producing
         return false;
     }
 
-    if (0 >= pollerCount || 0 > timeoutMs || 0 > intervalMs)
+    if (0 >= pollerCount || 0 > pollingTimeoutMs || 0 > pollingIntervalMs)
     {
         ZS_LOG_ERROR(mq, "invalid poller count/timeout/interval in mq manager, count : %d, timeout : %d, interval : %d",
-            pollerCount, timeoutMs, intervalMs);
+            pollerCount, pollingTimeoutMs, pollingIntervalMs);
         return false;
     }
 
@@ -74,7 +74,7 @@ bool Manager::Initialize(const ConfigList& configs, EventCallback ecb, Producing
     for (auto i = 0; i < pollerCount; ++i)
     {
         PollerSPtr poller = std::make_shared<Poller>();
-        if (false == poller->Initialize(timeoutMs, intervalMs) 
+        if (false == poller->Initialize(pollingTimeoutMs, pollingIntervalMs) 
             || false == poller->Start())
         {
             ZS_LOG_ERROR(mq, "starting poller in mq manager failed, idx : %d", 

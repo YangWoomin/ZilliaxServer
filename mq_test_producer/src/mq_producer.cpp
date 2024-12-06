@@ -5,7 +5,7 @@ using namespace zs::common;
 using namespace zs::mq;
 
 
-bool MQProducer::Initialize(Logger::Messenger msgr, const std::string servers, const std::string debug, int32_t pollerCount, int32_t intervalMs)
+bool MQProducer::Initialize(Logger::Messenger msgr, const std::string servers, const std::string debug, int32_t pollerCount, int32_t pollingIntervalMs)
 {
     ConfigList configs;
     configs.push_back({"debug", debug});
@@ -54,7 +54,7 @@ bool MQProducer::Initialize(Logger::Messenger msgr, const std::string servers, c
         delete msg;
     };
 
-    if (false == MQ::Initialize(msgr, configs, eventCallback, producingCallback, pollerCount, pollingTimeoutMs, intervalMs))
+    if (false == MQ::Initialize(msgr, configs, eventCallback, producingCallback, pollerCount, pollingTimeoutMs, pollingIntervalMs))
     {
         return false;
     }

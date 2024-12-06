@@ -13,7 +13,7 @@ namespace mq
     class PollingBox
     {
     public:
-        virtual int32_t Poll(int32_t timeoutMs) = 0;
+        virtual int32_t Poll(int32_t pollingTimeoutMs) = 0;
     };
 
     using PollingBoxSPtr = std::shared_ptr<PollingBox>;

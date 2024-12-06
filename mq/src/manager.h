@@ -20,7 +20,7 @@ namespace mq
     class Manager final
     {
     public:
-        bool Initialize(const ConfigList& configs, EventCallback ecb, ProducingCallback pcb, int32_t pollerCount, int32_t timeoutMs, int32_t intervalMs);
+        bool Initialize(const ConfigList& configs, EventCallback ecb, ProducingCallback pcb, int32_t pollerCount, int32_t pollingTimeoutMs, int32_t pollingIntervalMs);
         void Finalize();
 
         ProducerSPtr CreateProducer(const std::string topic, const ConfigList& configs);

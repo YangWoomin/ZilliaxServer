@@ -4,14 +4,14 @@
 using namespace zs::common;
 using namespace zs::mq;
 
-bool Poller::Initialize(int32_t timeoutMs, int32_t intervalMs)
+bool Poller::Initialize(int32_t pollingTimeoutMs, int32_t pollingIntervalMs)
 {
-    _timeoutMs = timeoutMs;
+    _timeoutMs = pollingTimeoutMs;
 
-    if (0 < intervalMs)
+    if (0 < pollingIntervalMs)
     {
         // _intervalMs is 10 by default
-        _intervalMs = intervalMs;
+        _intervalMs = pollingIntervalMs;
     }
     
     return true;

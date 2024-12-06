@@ -13,7 +13,7 @@ using namespace zs::mq;
 class MQProducer final
 {
 public:
-    bool Initialize(Logger::Messenger msgr, const std::string servers, const std::string debug, int32_t pollerCount, int32_t intervalMs);
+    bool Initialize(Logger::Messenger msgr, const std::string servers, const std::string debug, int32_t pollerCount, int32_t pollingIntervalMs);
     void Finalize();
 
     bool CreateProducer(std::string topic);

@@ -25,7 +25,7 @@ bool Producer::Produce(Message* msg)
     return false;
 }
 
-bool MQ::Initialize(Logger::Messenger msgr, const ConfigList& configs, EventCallback ecb, ProducingCallback pcb, int32_t pollerCount, int32_t timeoutMs, int32_t intervalMs)
+bool MQ::Initialize(Logger::Messenger msgr, const ConfigList& configs, EventCallback ecb, ProducingCallback pcb, int32_t pollerCount, int32_t pollingTimeoutMs, int32_t pollingIntervalMs)
 {
     Logger::Messenger& messenger = Logger::GetMessenger();
     messenger = msgr;
@@ -38,7 +38,7 @@ bool MQ::Initialize(Logger::Messenger msgr, const ConfigList& configs, EventCall
 
     manager = new Manager();
 
-    if (false == manager->Initialize(configs, ecb, pcb, pollerCount, timeoutMs, intervalMs))
+    if (false == manager->Initialize(configs, ecb, pcb, pollerCount, pollingTimeoutMs, pollingIntervalMs))
     {
         ZS_LOG_ERROR(mq, "initializing mq manager failed");
         return false;
