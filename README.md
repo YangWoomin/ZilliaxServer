@@ -328,10 +328,17 @@ docker-compose ps
 ```
 
 #### Setting Kafka Cluster on Conduktor
-* Conduktor Guide Page : https://docs.conduktor.io/platform/get-started/installation/get-started/docker/
+* Conduktor guide page : https://docs.conduktor.io/platform/get-started/installation/get-started/docker/
 * http://localhost:8080
-* Add Kafka Cluster like the following picture
+* add kafka cluster like the following picture
 
-![conduktor_adding_kafka_cluster](https://github.com/user-attachments/assets/9f58d118-99a1-4da8-9f53-c7332f933c01)
+![conduktor_adding_kafka_cluster](https://github.com/user-attachments/assets/392ca274-00ed-4f91-a93e-d15736b7babb)
 
+* if you want to remove postgresql fatal messages such as "role "root" does not exist", "database "root" does not exist" run the following commands in the postgresql container
+```bash
+docker exec -it [your postgresql container id or name] /bin/bash
+psql -U conduktor -d conduktor-console
+CREATE ROLE root WITH LOGIN PASSWORD 'your_password';
+CREATE DATABASE root OWNER root;
+```
 
