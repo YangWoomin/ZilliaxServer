@@ -11,4 +11,13 @@ librdkafka
 librdkafkacpp in mq module
     https://github.com/confluentinc/librdkafka/tree/v2.6.1
 
+hiredis
+    1.2.0(1.2.0-6ubuntu3) from package manager in Ubuntu 
+    1.2.0 from vcpkg in Windows
 
+libuv
+    1.48.0(1.48.0-1.1build1) from package manager in Ubuntu
+    1.49.2 from vcpkg in Windows
+
+redis++
+    https://github.com/sewenew/redis-plus-plus/tree/1.3.13

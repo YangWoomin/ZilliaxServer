@@ -1,0 +1,28 @@
+
+** Windows
+
+$ # clone redis++ 1.3.13 from repository
+$ git clone --branch=1.3.13 https://github.com/sewenew/redis-plus-plus.git
+$ # build redis++
+$ # debug
+$ mkdir redis-plus-plus\build_windows_debug && cd redis-plus-plus\build_windows_debug
+$ cmake -G "Visual Studio 17 2022" -DHIREDIS_HEADER="../../../../../../third_party/include" -DHIREDIS_LIB="../../../../../../third_party/lib/hiredis.lib" -DREDIS_PLUS_PLUS_ASYNC_LIB_HEADER="../../../../../../third_party/include/uv" -DREDIS_PLUS_PLUS_ASYNC_LIB="../../../../../../third_party/lib/uv.lib" -DCMAKE_INSTALL_PREFIX=../install_windows -DREDIS_PLUS_PLUS_CXX_STANDARD=20 -DREDIS_PLUS_PLUS_BUILD_ASYNC=libuv -DREDIS_PLUS_PLUS_BUILD_TEST=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_DEBUG_POSTFIX=d ..
+$ # release
+$ mkdir redis-plus-plus\build_windows_release && cd redis-plus-plus\build_windows_release
+$ cmake -G "Visual Studio 17 2022" -DHIREDIS_HEADER="../../../../../../third_party/include" -DHIREDIS_LIB="../../../../../../third_party/lib/hiredis.lib" -DREDIS_PLUS_PLUS_ASYNC_LIB_HEADER="../../../../../../third_party/include/uv" -DREDIS_PLUS_PLUS_ASYNC_LIB="../../../../../../third_party/lib/uv.lib" -DCMAKE_INSTALL_PREFIX=../install_windows -DREDIS_PLUS_PLUS_CXX_STANDARD=20 -DREDIS_PLUS_PLUS_BUILD_ASYNC=libuv -DREDIS_PLUS_PLUS_BUILD_TEST=OFF ..
+$ # open redis++.sln and build solution (ALL_BUILD, INSTALL)
+$ # copy installed outputs on ../install_windows to third_party/[include|lib|bin] and output/bin
+
+** Ubuntu
+
+$ git clone --branch=1.3.13 https://github.com/sewenew/redis-plus-plus.git
+$ # build redis++
+$ # debug
+$ mkdir -p redis-plus-plus/build_linux_debug && cd redis-plus-plus/build_linux_debug
+$ cmake -DHIREDIS_HEADER="../../../../../../third_party/include" -DHIREDIS_LIB="../../../../../../third_party/lib/libhiredis.so" -DREDIS_PLUS_PLUS_ASYNC_LIB_HEADER="../../../../../../third_party/include/uv" -DREDIS_PLUS_PLUS_ASYNC_LIB="../../../../../../third_party/lib/libuv.so" -DCMAKE_INSTALL_PREFIX=../install_linux -DREDIS_PLUS_PLUS_CXX_STANDARD=20 -DREDIS_PLUS_PLUS_BUILD_ASYNC=libuv -DREDIS_PLUS_PLUS_BUILD_TEST=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_DEBUG_POSTFIX=d ..
+$ # release
+$ mkdir -p redis-plus-plus/build_linux_release && cd redis-plus-plus/build_linux_release
+$ cmake -DHIREDIS_HEADER="../../../../../../third_party/include" -DHIREDIS_LIB="../../../../../../third_party/lib/libhiredis.so" -DREDIS_PLUS_PLUS_ASYNC_LIB_HEADER="../../../../../../third_party/include/uv" -DREDIS_PLUS_PLUS_ASYNC_LIB="../../../../../../third_party/lib/libuv.so" -DCMAKE_INSTALL_PREFIX=../install_linux -DREDIS_PLUS_PLUS_CXX_STANDARD=20 -DREDIS_PLUS_PLUS_BUILD_ASYNC=libuv -DREDIS_PLUS_PLUS_BUILD_TEST=OFF ..
+$ make
+$ make install
+$ # copy installed outputs on ../install_linux to third_party/[include|lib|bin] and output/bin
