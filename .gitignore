@@ -6,10 +6,6 @@ output/*
 !output/bin
 output/bin/*
 !output/bin/rdkafka*
-!output/bin/librdkafka*
-!output/bin/libhiredis*
 !output/bin/hiredis*
-!output/bin/libuv*
 !output/bin/uv*
-!output/bin/libredis++*
 !output/bin/redis++*
