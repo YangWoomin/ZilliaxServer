@@ -68,7 +68,7 @@
 * make : make-3.8.1.exe (in ./setting/build_tool directory)
 * cmake : cmake-3.30.0-windows-x86_64.msi (in ./setting/build_tool directory)
 * core utils : coreutils-5.3.0.exe (in ./setting/build_tool directory)
-* mysql odbc driver : mysql-connector-odbc-9.0.0-win64.msi (in ./setting/database/driver directory)
+* mysql odbc driver : mysql-connector-odbc-9.0.0-win64.msi (in ./setting/database/mysql/driver directory)
 
 ### Linux (Ubuntu 24.04 on wsl2) Prerequisite
 * os : Ubuntu 24.04 LTS
