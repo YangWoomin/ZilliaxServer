@@ -38,8 +38,10 @@ namespace cache
     class __ZS_CACHE_API Cache final
     {
     public:
-        static bool Initialize(Logger::Messenger msgr);
+        static bool Initialize(Logger::Messenger msgr, const std::string& dsn);
         static void Finalize();
+
+        static bool Set(const std::string& script, const std::vector<std::string>& keys, const std::vector<std::string>& args);
 
     private:
 

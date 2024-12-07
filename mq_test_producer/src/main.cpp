@@ -120,11 +120,17 @@ int main(int argc, char** argv)
         return 0;
     }
 
-    Cache::Initialize(msgr);
+    Cache::Initialize(msgr, "redis://bitnami@localhost:7000/");
+
+    const std::string testScript = R"(
+        if (#KEYS ~= 1 or #ARGV ~= 2) then return 0 end
+        redis.call("SET", KEYS[1] .. ":" .. ARGV[1], ARGV[2], "EX", 3000)
+        return 1
+    )";
 
     std::atomic<uint64_t> sn{0};
     std::weak_ptr<MQProducer> tmpMp = mp;
-    auto onMessageReceived = [tmpMp, &sn](const char* client, const char* msg, std::size_t len) {
+    auto onMessageReceived = [tmpMp, &sn, &testScript](const char* client, const char* msg, std::size_t len) {
         std::shared_ptr<MQProducer> mp = tmpMp.lock();
         if (nullptr != mp)
         {
@@ -134,6 +140,12 @@ int main(int argc, char** argv)
         {
             // TODO: buffer the messages
         }
+
+        std::string hash = "{" + std::string(client) + "}";
+        std::vector<std::string> keys = {hash};
+        std::vector<std::string> args = {std::to_string(sn), msg};
+
+        Cache::Set(testScript, keys, args);
     };
 
     ChatServer(msgr, IPVer::IP_V4, Protocol::TCP, port, isBroadcasting, nullptr, nullptr, onMessageReceived);

@@ -9,7 +9,7 @@
 using namespace zs::common;
 using namespace zs::network;
 
-Manager* manager = nullptr;
+static Manager* manager = nullptr;
 
 bool Network::Initialize(Logger::Messenger msgr)
 {

@@ -7,23 +7,30 @@
 
 #include    "cache/cache.h"
 
-#include    <unordered_map>
+#include    <sw/redis++/redis++.h>
+#include    <sw/redis++/async_redis++.h>
+
+#include    <memory>
 
 namespace zs
 {
 namespace cache
 {
     using namespace zs::common;
+    using namespace sw::redis;
 
     class Manager final
     {
     public:
-        bool Initialize();
+        bool Initialize(const std::string& dsn);
         void Finalize();
+
+        bool Set(std::string script, std::vector<std::string> keys, std::vector<std::string> args);
 
         Manager();
 
     private:
+        std::shared_ptr<AsyncRedisCluster>   _arc;
     };
 }
 }
