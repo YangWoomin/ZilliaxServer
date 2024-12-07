@@ -311,7 +311,7 @@ make rebuild_debug
 
 | Feature | Implemented | Tested |
 |----------|----------|----------|
-| Producer | ⬜ | ⬜ |
+| Producer | ✅ | ✅ |
 | Consumer | ⬜ | ⬜ |
 
 
