@@ -44,7 +44,10 @@
             "${workspaceFolder}/common/include",
             "${workspaceFolder}/db/include",
             "${workspaceFolder}/network/include",
-            "${workspaceFolder}/mq/include"
+            "${workspaceFolder}/mq/include",
+            "${workspaceFolder}/cache/include",
+            "${workspaceFolder}/third_party/include",
+            "${workspaceFolder}/third_party/include/uv"
         ]
     }
 }

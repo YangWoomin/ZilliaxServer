@@ -189,6 +189,30 @@
             },
             "group": "build"
         },
+        {
+            "type": "shell",
+            "label": "Rebuild cache as Debug",
+            "command": "make",
+            "args": [
+                "rebuild_debug"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/cache"
+            },
+            "group": "build"
+        },
+        {
+            "type": "shell",
+            "label": "Rebuild cache as Release",
+            "command": "make",
+            "args": [
+                "rebuild_release"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/cache"
+            },
+            "group": "build"
+        },
 
         {
             "type": "shell",

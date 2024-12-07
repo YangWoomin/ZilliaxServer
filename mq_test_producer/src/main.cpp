@@ -6,6 +6,8 @@
 #include    "chat_server.h"
 #include    "mq_producer.h"
 
+#include    "cache/cache.h"
+
 #include    "spdlog/spdlog.h"
 #include    "spdlog/async.h"
 #include    "spdlog/sinks/stdout_color_sinks.h"
@@ -20,6 +22,7 @@
 
 using namespace zs::common;
 using namespace zs::network;
+using namespace zs::cache;
 
 int main(int argc, char** argv)
 {
@@ -116,6 +119,8 @@ int main(int argc, char** argv)
     {
         return 0;
     }
+
+    Cache::Initialize(msgr);
 
     std::atomic<uint64_t> sn{0};
     std::weak_ptr<MQProducer> tmpMp = mp;
