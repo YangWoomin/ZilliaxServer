@@ -12,7 +12,7 @@ void Operation1::Callback()
         auto res = _fut.get();
         if (nullptr != _cb)
         {
-            _cb(_cid, _keys, _args, true, res ? std::move(*res) : ResultSet1{});
+            _cb(_cid, std::move(_keys), std::move(_args), true, res ? std::move(*res) : ResultSet1{});
         }
     } 
     catch (const Error& err) 
@@ -22,7 +22,7 @@ void Operation1::Callback()
         
         if (nullptr != _cb)
         {
-            _cb(_cid, _keys, _args, false, ResultSet1{});
+            _cb(_cid, std::move(_keys), std::move(_args), false, ResultSet1{});
         }
     }
 }
@@ -34,7 +34,7 @@ void Operation2::Callback()
         auto res = _fut.get();
         if (nullptr != _cb)
         {
-            _cb(_cid, _keys, _args, true, res ? *res : 0);
+            _cb(_cid, std::move(_keys), std::move(_args), true, res ? *res : 0);
         }
     } 
     catch (const Error& err) 
@@ -44,7 +44,7 @@ void Operation2::Callback()
         
         if (nullptr != _cb)
         {
-            _cb(_cid, _keys, _args, false, 0);
+            _cb(_cid, std::move(_keys), std::move(_args), false, 0);
         }
     }
 }

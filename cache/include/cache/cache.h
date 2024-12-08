@@ -42,8 +42,8 @@ namespace cache
     using Args = std::vector<std::string>;
     using ResultSet1 = std::vector<std::string>;
     using SimpleResult = long long;
-    using AsyncSet1Callback = std::function<void(ContextID, const Keys&, const Args&, bool, ResultSet1&&)>;
-    using AsyncSet2Callback = std::function<void(ContextID, const Keys&, const Args&, bool, SimpleResult)>;
+    using AsyncSet1Callback = std::function<void(ContextID, Keys&&, Args&&, bool, ResultSet1&&)>;
+    using AsyncSet2Callback = std::function<void(ContextID, Keys&&, Args&&, bool, SimpleResult)>;
 
     class __ZS_CACHE_API Cache final
     {

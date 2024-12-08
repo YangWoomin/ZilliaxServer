@@ -4,9 +4,7 @@
 #include    "network/network.h"
 
 #include    "chat_server.h"
-#include    "mq_producer.h"
-
-#include    "cache/cache.h"
+#include    "msg_manager.h"
 
 #include    "spdlog/spdlog.h"
 #include    "spdlog/async.h"
@@ -31,11 +29,10 @@ int main(int argc, char** argv)
     options.add_options()
         ("p,port", "server port to listen", cxxopts::value<int>()->default_value("3000"))
         ("b,broadcast", "broadcast or unicast echo mode in server", cxxopts::value<bool>()->default_value("false"))
-        ("s,servers", "mq servers delimited by comma", cxxopts::value<std::string>()->default_value("localhost:29092,localhost:39092,localhost:49092"))
+        ("m,mq", "mq servers address delimited by comma", cxxopts::value<std::string>()->default_value("localhost:29092,localhost:39092,localhost:49092"))
         ("d,debug", "mq producer debug mode", cxxopts::value<std::string>()->default_value("generic"))
         ("t,topic", "mq topic", cxxopts::value<std::string>()->default_value("mq_test_topic"))
-        ("c,count", "mq poller count", cxxopts::value<int>()->default_value("2"))
-        ("i,interval", "mq poller interval(ms)", cxxopts::value<int>()->default_value("10"))
+        ("c,cache", "cache server dsn", cxxopts::value<std::string>()->default_value("redis://bitnami@localhost:7000/"))
         ("h,help", "Print usage");
 
     auto result = options.parse(argc, argv);
@@ -45,13 +42,19 @@ int main(int argc, char** argv)
         return 0;
     }
 
+    // command line setting
     int32_t port = result["port"].as<int32_t>();
     bool isBroadcasting = result["broadcast"].as<bool>();
-    std::string servers = result["servers"].as<std::string>();
+    std::string cacheAddr = result["cache"].as<std::string>();
+    std::string mqAddr = result["mq"].as<std::string>();
     std::string debug = result["debug"].as<std::string>();
     std::string topic = result["topic"].as<std::string>();
-    int32_t count = result["count"].as<int32_t>();
-    int32_t interval = result["interval"].as<int32_t>();
+
+    // default setting
+    int32_t msgManagerWorkerCount = 2;
+    int32_t cacheWorkerCount = 2;
+    int32_t mqPollerCount = 2;
+    int32_t mqPollingIntervalMs = 10;
 
     // spd async logger
     spdlog::init_thread_pool(8192, 1);
@@ -109,59 +112,30 @@ int main(int argc, char** argv)
 
     ZS_LOG_INFO(mq_test_producer, "============ mq test producer start ============");
 
-    std::shared_ptr<MQProducer> mp = std::make_shared<MQProducer>();
-    if (false == mp->Initialize(msgr, servers, debug, count, interval))
-    {
-        return 0;
-    }
-    
-    if (false == mp->CreateProducer(topic))
+    std::shared_ptr<MsgManager> mm = std::make_shared<MsgManager>();
+    if (false == mm->Initialize(msgr, msgManagerWorkerCount, cacheAddr, cacheWorkerCount, mqAddr, debug, topic, mqPollerCount, mqPollingIntervalMs))
     {
         return 0;
     }
 
-    Cache::Initialize(msgr, "redis://bitnami@localhost:7000/", 2);
-
-    const Script testScript = R"(
-        if (#KEYS ~= 1 or #ARGV ~= 2) then return 0 end
-        redis.call("SET", KEYS[1] .. ":" .. ARGV[1], ARGV[2], "EX", 3000)
-        return 1
-    )";
-
-    std::atomic<uint64_t> sn{0};
-    std::weak_ptr<MQProducer> tmpMp = mp;
-    auto onMessageReceived = [tmpMp, &sn, &testScript](const char* client, const char* msg, std::size_t len) {
-        uint64_t nsn = ++sn;
-        std::shared_ptr<MQProducer> mp = tmpMp.lock();
-        if (nullptr != mp)
+    std::weak_ptr<MsgManager> tmpMm = mm;
+    auto onMessageReceived = [tmpMm](const char* client, const char* msg, std::size_t len) {
+        std::shared_ptr<MsgManager> mm = tmpMm.lock();
+        if (nullptr != mm)
         {
-            mp->Produce(client, msg, len, nsn);
+            mm->StoreMessage(client, msg, len);
         }
-
-        std::string clientId(client);
-        std::string hashSlot = "{" + clientId + "}";
-        Keys keys = {hashSlot};
-        Args args = {std::to_string(sn), std::string(msg, len)};
-        WorkerHash wh = std::hash<std::string>{}(clientId);
-        Cache::Set(testScript, nsn, std::move(keys), std::move(args), wh, 
-            [](ContextID cid, const Keys& keys, const Args& args, bool success, SimpleResult res) {
-                if (success)
-                {
-                    ZS_LOG_INFO(mq_test_producer, "caching message succeeded, sn : %llu, res : %d",
-                        cid, res);
-                }
-                else
-                {
-                    ZS_LOG_WARN(mq_test_producer, "caching message failed, sn : %llu",
-                        cid);
-                }
-            }
-        );
+        else
+        {
+            ZS_LOG_ERROR(mq_test_producer, "missed message, client : %s, msg : %s",
+                client, msg);
+        }
     };
 
     ChatServer(msgr, IPVer::IP_V4, Protocol::TCP, port, isBroadcasting, nullptr, nullptr, onMessageReceived);
 
-    mp.reset();
+    mm->Finalize();
+    mm.reset();
 
     ZS_LOG_INFO(mq_test_producer, "============ mq test producer end ============");
 

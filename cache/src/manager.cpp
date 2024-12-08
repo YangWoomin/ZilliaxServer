@@ -83,6 +83,12 @@ bool Manager::Set(const Script& script, ContextID cid, Keys&& keys, Args&& args,
         return false;
     }
 
+    Keys hKeys;
+    for (auto key : keys)
+    {
+        hKeys.push_back("{" + key + "}");
+    }
+
     Operation1SPtr op = std::make_shared<Operation1>();
     op->_script = script;
     op->_cid = cid;
@@ -91,8 +97,8 @@ bool Manager::Set(const Script& script, ContextID cid, Keys&& keys, Args&& args,
     op->_cb = cb;
     op->_fut = _arc->eval<Optional<ResultSet1>>(
         op->_script, 
-        op->_keys.begin(), 
-        op->_keys.end(), 
+        hKeys.begin(), 
+        hKeys.end(), 
         op->_args.begin(), 
         op->_args.end()
     );
@@ -108,6 +114,12 @@ bool Manager::Set(const Script& script, ContextID cid, Keys&& keys, Args&& args,
         return false;
     }
 
+    Keys hKeys;
+    for (auto key : keys)
+    {
+        hKeys.push_back("{" + key + "}");
+    }
+
     Operation2SPtr op = std::make_shared<Operation2>();
     op->_script = script;
     op->_cid = cid;
@@ -116,8 +128,8 @@ bool Manager::Set(const Script& script, ContextID cid, Keys&& keys, Args&& args,
     op->_cb = cb;
     op->_fut = _arc->eval<Optional<SimpleResult>>(
         op->_script, 
-        op->_keys.begin(), 
-        op->_keys.end(), 
+        hKeys.begin(), 
+        hKeys.end(), 
         op->_args.begin(), 
         op->_args.end()
     );
