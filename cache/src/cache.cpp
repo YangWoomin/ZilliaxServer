@@ -10,7 +10,7 @@ using namespace zs::cache;
 
 static Manager* manager = nullptr;
 
-bool Cache::Initialize(Logger::Messenger msgr, const std::string& dsn)
+bool Cache::Initialize(Logger::Messenger msgr, const std::string& dsn, int32_t workerCount)
 {
     Logger::Messenger& messenger = Logger::GetMessenger();
     messenger = msgr;
@@ -23,7 +23,7 @@ bool Cache::Initialize(Logger::Messenger msgr, const std::string& dsn)
 
     manager = new Manager();
 
-    if (false == manager->Initialize(dsn))
+    if (false == manager->Initialize(dsn, workerCount))
     {
         ZS_LOG_ERROR(cache, "initializing cache manager failed");
         return false;
@@ -44,7 +44,7 @@ void Cache::Finalize()
     }
 }
 
-bool Cache::Set(const std::string& script, const std::vector<std::string>& keys, const std::vector<std::string>& args)
+bool Cache::Set(const Script& script, ContextID cid, Keys&& keys, Args&& args, WorkerHash wh, AsyncSet1Callback cb)
 {
     if (nullptr == manager)
     {
@@ -52,6 +52,17 @@ bool Cache::Set(const std::string& script, const std::vector<std::string>& keys,
         return false;
     }
 
-    return manager->Set(script, keys, args);
+    return manager->Set(script, cid, std::move(keys), std::move(args), wh, cb);
+}
+
+bool Cache::Set(const Script& script, ContextID cid, Keys&& keys, Args&& args, WorkerHash wh, AsyncSet2Callback cb)
+{
+    if (nullptr == manager)
+    {
+        ZS_LOG_ERROR(cache, "cache manager not initialized");
+        return false;
+    }
+
+    return manager->Set(script, cid, std::move(keys), std::move(args), wh, cb);
 }
 

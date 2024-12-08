@@ -35,13 +35,24 @@ namespace cache
 {
     using namespace zs::common;
 
+    using Script = std::string;
+    using Keys = std::vector<std::string>;
+    using ContextID = uint64_t;
+    using WorkerHash = uint64_t;
+    using Args = std::vector<std::string>;
+    using ResultSet1 = std::vector<std::string>;
+    using SimpleResult = long long;
+    using AsyncSet1Callback = std::function<void(ContextID, const Keys&, const Args&, bool, ResultSet1&&)>;
+    using AsyncSet2Callback = std::function<void(ContextID, const Keys&, const Args&, bool, SimpleResult)>;
+
     class __ZS_CACHE_API Cache final
     {
     public:
-        static bool Initialize(Logger::Messenger msgr, const std::string& dsn);
+        static bool Initialize(Logger::Messenger msgr, const std::string& dsn, int32_t workerCount);
         static void Finalize();
 
-        static bool Set(const std::string& script, const std::vector<std::string>& keys, const std::vector<std::string>& args);
+        static bool Set(const Script& script, ContextID cid, Keys&& keys, Args&& args, WorkerHash wh, AsyncSet1Callback cb);
+        static bool Set(const Script& script, ContextID cid, Keys&& keys, Args&& args, WorkerHash wh, AsyncSet2Callback cb);
 
     private:
 

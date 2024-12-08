@@ -120,9 +120,9 @@ int main(int argc, char** argv)
         return 0;
     }
 
-    Cache::Initialize(msgr, "redis://bitnami@localhost:7000/");
+    Cache::Initialize(msgr, "redis://bitnami@localhost:7000/", 2);
 
-    const std::string testScript = R"(
+    const Script testScript = R"(
         if (#KEYS ~= 1 or #ARGV ~= 2) then return 0 end
         redis.call("SET", KEYS[1] .. ":" .. ARGV[1], ARGV[2], "EX", 3000)
         return 1
@@ -131,21 +131,32 @@ int main(int argc, char** argv)
     std::atomic<uint64_t> sn{0};
     std::weak_ptr<MQProducer> tmpMp = mp;
     auto onMessageReceived = [tmpMp, &sn, &testScript](const char* client, const char* msg, std::size_t len) {
+        uint64_t nsn = ++sn;
         std::shared_ptr<MQProducer> mp = tmpMp.lock();
         if (nullptr != mp)
         {
-            mp->Produce(client, msg, len, ++sn);
-        }
-        else
-        {
-            // TODO: buffer the messages
+            mp->Produce(client, msg, len, nsn);
         }
 
-        std::string hash = "{" + std::string(client) + "}";
-        std::vector<std::string> keys = {hash};
-        std::vector<std::string> args = {std::to_string(sn), msg};
-
-        Cache::Set(testScript, keys, args);
+        std::string clientId(client);
+        std::string hashSlot = "{" + clientId + "}";
+        Keys keys = {hashSlot};
+        Args args = {std::to_string(sn), std::string(msg, len)};
+        WorkerHash wh = std::hash<std::string>{}(clientId);
+        Cache::Set(testScript, nsn, std::move(keys), std::move(args), wh, 
+            [](ContextID cid, const Keys& keys, const Args& args, bool success, SimpleResult res) {
+                if (success)
+                {
+                    ZS_LOG_INFO(mq_test_producer, "caching message succeeded, sn : %llu, res : %d",
+                        cid, res);
+                }
+                else
+                {
+                    ZS_LOG_WARN(mq_test_producer, "caching message failed, sn : %llu",
+                        cid);
+                }
+            }
+        );
     };
 
     ChatServer(msgr, IPVer::IP_V4, Protocol::TCP, port, isBroadcasting, nullptr, nullptr, onMessageReceived);

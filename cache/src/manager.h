@@ -6,11 +6,13 @@
 #include    "common/log.h"
 
 #include    "cache/cache.h"
+#include    "common.h"
 
 #include    <sw/redis++/redis++.h>
 #include    <sw/redis++/async_redis++.h>
 
 #include    <memory>
+#include    <vector>
 
 namespace zs
 {
@@ -22,15 +24,19 @@ namespace cache
     class Manager final
     {
     public:
-        bool Initialize(const std::string& dsn);
+        bool Initialize(const std::string& dsn, int32_t workerCount);
         void Finalize();
 
-        bool Set(std::string script, std::vector<std::string> keys, std::vector<std::string> args);
+        bool Set(const Script& script, ContextID cid, Keys&& keys, Args&& args, WorkerHash wh, AsyncSet1Callback cb);
+        bool Set(const Script& script, ContextID cid, Keys&& keys, Args&& args, WorkerHash wh, AsyncSet2Callback cb);
 
-        Manager();
+        Manager() = default;
+        ~Manager() = default;
 
     private:
+        std::vector<WorkerSPtr>              _workers;
         std::shared_ptr<AsyncRedisCluster>   _arc;
+        std::shared_ptr<RedisCluster>        _rc;
     };
 }
 }

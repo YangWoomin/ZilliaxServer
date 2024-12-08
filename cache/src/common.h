@@ -10,7 +10,8 @@ namespace zs
 {
 namespace cache
 {
-    
+    class Worker;
+    using WorkerSPtr = std::shared_ptr<Worker>;
 }
 }
 

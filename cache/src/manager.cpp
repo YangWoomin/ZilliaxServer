@@ -2,14 +2,16 @@
 #include    "cache/cache.h"
 
 #include    "common/log.h"
+#include    "worker.h"
 
 #include    "manager.h"
+#include    "worker.h"
 
 using namespace zs::common;
 using namespace zs::cache;
 using namespace sw::redis;
 
-bool Manager::Initialize(const std::string& dsn)
+bool Manager::Initialize(const std::string& dsn, int32_t workerCount)
 {
     if (nullptr != _arc)
     {
@@ -17,7 +19,36 @@ bool Manager::Initialize(const std::string& dsn)
         return false;
     }
 
-    _arc = std::make_shared<AsyncRedisCluster>(dsn);
+    if (0 >= workerCount)
+    {
+        ZS_LOG_ERROR(cache, "invalid worker count in cache manager, count : %d",
+            workerCount);
+        return false;
+    }
+
+    for (auto i = 0; i < workerCount; ++i)
+    {
+        WorkerSPtr worker = std::make_shared<Worker>();
+        if (false == worker->Start())
+        {
+            ZS_LOG_ERROR(cache, "creating cache worker failed, idx : %d",
+                i);
+            return false;
+        }
+        _workers.push_back(worker);
+    }
+
+    try 
+    {
+        _arc = std::make_shared<AsyncRedisCluster>(dsn);
+        _rc = std::make_shared<RedisCluster>(dsn);
+    } 
+    catch (const Error &err) 
+    {
+        ZS_LOG_ERROR(cache, "creating cache handles failed, msg : %s",
+            err.what());
+        return false;
+    }
 
     ZS_LOG_INFO(cache, "cache manager initialized");
 
@@ -26,10 +57,25 @@ bool Manager::Initialize(const std::string& dsn)
 
 void Manager::Finalize()
 {
-    
+    for (auto& worker : _workers)
+    {
+        worker->Stop();
+    }
+    _workers.clear();
+
+    try 
+    {
+        _arc.reset();
+        _rc.reset();
+    } 
+    catch (const Error &err) 
+    {
+        ZS_LOG_WARN(cache, "clearing cache handles failed, msg : %s",
+            err.what());
+    }
 }
 
-bool Manager::Set(std::string script, std::vector<std::string> keys, std::vector<std::string> args)
+bool Manager::Set(const Script& script, ContextID cid, Keys&& keys, Args&& args, WorkerHash wh, AsyncSet1Callback cb)
 {
     if (nullptr == _arc)
     {
@@ -37,26 +83,44 @@ bool Manager::Set(std::string script, std::vector<std::string> keys, std::vector
         return false;
     }
 
-    auto res = _arc->eval<Optional<long long>>(script, keys.begin(), keys.end(), args.begin(), args.end());
+    Operation1SPtr op = std::make_shared<Operation1>();
+    op->_script = script;
+    op->_cid = cid;
+    op->_keys = std::move(keys);
+    op->_args = std::move(args);
+    op->_cb = cb;
+    op->_fut = _arc->eval<Optional<ResultSet1>>(
+        op->_script, 
+        op->_keys.begin(), 
+        op->_keys.end(), 
+        op->_args.begin(), 
+        op->_args.end()
+    );
 
-    try {
-        auto val = res.get();
-        if (val)
-            ZS_LOG_INFO(cache, "cache eval res : %d",
-                *val);
-        else
-            ZS_LOG_ERROR(cache, "cache eval no res");
-    } catch (const Error &err) {
-        // handle error
-        ZS_LOG_ERROR(cache, "cache eval exception, %s",
-            err.what());
-    }
-    
-
-    return true;
+    return _workers[wh % _workers.size()]->Post(op);
 }
 
-Manager::Manager()
+bool Manager::Set(const Script& script, ContextID cid, Keys&& keys, Args&& args, WorkerHash wh, AsyncSet2Callback cb)
 {
-    
+    if (nullptr == _arc)
+    {
+        ZS_LOG_ERROR(cache, "cache manager not initialized");
+        return false;
+    }
+
+    Operation2SPtr op = std::make_shared<Operation2>();
+    op->_script = script;
+    op->_cid = cid;
+    op->_keys = std::move(keys);
+    op->_args = std::move(args);
+    op->_cb = cb;
+    op->_fut = _arc->eval<Optional<SimpleResult>>(
+        op->_script, 
+        op->_keys.begin(), 
+        op->_keys.end(), 
+        op->_args.begin(), 
+        op->_args.end()
+    );
+
+    return _workers[wh % _workers.size()]->Post(op);
 }
