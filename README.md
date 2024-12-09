@@ -309,11 +309,12 @@ make rebuild_debug
 * this module is core of producing and consuming messages to and from message queue(Kafka) asynchronously
 * the following features are or would be supported
 
-| Feature | Implemented | Tested |
-|----------|----------|----------|
-| Producer | ✅ | ✅ |
-| Consumer | ⬜ | ⬜ |
+| Feature | Implemented | Tested | Linux | Windows |
+|----------|----------|----------|----------|----------|
+| Producer | ✅ | ✅ | ✅ | ❌ |
+| Consumer | ⬜ | ⬜ | ⬜ | ⬜ |
 
+* servers on windows cannot find redis and kafka clusters in wsl2 
 
 ### Prerequisite
 #### Docker & Docker Compose Installation 
