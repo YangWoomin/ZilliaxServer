@@ -10,7 +10,7 @@ using namespace zs::mq;
 
 bool InternalProducer::Initialize(const std::string& topic_str, RdKafka::Conf* gConfig, const ConfigList& configs)
 {
-    if (nullptr != _conf)
+    if (nullptr != _producer)
     {
         ZS_LOG_ERROR(mq, "mq producer already initialized, topic : %s",
             topic_str.c_str());
@@ -54,6 +54,34 @@ bool InternalProducer::Initialize(const std::string& topic_str, RdKafka::Conf* g
     _conf = conf;
     _producer = producer;
     _topic = topic;
+
+    ZS_LOG_INFO(mq, "mq producer initialized, topic : %s",
+        topic_str.c_str());
+
+    return true;
+}
+
+bool InternalProducer::Initialize(const std::string& topic_str, RdKafka::Conf* gConfig)
+{
+    if (nullptr != _producer)
+    {
+        ZS_LOG_ERROR(mq, "mq producer already initialized, topic : %s",
+            topic_str.c_str());
+        return false;
+    }
+
+    std::string errMsg;
+
+    RdKafka::Producer* producer = RdKafka::Producer::create(gConfig, errMsg);
+    if (nullptr == producer)
+    {
+        ZS_LOG_ERROR(mq, "creating new producer in mq producer failed, topic : %s, msg : %s", 
+            topic_str.c_str(), errMsg.c_str());
+        return false;
+    }
+
+    _producer = producer;
+    _topicName = topic_str;
 
     ZS_LOG_INFO(mq, "mq producer initialized, topic : %s",
         topic_str.c_str());
@@ -106,26 +134,39 @@ bool InternalProducer::Produce(Message* msg)
         return false;
     }
 
-    // TODO: add headers
-    // RdKafka::Headers *headers = RdKafka::Headers::create();
-    // for (const auto& [key, value] : msg->_headers)
-    // {
-    //     headers->add(key, value);
-    // }
+    RdKafka::ErrorCode errCode = RdKafka::ERR_NO_ERROR;
+    if (nullptr != _topic)
+    {
+        errCode = _producer->produce(_topic, RdKafka::Topic::PARTITION_UA,
+            RdKafka::Producer::RK_MSG_COPY, (void*)msg->_buf.c_str(), msg->_buf.size(),
+            &msg->_key, msg);
+    }
+    else
+    {
+        RdKafka::Headers* headers = RdKafka::Headers::create();
+        for (const auto& [key, value] : msg->_headers)
+        {
+            headers->add(key, value);
+        }
 
-    RdKafka::ErrorCode errCode = _producer->produce(_topic, RdKafka::Topic::PARTITION_UA,
-        RdKafka::Producer::RK_MSG_COPY, (void*)msg->_buf.c_str(), msg->_buf.size(),
-        &msg->_key, msg);
+        errCode = _producer->produce(_topicName, RdKafka::Topic::PARTITION_UA,
+            RdKafka::Producer::RK_MSG_COPY, (void*)msg->_buf.c_str(), msg->_buf.size(),
+            msg->_key.c_str(), msg->_key.size(),
+            0, headers, msg);
+
+        if (RdKafka::ERR_NO_ERROR != errCode)
+        {
+            delete headers;
+        }
+    }
+
     if (RdKafka::ERR_NO_ERROR != errCode)
     {
         ZS_LOG_ERROR(mq, "producing message failed in mq producer, topic : %s, key : %s, sn : %llu, err code : %d", 
-            _topic->name().c_str(), msg->_key.c_str(), msg->_sn, errCode);
+            _topicName.c_str(), msg->_key.c_str(), msg->_sn, errCode);
         return false;
     }
-
-    // polling is processed by pollers
-    //_producer->poll(0);
-
+    
     return true;
 }
 

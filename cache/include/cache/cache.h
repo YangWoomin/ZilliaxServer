@@ -51,8 +51,10 @@ namespace cache
         static bool Initialize(Logger::Messenger msgr, const std::string& dsn, int32_t workerCount);
         static void Finalize();
 
-        static bool Set(const Script& script, ContextID cid, Keys&& keys, Args&& args, WorkerHash wh, AsyncSet1Callback cb);
-        static bool Set(const Script& script, ContextID cid, Keys&& keys, Args&& args, WorkerHash wh, AsyncSet2Callback cb);
+        static bool Run(const Script& script, ContextID cid, Keys&& keys, Args&& args, WorkerHash wh, AsyncSet1Callback cb);
+        static bool Run(const Script& script, ContextID cid, Keys&& keys, Args&& args, WorkerHash wh, AsyncSet2Callback cb);
+        static bool Run(const Script& script, ContextID cid, Keys&& keys, Args&& args, ResultSet1& rs);
+        static bool Run(const Script& script, ContextID cid, Keys&& keys, Args&& args, SimpleResult& rs);
 
     private:
 

@@ -24,6 +24,7 @@ namespace mq
         void Finalize();
 
         ProducerSPtr CreateProducer(const std::string topic, const ConfigList& configs);
+        ProducerSPtr CreateProducer(const std::string topic);
 
         Manager();
 

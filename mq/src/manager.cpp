@@ -80,7 +80,6 @@ bool Manager::Initialize(const ConfigList& configs, EventCallback ecb, Producing
             ZS_LOG_ERROR(mq, "starting poller in mq manager failed, idx : %d", 
                 i);
             delete conf;
-            _pollers.clear();
             return false;
         }
 
@@ -128,6 +127,33 @@ ProducerSPtr Manager::CreateProducer(const std::string topic, const ConfigList& 
 
     InternalProducerSPtr intProd = std::make_shared<InternalProducer>(*this);
     if (false == intProd->Initialize(topic, _conf, configs))
+    {
+        ZS_LOG_ERROR(mq, "initializing producer failed in mq manager, topic : %s",
+            topic.c_str());
+        return nullptr;
+    }
+
+    ProducerSPtr prod = std::make_shared<Producer>();
+    prod->setInternalProducer(intProd);
+
+    _producers[topic] = intProd;
+
+    PollerSPtr poller = _pollers[(_allocator++) % _pollers.size()];
+    poller->AddPollingBox(intProd);
+
+    return prod;
+}
+
+ProducerSPtr Manager::CreateProducer(const std::string topic)
+{
+    if (nullptr == _conf)
+    {
+        ZS_LOG_ERROR(mq, "mq manager not initialized");
+        return nullptr;
+    }
+
+    InternalProducerSPtr intProd = std::make_shared<InternalProducer>(*this);
+    if (false == intProd->Initialize(topic, _conf))
     {
         ZS_LOG_ERROR(mq, "initializing producer failed in mq manager, topic : %s",
             topic.c_str());

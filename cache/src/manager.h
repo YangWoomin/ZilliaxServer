@@ -27,8 +27,10 @@ namespace cache
         bool Initialize(const std::string& dsn, int32_t workerCount);
         void Finalize();
 
-        bool Set(const Script& script, ContextID cid, Keys&& keys, Args&& args, WorkerHash wh, AsyncSet1Callback cb);
-        bool Set(const Script& script, ContextID cid, Keys&& keys, Args&& args, WorkerHash wh, AsyncSet2Callback cb);
+        bool Run(const Script& script, ContextID cid, Keys&& keys, Args&& args, WorkerHash wh, AsyncSet1Callback cb);
+        bool Run(const Script& script, ContextID cid, Keys&& keys, Args&& args, WorkerHash wh, AsyncSet2Callback cb);
+        bool Run(const Script& script, ContextID cid, Keys&& keys, Args&& args, ResultSet1& rs);
+        bool Run(const Script& script, ContextID cid, Keys&& keys, Args&& args, SimpleResult& rs);
 
         Manager() = default;
         ~Manager() = default;

@@ -44,7 +44,7 @@ void Cache::Finalize()
     }
 }
 
-bool Cache::Set(const Script& script, ContextID cid, Keys&& keys, Args&& args, WorkerHash wh, AsyncSet1Callback cb)
+bool Cache::Run(const Script& script, ContextID cid, Keys&& keys, Args&& args, WorkerHash wh, AsyncSet1Callback cb)
 {
     if (nullptr == manager)
     {
@@ -52,10 +52,10 @@ bool Cache::Set(const Script& script, ContextID cid, Keys&& keys, Args&& args, W
         return false;
     }
 
-    return manager->Set(script, cid, std::move(keys), std::move(args), wh, cb);
+    return manager->Run(script, cid, std::move(keys), std::move(args), wh, cb);
 }
 
-bool Cache::Set(const Script& script, ContextID cid, Keys&& keys, Args&& args, WorkerHash wh, AsyncSet2Callback cb)
+bool Cache::Run(const Script& script, ContextID cid, Keys&& keys, Args&& args, WorkerHash wh, AsyncSet2Callback cb)
 {
     if (nullptr == manager)
     {
@@ -63,6 +63,28 @@ bool Cache::Set(const Script& script, ContextID cid, Keys&& keys, Args&& args, W
         return false;
     }
 
-    return manager->Set(script, cid, std::move(keys), std::move(args), wh, cb);
+    return manager->Run(script, cid, std::move(keys), std::move(args), wh, cb);
+}
+
+bool Cache::Run(const Script& script, ContextID cid, Keys&& keys, Args&& args, ResultSet1& rs)
+{
+    if (nullptr == manager)
+    {
+        ZS_LOG_ERROR(cache, "cache manager not initialized");
+        return false;
+    }
+
+    return manager->Run(script, cid, std::move(keys), std::move(args), rs);
+}
+
+bool Cache::Run(const Script& script, ContextID cid, Keys&& keys, Args&& args, SimpleResult& rs)
+{
+    if (nullptr == manager)
+    {
+        ZS_LOG_ERROR(cache, "cache manager not initialized");
+        return false;
+    }
+
+    return manager->Run(script, cid, std::move(keys), std::move(args), rs);
 }
 

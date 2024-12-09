@@ -69,3 +69,14 @@ ProducerSPtr MQ::CreateProducer(const std::string topic, const ConfigList& confi
 
     return manager->CreateProducer(topic, configs);
 }
+
+ProducerSPtr MQ::CreateProducer(const std::string topic)
+{
+    if (nullptr == manager)
+    {
+        ZS_LOG_ERROR(mq, "mq module not initialized");
+        return nullptr;
+    }
+
+    return manager->CreateProducer(topic);
+}

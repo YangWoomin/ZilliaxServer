@@ -52,12 +52,19 @@ namespace mq
         MESSAGESTATUS_PERSISTED,
     };
 
+    struct MessageContext
+    {
+        virtual ~MessageContext() = default;
+    };
+    using MessageContextSPtr = std::shared_ptr<MessageContext>;
+
     struct Message
     {
         std::string                                         _key;
         std::string                                         _buf;
-        //std::unordered_map<std::string, std::string>        _headers; // TODO
+        std::unordered_map<std::string, std::string>        _headers; // you can use headers conditionally
         uint64_t                                            _sn = 0;
+        MessageContextSPtr                                  _ctx;
     };
 
     using ProducingCallback = std::function<void(MessageStatus, Message*, const std::string&)>;
@@ -93,7 +100,13 @@ namespace mq
         static bool Initialize(Logger::Messenger msgr, const ConfigList& configs, EventCallback ecb, ProducingCallback pcb, int32_t pollerCount, int32_t pollingTimeoutMs, int32_t pollingIntervalMs);
         static void Finalize();
 
+        // this producer can use dedicated setting by configs
+        // but cannot use headers
         static ProducerSPtr CreateProducer(const std::string topic, const ConfigList& configs);
+
+        // this producer should use global setting instead of dedicated setting 
+        // but can send headers
+        static ProducerSPtr CreateProducer(const std::string topic);
 
     private:
 

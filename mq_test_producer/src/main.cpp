@@ -33,6 +33,7 @@ int main(int argc, char** argv)
         ("d,debug", "mq producer debug mode", cxxopts::value<std::string>()->default_value("generic"))
         ("t,topic", "mq topic", cxxopts::value<std::string>()->default_value("mq_test_topic"))
         ("c,cache", "cache server dsn", cxxopts::value<std::string>()->default_value("redis://bitnami@localhost:7000/"))
+        ("ttl", "message ttl", cxxopts::value<int>()->default_value("3000"))
         ("h,help", "Print usage");
 
     auto result = options.parse(argc, argv);
@@ -46,15 +47,21 @@ int main(int argc, char** argv)
     int32_t port = result["port"].as<int32_t>();
     bool isBroadcasting = result["broadcast"].as<bool>();
     std::string cacheAddr = result["cache"].as<std::string>();
+    int32_t msgTtl = result["ttl"].as<int32_t>();
     std::string mqAddr = result["mq"].as<std::string>();
     std::string debug = result["debug"].as<std::string>();
     std::string topic = result["topic"].as<std::string>();
 
     // default setting
     int32_t msgManagerWorkerCount = 2;
+    int32_t msgManagerWorkerIntervalMs = 10;
     int32_t cacheWorkerCount = 2;
+    int32_t cacheStoredMsgSnTmpListTtlSec = 3000;
+    int32_t cacheStoredMsgSnTmpListMaxCount = 1000;
+    int32_t cacheSendingMsgLoadCount = 100;
     int32_t mqPollerCount = 2;
     int32_t mqPollingIntervalMs = 10;
+    int32_t mqPollingTimeoutMs = 0;
 
     // spd async logger
     spdlog::init_thread_pool(8192, 1);
@@ -111,14 +118,61 @@ int main(int argc, char** argv)
     origin = msgr;
 
     ZS_LOG_INFO(mq_test_producer, "============ mq test producer start ============");
+    
+    CacheConfig cacheConfig = {
+        cacheAddr,
+        cacheWorkerCount,
+        msgTtl,
+        cacheStoredMsgSnTmpListTtlSec,
+        cacheStoredMsgSnTmpListMaxCount,
+        
+        cacheSendingMsgLoadCount
+    };
+
+    MQConfig mqConfig = {
+        mqAddr,
+        debug,
+        topic,
+        mqPollerCount,
+        mqPollingIntervalMs,
+        mqPollingTimeoutMs,
+        // config list
+        {
+            {"metadata.broker.list", "true"},
+        }
+    };
 
     std::shared_ptr<MsgManager> mm = std::make_shared<MsgManager>();
-    if (false == mm->Initialize(msgr, msgManagerWorkerCount, cacheAddr, cacheWorkerCount, mqAddr, debug, topic, mqPollerCount, mqPollingIntervalMs))
+    if (false == mm->Initialize(msgr, msgManagerWorkerCount, msgManagerWorkerIntervalMs, std::move(cacheConfig), std::move(mqConfig)))
     {
         return 0;
     }
 
     std::weak_ptr<MsgManager> tmpMm = mm;
+    auto onClientConnected = [tmpMm](const char* client) {
+        std::shared_ptr<MsgManager> mm = tmpMm.lock();
+        if (nullptr != mm)
+        {
+            mm->AddClient(client);
+        }
+        else
+        {
+            ZS_LOG_ERROR(mq_test_producer, "missed client connected, client : %s",
+                client);
+        }
+    };
+    auto onClientClosed = [tmpMm](const char* client) {
+        std::shared_ptr<MsgManager> mm = tmpMm.lock();
+        if (nullptr != mm)
+        {
+            mm->RemoveClient(client);
+        }
+        else
+        {
+            ZS_LOG_ERROR(mq_test_producer, "missed client closed, client : %s",
+                client);
+        }
+    };
     auto onMessageReceived = [tmpMm](const char* client, const char* msg, std::size_t len) {
         std::shared_ptr<MsgManager> mm = tmpMm.lock();
         if (nullptr != mm)
@@ -132,9 +186,8 @@ int main(int argc, char** argv)
         }
     };
 
-    ChatServer(msgr, IPVer::IP_V4, Protocol::TCP, port, isBroadcasting, nullptr, nullptr, onMessageReceived);
+    ChatServer(msgr, IPVer::IP_V4, Protocol::TCP, port, isBroadcasting, onClientConnected, onClientClosed, onMessageReceived);
 
-    mm->Finalize();
     mm.reset();
 
     ZS_LOG_INFO(mq_test_producer, "============ mq test producer end ============");

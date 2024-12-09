@@ -20,6 +20,7 @@ namespace mq
     {
     public:
         bool Initialize(const std::string& topic, RdKafka::Conf* gConfig, const ConfigList& configs);
+        bool Initialize(const std::string& topic, RdKafka::Conf* gConfig);
         void Finalize();
 
         bool Produce(Message* msg);
@@ -34,6 +35,7 @@ namespace mq
         RdKafka::Conf*                  _conf = nullptr;
         RdKafka::Producer*              _producer = nullptr;
         RdKafka::Topic*                 _topic = nullptr;
+        std::string                     _topicName;
     };
 }
 }
