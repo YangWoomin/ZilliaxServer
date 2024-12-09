@@ -143,5 +143,16 @@
             //"preLaunchTask": "Rebuild network network_test as Debug",
             "internalConsoleOptions": "openOnSessionStart"
         },
+        {
+            "name": "Launch mq_test_producer",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/output/bin/mq_test_producerd.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/output/bin",
+            "environment": [],
+            "console": "integratedTerminal"
+        }
     ]
 }

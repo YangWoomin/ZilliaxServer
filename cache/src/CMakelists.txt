@@ -40,6 +40,17 @@ target_include_directories( ${target} PRIVATE ${dir_third_party_libuv_include} )
 
 target_link_libraries( ${target} 
     PRIVATE 
+    $<$<CONFIG:Debug>:${lib_hiredis_d}>
+    $<$<CONFIG:Release>:${lib_hiredis}>
+)
+target_link_libraries( ${target} 
+    PRIVATE 
+    $<$<CONFIG:Debug>:${lib_uv_d}>
+    $<$<CONFIG:Release>:${lib_uv}>
+)
+
+target_link_libraries( ${target} 
+    PRIVATE 
     $<$<CONFIG:Debug>:${lib_redispp_d}>
     $<$<CONFIG:Release>:${lib_redispp}>
 )
