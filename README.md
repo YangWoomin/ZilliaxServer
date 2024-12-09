@@ -309,7 +309,7 @@ make rebuild_debug
 * this module is core of producing and consuming messages to and from message queue(Kafka) asynchronously
 * the following features are or would be supported
 
-| Feature | Implemented | Tested | Linux(Ubuntu 24.04) | Windows |
+| Feature | Implemented | Tested | Linux | Windows |
 |----------|----------|----------|----------|----------|
 | Producer | ✅ | ✅ | ✅ | ❌ |
 | Consumer | ⬜ | ⬜ | ⬜ | ⬜ |
