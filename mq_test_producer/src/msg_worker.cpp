@@ -142,11 +142,12 @@ void MsgWorker::handleClientMsgStatus()
             {
                 if (true == produceMessage(clientId, sendingMsgSn[i], 
                     MsgHeaders{
-                        {"sn", res}
+                        {"sn", std::to_string(sn)}
                     },
                     sn, client))
                 {
                     client->_ms._sendingMsgCount++;
+                    sn++;
                 }
             }
         }

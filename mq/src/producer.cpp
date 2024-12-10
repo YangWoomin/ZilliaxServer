@@ -162,7 +162,7 @@ bool InternalProducer::Produce(Message* msg)
 
     if (RdKafka::ERR_NO_ERROR != errCode)
     {
-        ZS_LOG_ERROR(mq, "producing message failed in mq producer, topic : %s, key : %s, sn : %llu, err code : %d", 
+        ZS_LOG_WARN(mq, "producing message failed in mq producer, topic : %s, key : %s, sn : %llu, err code : %d", 
             _topicName.c_str(), msg->_key.c_str(), msg->_sn, errCode);
         return false;
     }
