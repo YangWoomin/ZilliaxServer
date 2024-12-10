@@ -31,7 +31,7 @@ int main(int argc, char** argv)
         ("b,broadcast", "broadcast or unicast echo mode in server", cxxopts::value<bool>()->default_value("false"))
         ("m,mq", "mq servers address delimited by comma", cxxopts::value<std::string>()->default_value("localhost:29092,localhost:39092,localhost:49092"))
         ("d,debug", "mq producer debug mode", cxxopts::value<std::string>()->default_value("generic"))
-        ("t,topic", "mq topic", cxxopts::value<std::string>()->default_value("mq_test_topic"))
+        ("t,topic", "mq topic", cxxopts::value<std::string>()->default_value("client_message"))
         ("c,cache", "cache server dsn", cxxopts::value<std::string>()->default_value("redis://bitnami@localhost:7000/"))
         ("ttl", "message ttl", cxxopts::value<int>()->default_value("3000"))
         ("h,help", "Print usage");

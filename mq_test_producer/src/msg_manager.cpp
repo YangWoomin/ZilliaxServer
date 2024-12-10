@@ -192,8 +192,10 @@ void MsgManager::handleStoredMessage(ContextID cid, Keys&& keys, Args&& args, bo
     }
     else
     {
-        // this could make the messages unordered
-        // we should make the message sequence ordered manually by using the context id
+        // this could make the messages lost and unordered
+        // server should notify client that the message was lost
+        // and induce client to send the message again
+        // but now we just log as todo
         ZS_LOG_ERROR(mq_test_producer, "caching message failed, client : %s, msg : %s, cid : %llu",
             keys[0].c_str(), args[0].c_str(), cid);
     }
