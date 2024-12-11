@@ -28,7 +28,7 @@ void readTextFilesInDirectory(const std::string& directoryPath, std::vector<std:
 
             std::string line;
             while (std::getline(file, line)) {
-                if (!line.empty()) {
+                if (!line.empty() && !std::all_of(line.begin(), line.end(), isspace)) {
                     text.push_back(line);
                     totalSize += line.size();
                 }

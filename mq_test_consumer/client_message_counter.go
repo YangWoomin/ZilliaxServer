@@ -41,13 +41,15 @@ local msg_cnt_key = key .. ":msg_cnt"
 local msg_sn = tonumber(ARGV[1])
 
 local last_msg_sn = tonumber(redis.call("GET", last_msg_sn_key) or '0')
-if last_msg_sn + 1 ~= msg_sn then
-	return 0
+if (last_msg_sn + 1 == msg_sn) then
+	redis.call("INCR", last_msg_sn_key)
+	redis.call("INCR", msg_cnt_key)
+	return 1
+elseif (last_msg_sn >= msg_sn) then
+	return 2
 end
 
-redis.call("INCR", last_msg_sn_key)
-redis.call("INCR", msg_cnt_key)
-return 1
+return 0
 
 	`
 
@@ -62,9 +64,12 @@ return 1
 	}
 
 	if res == 0 {
+		// TODO: save this message to DLQ
 		sugar.Errorf("invalid script result, id : %d, cid : %s, sn : %s",
 			cmc.id, fr.cid, fr.sn)
-		return false
+	} else if res == 2 {
+		sugar.Warnf("duplcated message occurred, id : %d, cid : %s, sn : %s",
+			cmc.id, fr.cid, fr.sn)
 	}
 
 	sugar.Infof("executing script succeeded, id : %d, cid : %s, sn : %s",

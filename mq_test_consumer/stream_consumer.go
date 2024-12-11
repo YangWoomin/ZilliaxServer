@@ -23,53 +23,50 @@ type StreamConsumer interface {
 	Process(fr *FetchResult) bool
 }
 
+type Pendings map[int32]kafka.Offset
+
 func Run(sc StreamConsumer, sugar *zap.SugaredLogger, ctx context.Context, wg *sync.WaitGroup, cc *kafka.ConfigMap, pc kafka.ConfigMap, intv, tmcnt int) {
 
 	defer wg.Done()
 
+	var maxRcnt int = 3000
+	var txtimeout int = 30 // 30 sec
+
 	// create consumer
 	c, err := kafka.NewConsumer(cc)
-
 	if err != nil {
-		sugar.Panicf("creating consumer failed, id : %d, err : %s", sc.GetId(), err)
+		sugar.Fatalf("creating consumer failed, id : %d, err : %s", sc.GetId(), err)
 	}
 
 	defer c.Close()
 
 	// create producer
-	tid, _ := pc.Get("transactional.id", "")
-	ntid := fmt.Sprintf("%v", tid) + string(sc.GetId())
-	pc.SetKey("transactional.id", ntid)
+	var p *kafka.Producer = CreateProducer(sc, sugar, &pc, txtimeout)
+	if p != nil {
+		defer p.Close()
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(txtimeout)*time.Second)
+			defer cancel()
 
-	p, err := kafka.NewProducer(&pc)
-
-	if err != nil {
-		sugar.Panicf("creating producer failed, id : %d, err : %s", sc.GetId(), err)
+			if err := p.AbortTransaction(ctx); err != nil {
+				sugar.Warnf("AbortTransaction failed, err : %s", err.Error())
+			}
+		}()
 	}
-
-	err = p.InitTransactions(context.Background())
-	if err != nil {
-		sugar.Panicf("initializing producer transaction failed, id : %d, err : %s",
-			sc.GetId(), err.Error())
-	}
-
-	defer p.Close()
 
 	// subscribe consumer topic
 	err = c.SubscribeTopics([]string{sc.GetConsTopic()}, nil)
-
 	if err != nil {
-		sugar.Panicf("subscribing topic failed, id : %d, topic : %s, err : %s",
+		sugar.Fatalf("subscribing topic failed, id : %d, topic : %s, err : %s",
 			sc.GetId(), sc.GetConsTopic(), err.Error())
 	}
 
-	sugar.Infof("client message consumer %d started for topic : %s, tid : %s",
-		sc.GetId(), sc.GetConsTopic(), ntid)
+	sugar.Infof("client message consumer %d started for topic : %s",
+		sc.GetId(), sc.GetConsTopic())
 
-	var cnt = 0
 	var rcnt = 0
-	var trans = false
-	var lfr *FetchResult = nil
+	var cnt = 0
+	pendings := make(Pendings)
 
 	for {
 		select {
@@ -81,19 +78,17 @@ func Run(sc StreamConsumer, sugar *zap.SugaredLogger, ctx context.Context, wg *s
 			// fetch message
 			fr := Fetch(sc, sugar, c, intv)
 			if fr.msg == nil {
-				if trans && lfr != nil {
-					if !Commit(sc, sugar, c, p, lfr) {
-						p.AbortTransaction(context.Background())
-						sugar.Panicf("[consumer %d] cannot commit transaction, cid : %s, sn : %s",
-							sc.GetId(), lfr.cid, lfr.sn)
+				if cnt > 0 {
+					if !CommitTx(sc, sugar, c, p, pendings, txtimeout) {
+						sugar.Errorf("[consumer %d] cannot commit transaction, %v",
+							sc.GetId(), pendings)
+						return
 					}
-					trans = false
-					lfr = nil
+					pendings = make(Pendings)
 					cnt = 0
 				}
 				continue
 			}
-			lfr = fr
 
 			// process message
 			for !sc.Process(fr) {
@@ -101,29 +96,21 @@ func Run(sc StreamConsumer, sugar *zap.SugaredLogger, ctx context.Context, wg *s
 				time.Sleep(time.Duration(intv) * time.Millisecond)
 
 				rcnt++
-				if rcnt > 100000 { // 100 sec
-					sugar.Panicf("[consumer %d] cannot process msg, cid : %s, sn : %s",
+				if rcnt > maxRcnt {
+					sugar.Errorf("[consumer %d] cannot process msg, cid : %s, sn : %s",
 						sc.GetId(), fr.cid, fr.sn)
+					return
 				}
 			}
 			rcnt = 0
 
-			ptp := sc.GetProdTopic()
-			if ptp == "" {
-				// commit offset
-
-				continue
-			}
-
-			// transaction
-			if !trans {
-				if !BeginTran(sc, sugar, c, p) {
-					sugar.Panicf("[consumer %d] cannot begin transaction, cid : %s, sn : %s",
+			// begin transaction
+			if cnt == 0 {
+				if !BeginTx(sc, sugar, p) {
+					sugar.Errorf("[consumer %d] cannot begin transaction, cid : %s, sn : %s",
 						sc.GetId(), fr.cid, fr.sn)
+					return
 				}
-				trans = true
-				cnt = 0
-				rcnt = 0
 			}
 
 			// produce message
@@ -132,25 +119,56 @@ func Run(sc StreamConsumer, sugar *zap.SugaredLogger, ctx context.Context, wg *s
 				time.Sleep(time.Duration(intv) * time.Millisecond)
 
 				rcnt++
-				if rcnt > 100000 { // 100 sec
-					sugar.Panicf("[consumer %d] cannot produce message, cid : %s, sn : %s",
+				if rcnt > maxRcnt {
+					sugar.Errorf("[consumer %d] cannot produce message, cid : %s, sn : %s",
 						sc.GetId(), fr.cid, fr.sn)
+					return
 				}
 			}
-			cnt++
 			rcnt = 0
 
-			if cnt%tmcnt == 0 && trans {
-				if !Commit(sc, sugar, c, p, fr) {
-					p.AbortTransaction(context.Background())
-					sugar.Panicf("[consumer %d] cannot commit transaction, cid : %s, sn : %s",
+			if pendings[fr.msg.TopicPartition.Partition] < fr.msg.TopicPartition.Offset+1 {
+				pendings[fr.msg.TopicPartition.Partition] = fr.msg.TopicPartition.Offset + 1
+			}
+			cnt++
+
+			// commit transaction
+			if cnt%tmcnt == 0 {
+				if !CommitTx(sc, sugar, c, p, pendings, txtimeout) {
+					sugar.Errorf("[consumer %d] cannot commit transaction, cid : %s, sn : %s",
 						sc.GetId(), fr.cid, fr.sn)
+					return
 				}
-				trans = false
+				pendings = make(Pendings)
 				cnt = 0
 			}
 		}
 	}
+}
+
+func CreateProducer(sc StreamConsumer, sugar *zap.SugaredLogger, pc *kafka.ConfigMap, timeout int) *kafka.Producer {
+	if sc.GetProdTopic() != "" {
+		tid, _ := pc.Get("transactional.id", "")
+		ntid := fmt.Sprintf("%v", tid) + string(sc.GetId())
+		pc.SetKey("transactional.id", ntid)
+
+		p, err := kafka.NewProducer(pc)
+		if err != nil {
+			sugar.Panicf("creating producer failed, id : %d, err : %s", sc.GetId(), err)
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+		defer cancel()
+
+		err = p.InitTransactions(ctx)
+		if err != nil {
+			sugar.Panicf("initializing producer transaction failed, id : %d, err : %s",
+				sc.GetId(), err.Error())
+		}
+
+		return p
+	}
+	return nil
 }
 
 func Fetch(sc StreamConsumer, sugar *zap.SugaredLogger, c *kafka.Consumer, intv int) *FetchResult {
@@ -167,7 +185,7 @@ func Fetch(sc StreamConsumer, sugar *zap.SugaredLogger, c *kafka.Consumer, intv 
 		}
 
 		sugar.Infof("[consumer %d] topic : %s, timestamp : %s, cid : %s, sn : %s, msg : %s",
-			sc.GetId(), msg.TopicPartition, msg.Timestamp.Format(time.RFC3339), cid, sn, string(msg.Value))
+			sc.GetId(), *msg.TopicPartition.Topic, msg.Timestamp.Format(time.RFC3339), cid, sn, string(msg.Value))
 
 		return &FetchResult{msg, sn, cid}
 
@@ -180,7 +198,11 @@ func Fetch(sc StreamConsumer, sugar *zap.SugaredLogger, c *kafka.Consumer, intv 
 	return &FetchResult{nil, "", ""}
 }
 
-func BeginTran(sc StreamConsumer, sugar *zap.SugaredLogger, c *kafka.Consumer, p *kafka.Producer) bool {
+func BeginTx(sc StreamConsumer, sugar *zap.SugaredLogger, p *kafka.Producer) bool {
+
+	if p == nil {
+		return true
+	}
 
 	err := p.BeginTransaction()
 	if err != nil {
@@ -194,10 +216,15 @@ func BeginTran(sc StreamConsumer, sugar *zap.SugaredLogger, c *kafka.Consumer, p
 
 func Produce(sc StreamConsumer, sugar *zap.SugaredLogger, c *kafka.Consumer, p *kafka.Producer, fr *FetchResult) bool {
 
+	if p == nil {
+		return true
+	}
+
 	ptp := sc.GetProdTopic()
 	err := p.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{
 			Topic: &ptp, Partition: kafka.PartitionAny},
+		Key:   []byte(fr.cid),
 		Value: fr.msg.Value,
 		Headers: []kafka.Header{
 			{Key: "sn", Value: []byte(fr.sn)},
@@ -205,40 +232,67 @@ func Produce(sc StreamConsumer, sugar *zap.SugaredLogger, c *kafka.Consumer, p *
 		},
 	}, nil)
 	if err != nil {
-		sugar.Errorf("[consumer %d] producing message failed, ptp : %s, sn : %s, cid : %s, err : %s",
-			sc.GetId(), sc.GetProdTopic(), fr.sn, fr.cid, err.Error())
+		sugar.Errorf("[consumer %d] producing message failed, ptp : %s, cid : %s, sn : %s, err : %s",
+			sc.GetId(), sc.GetProdTopic(), fr.cid, fr.sn, err.Error())
 
 		return false
 	}
+
+	sugar.Infof("[consumer %d] producing message succeeded, ptp : %s, cid : %s, sn : %s, offset : %d",
+		sc.GetId(), sc.GetProdTopic(), fr.cid, fr.sn, fr.msg.TopicPartition.Offset)
 
 	return true
 }
 
-func Commit(sc StreamConsumer, sugar *zap.SugaredLogger, c *kafka.Consumer, p *kafka.Producer, fr *FetchResult) bool {
+func CommitTx(sc StreamConsumer, sugar *zap.SugaredLogger, c *kafka.Consumer, p *kafka.Producer, ps Pendings, timeout int) bool {
+
+	offsets := []kafka.TopicPartition{}
+	tp := sc.GetConsTopic()
+
+	for key, value := range ps {
+		offsets = append(offsets, kafka.TopicPartition{
+			Topic:     &tp,
+			Partition: key,
+			Offset:    value,
+		})
+	}
+
+	if p == nil {
+		_, err := c.CommitOffsets(offsets)
+		if err != nil {
+			sugar.Errorf("[consumer %d] committing offset failed, ctp : %s, err : %s, ps : %v",
+				sc.GetId(), sc.GetConsTopic(), err.Error(), ps)
+			return false
+		}
+
+		return true
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+	defer cancel()
 
 	cgm, err := c.GetConsumerGroupMetadata()
 	if err != nil {
-		sugar.Errorf("[consumer %d] getting consumer group metadata failed, ctp : %s, sn : %s, cid : %s, err : %s",
-			sc.GetId(), sc.GetConsTopic(), fr.sn, fr.cid, err.Error())
+		sugar.Errorf("[consumer %d] getting consumer group metadata failed, ctp : %s, err : %s, ps : %v",
+			sc.GetId(), sc.GetConsTopic(), err.Error(), ps)
 		return false
 	}
 
-	err = p.SendOffsetsToTransaction(context.Background(),
-		[]kafka.TopicPartition{fr.msg.TopicPartition}, cgm)
+	err = p.SendOffsetsToTransaction(ctx, offsets, cgm)
 	if err != nil {
-		sugar.Errorf("[consumer %d] committing offset failed, ctp : %s, sn : %s, cid : %s, err : %s",
-			sc.GetId(), sc.GetConsTopic(), fr.sn, fr.cid, err.Error())
+		sugar.Errorf("[consumer %d] committing offset failed, ctp : %s, err : %s, ps : %v",
+			sc.GetId(), sc.GetConsTopic(), err.Error(), ps)
 		return false
 	}
 
-	err = p.CommitTransaction(context.Background())
+	err = p.CommitTransaction(ctx)
 	if err != nil {
-		sugar.Errorf("[consumer %d] committing transaction failed, ctp : %s, sn : %s, cid : %s, err : %s",
-			sc.GetId(), sc.GetConsTopic(), fr.sn, fr.cid, err.Error())
+		sugar.Errorf("[consumer %d] committing transaction failed, ctp : %s, err : %s, ps : %v",
+			sc.GetId(), sc.GetConsTopic(), err.Error(), ps)
 		return false
 	}
 
-	sugar.Infof("[consumer %d] commit succeeded, cid : %s, sn : %s",
-		sc.GetId(), fr.cid, fr.sn)
+	sugar.Infof("[consumer %d] commit succeeded, ps : %v",
+		sc.GetId(), ps)
 	return true
 }

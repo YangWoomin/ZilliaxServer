@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"net/url"
 	"os"
 	"os/signal"
@@ -21,12 +22,13 @@ func main() {
 	group := flag.String("group", "mq_test_consumer", "mq group id to consume")
 	ctp := flag.String("ctp", "", "consumer topic")
 	cnt := flag.Int("cnt", 3, "consumer count")
-	intv := flag.Int("intv", 100, "consumer polling interval(ms)")
+	intv := flag.Int("intv", 10, "consumer polling interval(ms)")
 	ptp := flag.String("ptp", "", "producer topic")
 	tid := flag.String("tid", "", "transactional id prefix for producer")
-	mode := flag.String("mode", "cmc", "consumer mode (default: client message counter)")
-	rsi := flag.String("rsi", "redis://default:bitnami@localhost:7000/", "mq server to connect")
+	mode := flag.String("mode", "cmc", "consumer mode [client message counter(cmc)|message aggregator(ma)]")
+	rsi := flag.String("rsi", "redis://default:bitnami@localhost:7000/", "redis server to connect")
 	tmcnt := flag.Int("tmcnt", 100, "transaction message count for bulk")
+	ttl := flag.Int("ttl", 3000, "duplicated message check ttl")
 
 	flag.Parse()
 
@@ -45,6 +47,8 @@ func main() {
 	}
 
 	config.Encoding = "console"
+
+	config.OutputPaths = []string{"stdout", fmt.Sprintf("../log/%s.log", *mode)}
 
 	logger, _ := config.Build()
 	defer logger.Sync()
@@ -66,9 +70,6 @@ func main() {
 		sugar.Warn("no work for producer")
 	}
 
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
-
 	// kafka
 	consCnf := kafka.ConfigMap{
 		"bootstrap.servers":  *mqs,
@@ -76,12 +77,16 @@ func main() {
 		"auto.offset.reset":  "earliest",
 		"enable.auto.commit": false,
 		"isolation.level":    "read_committed",
+
+		"debug": "generic",
 	}
 
 	prodCnf := kafka.ConfigMap{
 		"bootstrap.servers":  *mqs,
 		"transactional.id":   *tid, // producer id will be appended at start
 		"enable.idempotence": true,
+
+		"debug": "generic",
 	}
 
 	// redis
@@ -110,8 +115,12 @@ func main() {
 		var sc StreamConsumer
 		if *mode == "cmc" {
 			sc = ClntMsgCnter{sugar, i, *ctp, *ptp, rc}
+		} else if *mode == "ma" {
+			sc = MsgAggr{sugar, i, *ctp, rc, *ttl}
 		} else {
-
+			sugar.Error("invalid mode")
+			flag.Usage()
+			os.Exit(1)
 		}
 
 		pcnf := make(kafka.ConfigMap)
@@ -121,12 +130,16 @@ func main() {
 		go Run(sc, sugar, ctx, &wg, &consCnf, pcnf, *intv, *tmcnt)
 	}
 
+	go func() {
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+		<-sigChan
+		sugar.Warn("signal received, shutting down...")
+		cancel()
+	}()
+
 	sugar.Info("press ctrl+c to stop")
-	<-signalChan
-
-	sugar.Warn("signal received, shutting down...")
-	cancel()
-
 	wg.Wait()
 	sugar.Info("all consumers and producers stopped, exiting...")
 }
