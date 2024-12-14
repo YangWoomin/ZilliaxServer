@@ -488,7 +488,7 @@ docker-compose ps
 
 ### Test
 
-#### Create "client_message" and "message_aggregation" topics
+#### Create "client_message" and "message_aggregation" Topics
 * http://localhost:8080/console/my-local-cluster/topics
 * click "+ New topic" at right top on the page
 * enter "client_message" topic name, change partition count to 10, and click "Create topic" at right bottom on the page
@@ -550,7 +550,7 @@ docker-compose ps
 
 * there are more than 44,220 records because transaction markers are also included
 
-#### Check Message Count Per Client
+#### Check Message Count per Client
 * move shell current working directory to ./output/bin
 
 ```bash
@@ -561,7 +561,7 @@ docker-compose ps
 
 * check that each client sent 4422 messages that are stored in redis
 
-#### Check Message Count Per Message
+#### Check Message Count per Message
 * move shell current working directory to ./output/bin
 
 ```bash
