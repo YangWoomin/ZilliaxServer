@@ -40,7 +40,7 @@
 * Physics system
 * NavMesh & Navigation
 * AI System (Behavior Tree)
-* Containerize
+* Containerization
 * Google Breakpad
 
 ## Build Tool and Driver
@@ -261,7 +261,7 @@ make rebuild_debug
 
 #### "network" Module Build
 * move cmd(or shell) current working directory to ./network
-* build db module by the following command or vs code task
+* build network module by the following command or vs code task
 
 ```bash
 make rebuild_debug
@@ -329,16 +329,16 @@ make rebuild_debug
 * this module can make our servers send messages or events to other servers asynchronously by using the message queue
 * the following features are or would be supported
 
-| Feature | Implemented | Tested | Linux | Windows |
-|----------|----------|----------|----------|----------|
-| Producer | ✅ | ✅ | ✅ | ❌ |
-| Consumer | ⬜ | ⬜ | ⬜ | ⬜ |
+| Feature | Implemented | Tested |
+|----------|----------|----------|
+| Producer | ✅ | ✅ |
+| Consumer | ⬜ | ⬜ |
 
-* servers on windows cannot find redis and kafka clusters in wsl2 
+* **NOTE**: servers on windows cannot find redis and kafka clusters in wsl2 
 
 ### "mq" Module Build
 * move cmd(or shell) current working directory to ./mq
-* build db module by the following command or vs code task
+* build mq module by the following command or vs code task
 
 ```bash
 make rebuild_debug
@@ -359,9 +359,11 @@ make rebuild_debug
 | Sync | ⬜ | ✅ |
 | Async | ⬜ | ✅ |
 
+* **NOTE**: servers on windows cannot find redis and kafka clusters in wsl2 
+
 ### "cache" Module Build
 * move cmd(or shell) current working directory to ./cache
-* build db module by the following command or vs code task
+* build cache module by the following command or vs code task
 
 ```bash
 make rebuild_debug
@@ -371,6 +373,7 @@ make rebuild_debug
 
 ## Integration Test
 * we build and test "network", "network_test", "mq", "cache", "mq_test_producer", and "mq_test_consumer" modules comprehensively in this chapter
+* this test scenario aims to count client messages per client and message, and to save the counting results while ensuring data integrity and consistency
 
 ### Overview
 
@@ -384,11 +387,40 @@ make rebuild_debug
 * Client Message Counter : "mq_test_consumer" (Golang)
 * Message Aggregator : "mq_test_consumer" (same as Client Message Counter, Golang)
 
-### "mq_test_producer" module
+### Producer Server
+* this server receives messages from client by "network" module, store temporarily in memory database by "cache" module, and enqueue those in the message queue by "mq" module
 
+#### Build
+* move shell current working directory to ./mq_test_producer
+* build mq_test_producer module by the following command or vs code task
 
-### "mq_test_consumer" module
+```bash
+make rebuild_debug
+```
 
+* this module needs shared libraries built from "network", "mq", and "cache"
+
+### Client Message Counter & Message Aggregator
+* these servers consume messages from the message queue
+* Client Message consumes messages produced from Producer Server, counts messages per client, and reproduces messages to the message queue for Message Aggregator
+* Message Aggregator consumes messages produced from Client Message, counts messages per message
+* "mq_test_consumer" module is made by Golang (I need some Golang experience 😜)
+
+#### Install Golang
+* Windows : ./setting/lan/go1.23.4.windows-amd64.msi
+* Linux (Ubuntu) : ./setting/lan/go1.23.4.linux-amd64.tar.gz
+
+```bash
+tar -C /usr/local -xzf go1.23.4.linux-amd64.tar.gz
+```
+
+#### Build
+* move cmd(or shell) current working directory to ./mq_test_consumer
+* build mq_test_consumer module by the following command
+
+```bash
+./build.sh
+```
 
 ### Prerequisite
 #### Run Environment
