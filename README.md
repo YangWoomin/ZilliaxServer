@@ -419,7 +419,7 @@ tar -C /usr/local -xzf go1.23.4.linux-amd64.tar.gz
 * build mq_test_consumer module by the following command
 
 ```bash
-./build.sh
+./build.sh # or .\build.bat on windows
 ```
 
 ### Prerequisite
