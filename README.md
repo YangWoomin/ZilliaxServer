@@ -205,7 +205,7 @@ docker-compose ps
 #### initial scripts
 * run ./setting/database/mysql/scripts/db_test/init.sql at MySQL Workbench 
 #### "db" Module Build
-* move cmd current working directory to ./db
+* move cmd(or shell) current working directory to ./db
 * build db module by the following command or vs code task
 
 ```bash
@@ -213,7 +213,7 @@ make rebuild_debug
 ```
 
 #### "db_test" Tester Build
-* move cmd current working directory to ./db_test
+* move cmd(or shell) current working directory to ./db_test
 * build db_test by the following command or vs code task
 
 ```bash
@@ -249,14 +249,29 @@ make rebuild_debug
 | Sync | ⬜ | ⬜ |
 | Async | ✅ | ✅ |
 
-#### "network" Module Build
-* same way as "db" module
 ### "network_test" module
 * this test program is for testing "network" module
 * this program consists of three components - chat server, chat client and chat massive test client
+
+### "network" Module Test
+
+#### "network" Module Build
+* move cmd(or shell) current working directory to ./network
+* build db module by the following command or vs code task
+
+```bash
+make rebuild_debug
+```
+
 #### "network_test" Tester Build
-* same way as "db_test" tester
-#### Chat Server
+* move cmd(or shell) current working directory to ./network_test
+* build db_test by the following command or vs code task
+
+```bash
+make rebuild_debug
+```
+
+#### Run Chat Server
 * this is default mode of network_test
 * you can choose unicast(default) echo or broadcast echo mode
 * printing received messages from chat clients is skipped
@@ -268,7 +283,7 @@ make rebuild_debug
 
 ![image](https://github.com/user-attachments/assets/77daaa69-e68f-4693-a4d9-1bfb179d4f9d)
 
-#### Chat Client
+#### Run Chat Client
 * you can send messages one by one to the chat server on console stdin
 * a message received from the chat server is printed on console stdout 
 * run example
@@ -305,7 +320,7 @@ make rebuild_debug
 
 
 ## Message Queue
-### "mq" module
+### "mq" Module
 * this module is core of producing and consuming messages to and from message queue(Kafka) asynchronously
 * the following features are or would be supported
 
@@ -316,11 +331,42 @@ make rebuild_debug
 
 * servers on windows cannot find redis and kafka clusters in wsl2 
 
+### "mq" Module Build
+
+## Cache
+### "cache" Module
+
+
+### "cache" Module Build
+
+
+## Integration Test
+* we build and test "network", "network_test", "mq", "cache", "mq_test_producer", "mq_test_consumer" modules comprehensively in this chapter
+
+### Overview
+
+![zilliax_server_overview](https://github.com/user-attachments/assets/f2ad3955-1b19-42fe-a8ba-cab2e0734b2f)
+
+### Module Relationship
+* Client : "network_test"
+* Producer Server : "mq_test_producer"
+* Cache Server : Redis Cluster, accessed from "cache" module
+* Message Queue : Kafka Cluster, accessed from "mq" module
+* Client Message Counter : "mq_test_consumer" (Golang)
+* Message Aggregator : "mq_test_consumer" (same as Client Message Counter, Golang)
+
+### "mq_test_producer" module
+
+### "mq_test_consumer" module
+
 ### Prerequisite
+#### Run Environment
+* Ubuntu 24.04 on wsl2 + docker + docker-compose
+
 #### Docker & Docker Compose Installation 
 * refer to "Database - Prerequisite - Docker & Docker Compose Installation"
 
-#### Kafka and Conduktor on Docker
+#### Kafka Cluster and Conduktor on Docker
 * move cmd(bash shell) current working directory to ./setting/mq/kafka/docker-compose
 
 ```bash
@@ -345,14 +391,18 @@ CREATE ROLE root WITH LOGIN PASSWORD 'your_password';
 CREATE DATABASE root OWNER root;
 ```
 
-#### "mq" module build
+#### Redis Cluster and Redis Insight on Docker
+
+#### Setting Redis Cluster on Redis Insight
 
 
-## Cache
-### "cache" module
+### Module & Tester Build
+
+#### "network", "network_test", "mq", "cache" Modules Build
+
+#### "mq_test_producer" Build
+
+#### "mq_test_consumer" Build
 
 
-## Producer Server
-### "mq_test_producer" module
-### "mq_test_consumer" module
 
