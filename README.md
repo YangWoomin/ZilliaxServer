@@ -430,7 +430,7 @@ tar -C /usr/local -xzf go1.23.4.linux-amd64.tar.gz
 * refer to "Database - Prerequisite - Docker & Docker Compose Installation"
 
 #### Kafka Cluster and Conduktor on Docker
-* move cmd(bash shell) current working directory to ./setting/mq/kafka/docker-compose
+* move shell current working directory to ./setting/mq/kafka/docker-compose
 
 ```bash
 docker-compose up -d
@@ -440,11 +440,12 @@ docker-compose ps
 * there are six brokers that are composed of three controllers(KRaft) and normal brokers respectively
 
 #### Setting Kafka Cluster on Conduktor
-* Conduktor guide page : https://docs.conduktor.io/platform/get-started/installation/get-started/docker/
 * http://localhost:8080
 * add kafka cluster like the following picture
 
 ![conduktor_adding_kafka_cluster](https://github.com/user-attachments/assets/392ca274-00ed-4f91-a93e-d15736b7babb)
+
+* explore a lot of facilities for managing and monitoring kafka cluster in Conduktor
 
 * if you want to remove postgresql fatal messages such as "role "root" does not exist", "database "root" does not exist" run the following commands in the postgresql container
 ```bash
@@ -455,10 +456,23 @@ CREATE DATABASE root OWNER root;
 ```
 
 #### Redis Cluster and Redis Insight on Docker
+* move shell current working directory to ./setting/database/redis/docker-compose
 
+```bash
+docker-compose up -d
+docker-compose ps
+```
+
+* there are six redis nodes that are composed of three master nodes and replica nodes respectively
 
 #### Setting Redis Cluster on Redis Insight
+* http://localhost:5540/
+* add redis cluster like the following picture
 
+![image](https://github.com/user-attachments/assets/b1fc45cd-e410-412f-a576-6b69050122f7)
+
+* enter "bitnami" as password if you didn't change password in docker-compose file
+* explore a lot of facilities for managing and monitoring redis cluster in Redis Insight  
 
 ### Test
 
