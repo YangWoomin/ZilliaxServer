@@ -30,6 +30,8 @@
 * Cross platform (Windows/Linux)
 * Database module (ODBC connector)
 * Asynchronous network module (IOCP, epoll)
+* Memory Database module (Redis)
+* Message Queue module (Kafka)
 
 ## TO-DO Features
 * Network module - RIO, io_uring, TLS, HTTP(S) Server
@@ -37,9 +39,6 @@
 * Physics system
 * NavMesh & Navigation
 * AI System (Behavior Tree)
-* Memory database module - redis(reids++)
-* Message queue client module - kafka(librdkafka)
-* Distributed System - inter-server communication
 * Containerize
 * Google Breakpad
 
@@ -53,6 +52,10 @@
 * spdlog-1.14.1 (https://github.com/gabime/spdlog/tree/v1.14.1) - MIT License
 * cxxopts-3.2.0 (https://github.com/jarro2783/cxxopts/tree/v3.2.0) - MIT License
 * librdkafka-2.6.1 (https://github.com/confluentinc/librdkafka/tree/v2.6.1) - Apache 2.0
+* libuv (https://github.com/libuv/libuv) - MIT License
+* hiredis (https://github.com/redis/hiredis) - MIT License
+* redis++ (https://github.com/sewenew/redis-plus-plus) - Apache 2.0
+* (check more details in ./third-party/readme.txt)
 
 ## Development Environment
 
