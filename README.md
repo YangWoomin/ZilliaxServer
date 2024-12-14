@@ -486,7 +486,7 @@ docker-compose ps
 * click "+ New topic" at right top on the page
 * enter "client_message" topic name, change partition count to 10, and click "Create topic" at right bottom on the page
 
-![image](https://github.com/user-attachments/assets/aed15e23-98d1-46bd-8d4d-b602addea591)
+![image](https://github.com/user-attachments/assets/9f833088-637e-465a-90d8-03c334e3e3a2)
 
 * click "+ New topic" again to create "message_aggregation" topic
 * enter "message_aggregation" topic name, change partition count to 10, and click "Create topic" at right bottom on the page
