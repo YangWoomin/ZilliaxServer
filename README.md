@@ -366,7 +366,7 @@ make rebuild_debug
 make rebuild_debug
 ```
 
-* if you have any problem for redis++ such as compilation or link build your own redis++ shared library by referring to ./setting/database/redis/redis++/install_redis++.txt
+* if you have any problem for redis++ such as compilation, link or run build your own redis++ shared library by referring to ./setting/database/redis/redis++/install_redis++.txt
 
 ## Integration Test
 * we build and test "network", "network_test", "mq", "cache", "mq_test_producer", and "mq_test_consumer" modules comprehensively in this chapter
