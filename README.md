@@ -469,7 +469,7 @@ docker-compose ps
 * http://localhost:5540/
 * add redis cluster like the following picture
 
-![image](https://github.com/user-attachments/assets/4e3c9f12-91d2-4df2-850b-f3b53f8ddd66)
+![image](https://github.com/user-attachments/assets/704e16f1-9289-45d5-819b-d4e32b760e30)
 
 * enter "bitnami" as password if you didn't change password in docker-compose file
 * explore a lot of facilities for managing and monitoring redis cluster in Redis Insight  
