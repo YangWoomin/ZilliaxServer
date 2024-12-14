@@ -407,7 +407,7 @@ make rebuild_debug
 * "mq_test_consumer" module is made by Golang (I need some Golang experience 😜)
 
 #### Install Golang
-* Windows : ./setting/lan/go1.23.4.windows-amd64.msi
+* Windows : not supported (because confluent-kafka-go doesn't support on windows officially)
 * Linux (Ubuntu) : ./setting/lan/go1.23.4.linux-amd64.tar.gz
 
 ```bash
@@ -415,11 +415,11 @@ tar -C /usr/local -xzf go1.23.4.linux-amd64.tar.gz
 ```
 
 #### Build
-* move cmd(or shell) current working directory to ./mq_test_consumer
+* move shell current working directory to ./mq_test_consumer
 * build mq_test_consumer module by the following command
 
 ```bash
-./build.sh # or .\build.bat on windows
+./build.sh
 ```
 
 ### Prerequisite
