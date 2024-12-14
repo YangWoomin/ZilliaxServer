@@ -548,7 +548,7 @@ docker-compose ps
 
 ![image](https://github.com/user-attachments/assets/42bbf38f-8845-4c8b-9b42-a72f3e18f747)
 
-* there are more than 44,220 records because transaction marker are also included
+* there are more than 44,220 records because transaction markers are also included
 
 #### Check Message Count Per Client
 * move shell current working directory to ./output/bin
