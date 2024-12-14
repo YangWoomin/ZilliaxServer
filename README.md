@@ -448,7 +448,7 @@ docker-compose ps
 
 ![image](https://github.com/user-attachments/assets/e212c952-8d04-4118-928a-f6f659065c02)
 
-#### Setting Kafka Cluster on Conduktor
+#### Set Kafka Cluster on Conduktor
 * http://localhost:8080
 * add kafka cluster like the following picture
 
@@ -477,7 +477,7 @@ docker-compose ps
 ![image](https://github.com/user-attachments/assets/e36c54a1-5441-4351-86d2-ff9140de621c)
 
 
-#### Setting Redis Cluster on Redis Insight
+#### Set Redis Cluster on Redis Insight
 * http://localhost:5540/
 * add redis cluster like the following picture
 
