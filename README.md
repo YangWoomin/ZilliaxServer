@@ -467,6 +467,9 @@ docker-compose ps
 
 * there are six redis nodes that are composed of three master nodes and replica nodes respectively
 
+![image](https://github.com/user-attachments/assets/e36c54a1-5441-4351-86d2-ff9140de621c)
+
+
 #### Setting Redis Cluster on Redis Insight
 * http://localhost:5540/
 * add redis cluster like the following picture
@@ -478,7 +481,15 @@ docker-compose ps
 
 ### Test
 
-#### 
+#### Create "client_message" and "message_aggregation" topics
+* http://localhost:8080/console/my-local-cluster/topics
+* click "+ New topic" at right top on the page
+* enter "client_message" topic name, change partition count to 10, and click "Create topic" at right bottom on the page
+
+![image](https://github.com/user-attachments/assets/aed15e23-98d1-46bd-8d4d-b602addea591)
+
+* click "+ New topic" again to create "message_aggregation" topic
+* enter "message_aggregation" topic name, change partition count to 10, and click "Create topic" at right bottom on the page
 
 #### Run Client Message Counter
 * move shell current working directory to ./output/bin
