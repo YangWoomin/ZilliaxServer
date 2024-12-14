@@ -328,6 +328,8 @@ docker-compose up -d
 docker-compose ps
 ```
 
+* there are six brokers that are composed of three controllers(KRaft) and normal brokers respectively
+
 #### Setting Kafka Cluster on Conduktor
 * Conduktor guide page : https://docs.conduktor.io/platform/get-started/installation/get-started/docker/
 * http://localhost:8080
@@ -342,4 +344,15 @@ psql -U conduktor -d conduktor-console
 CREATE ROLE root WITH LOGIN PASSWORD 'your_password';
 CREATE DATABASE root OWNER root;
 ```
+
+#### "mq" module build
+
+
+## Cache
+### "cache" module
+
+
+## Producer Server
+### "mq_test_producer" module
+### "mq_test_consumer" module
 
