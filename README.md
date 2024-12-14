@@ -325,6 +325,7 @@ make rebuild_debug
 ## Message Queue
 ### "mq" Module
 * this module is core of producing and consuming messages to and from message queue(Kafka) asynchronously
+* this module can make our servers send messages or events to other servers asynchronously by using the message queue
 * the following features are or would be supported
 
 | Feature | Implemented | Tested | Linux | Windows |
@@ -335,13 +336,37 @@ make rebuild_debug
 * servers on windows cannot find redis and kafka clusters in wsl2 
 
 ### "mq" Module Build
+* move cmd(or shell) current working directory to ./mq
+* build db module by the following command or vs code task
+
+```bash
+make rebuild_debug
+```
+
+* this module contains librdkafkacpp source files in ./mq/src/librdkafkacpp and links librdkafka(C)
+* if you want to have a new version of librdkafka check the guide file in ./setting/mq/kafka/librdkafka/install_librdkafka.txt
 
 ## Cache
 ### "cache" Module
+* this module is core of data access and manipulation to memory database(Redis) synchronously or asynchronously
+* this module can make our servers stateless by saving data in memory database so that those have scalability for cloud native application
+* now we have only Lua script run by exposed interface but will support to run simple commands by redis++ native facilities
+* the following features are or would also supported
 
+| Feature | Standalone | Cluster |
+|----------|----------|----------|
+| Sync | ⬜ | ✅ |
+| Async | ⬜ | ✅ |
 
 ### "cache" Module Build
+* move cmd(or shell) current working directory to ./cache
+* build db module by the following command or vs code task
 
+```bash
+make rebuild_debug
+```
+
+* if you have any problem for redis++ such as compilation or link build your own redis++ shared library by referring to ./setting/database/redis/redis++/install_redis++.txt
 
 ## Integration Test
 * we build and test "network", "network_test", "mq", "cache", "mq_test_producer", and "mq_test_consumer" modules comprehensively in this chapter
@@ -360,7 +385,9 @@ make rebuild_debug
 
 ### "mq_test_producer" module
 
+
 ### "mq_test_consumer" module
+
 
 ### Prerequisite
 #### Run Environment
@@ -395,6 +422,7 @@ CREATE DATABASE root OWNER root;
 ```
 
 #### Redis Cluster and Redis Insight on Docker
+
 
 #### Setting Redis Cluster on Redis Insight
 
