@@ -28,7 +28,7 @@
 ## Features
 * C/C++(20)
 * Cross platform (Windows/Linux)
-* Database module (ODBC connector)
+* Database module (MySQL)
 * Asynchronous network module (IOCP, epoll)
 * Memory Database module (Redis)
 * Message Queue module (Kafka)
