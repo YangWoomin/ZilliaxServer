@@ -422,6 +422,13 @@ tar -C /usr/local -xzf go1.23.4.linux-amd64.tar.gz
 ./build.sh
 ```
 
+* move shell current working directory to ./mq_test_consumer/test_verifier
+* build mq_test_verifier by the following command
+
+```bash
+./build.sh
+```
+
 ### Prerequisite
 #### Run Environment
 * Ubuntu 24.04 on wsl2 + docker + docker-compose
@@ -495,14 +502,76 @@ docker-compose ps
 * move shell current working directory to ./output/bin
 
 ```bash
-./mq_test_consumer.out --ctp=client_
+./mq_test_consumer.out --ctp=client_message --ptp=message_aggregation --tid=tid
 ```
 
+* pass the parameters ctp that means consumer topic, ptp that means producer topic, and tid that means transactional id
+* if you want to know other parameter options check the source file ./mq_test_consumer/main.go
+
 #### Run Message Aggregator
+* move shell current working directory to ./output/bin
+
+```bash
+./mq_test_consumer.out --group=mq_test_consumer1 --ctp=message_aggregation --mode=ma
+```
+
+* pass the arguments group that menas consumer group, ctp that means consumer topic, and ma as mode that means message aggregator
+* if you want to know other parameter options check the source file ./mq_test_consumer/main.go
 
 #### Run Producer Server
+* move shell current working directory to ./output/bin
+
+```bash
+./mq_test_producerd.out
+```
+
+* there is no parameter because the server uses default parameter values
+* if you want to know other parameter options check the source file ./mq_test_producer/src/main.cpp
 
 #### Run Client
+* move shell current working directory to ./output/bin
 
-#### Check Test Result
+```bash
+./network_testd.out --mode=mtc --num=10
+```
+
+* pass the parameters mtc as mode that means massive test client and num that means the number of clients
+* if you want to know other parameter options check the source file ./network_test/src/main.cpp
+
+#### Check "client_message" Topic Records
+
+![image](https://github.com/user-attachments/assets/b005377d-bf32-4f17-ba3b-c955ecced52c)
+
+* there are 44,220 records received from 10 clients each of which sends 4422 messages
+
+#### Check "message_aggregation" Topic Records
+
+![image](https://github.com/user-attachments/assets/42bbf38f-8845-4c8b-9b42-a72f3e18f747)
+
+* there are more than 44,220 records because transaction marker are also included
+
+![image](https://github.com/user-attachments/assets/1daa61bf-f890-4ae3-b8f8-1739a109c79f)
+
+#### Check Message Count Per Client
+* move shell current working directory to ./output/bin
+
+```bash
+./mq_test_verifier.out --key=consumer:*:msg_cnt
+```
+
+![image](https://github.com/user-attachments/assets/d95baaf7-d456-43f2-85cd-c7bac19e1a70)
+
+* check that each client sent 4422 messages that are stored in redis
+
+#### Check Message Count Per Message
+* move shell current working directory to ./output/bin
+
+```bash
+./mq_test_verifier.out --key=message:*:msg_cnt
+```
+
+![image](https://github.com/user-attachments/assets/9f376c9c-b97e-486b-b7f6-9eefaf4e3cbf)
+
+
+* check that each message is stored 10 times from 10 clients and all message count is 4422
 
