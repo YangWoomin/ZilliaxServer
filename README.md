@@ -460,13 +460,15 @@ CREATE DATABASE root OWNER root;
 #### Setting Redis Cluster on Redis Insight
 
 
-### Module & Tester Build
+### Test
 
-#### "network", "network_test", "mq", "cache" Modules Build
+#### Run Client Message Counter
 
-#### "mq_test_producer" Build
+#### Run Message Aggregator
 
-#### "mq_test_consumer" Build
+#### Run Producer Server
 
+#### Run Client
 
+#### Check Test Result
 
