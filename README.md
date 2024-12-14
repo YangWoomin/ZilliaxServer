@@ -439,6 +439,8 @@ docker-compose ps
 
 * there are six brokers that are composed of three controllers(KRaft) and normal brokers respectively
 
+![image](https://github.com/user-attachments/assets/e212c952-8d04-4118-928a-f6f659065c02)
+
 #### Setting Kafka Cluster on Conduktor
 * http://localhost:8080
 * add kafka cluster like the following picture
@@ -476,7 +478,14 @@ docker-compose ps
 
 ### Test
 
+#### 
+
 #### Run Client Message Counter
+* move shell current working directory to ./output/bin
+
+```bash
+./mq_test_consumer.out --ctp=client_
+```
 
 #### Run Message Aggregator
 
