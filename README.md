@@ -540,7 +540,7 @@ docker-compose ps
 
 #### Check "client_message" Topic Records
 
-![image](https://github.com/user-attachments/assets/b005377d-bf32-4f17-ba3b-c955ecced52c)
+![image](https://github.com/user-attachments/assets/9f770cfd-280e-4473-b538-0e5a7dc447b6)
 
 * there are 44,220 records received from 10 clients each of which sends 4422 messages
 
@@ -549,8 +549,6 @@ docker-compose ps
 ![image](https://github.com/user-attachments/assets/42bbf38f-8845-4c8b-9b42-a72f3e18f747)
 
 * there are more than 44,220 records because transaction marker are also included
-
-![image](https://github.com/user-attachments/assets/1daa61bf-f890-4ae3-b8f8-1739a109c79f)
 
 #### Check Message Count Per Client
 * move shell current working directory to ./output/bin
