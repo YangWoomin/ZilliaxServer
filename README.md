@@ -349,7 +349,7 @@ make rebuild_debug
 ## Cache
 ### "cache" Module
 * this module is core of data access and manipulation to memory database(Redis) synchronously or asynchronously
-* this module can make our servers stateless by saving data in memory database so that those have scalability for cloud native application
+* this module can make our servers stateless by saving data in memory database so that those have scalability as cloud native application
 * now we have only Lua script run by exposed interface but will support to run simple commands by redis++ native facilities
 * the following features are or would also supported
 
