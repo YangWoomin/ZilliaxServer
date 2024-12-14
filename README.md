@@ -341,7 +341,7 @@ make rebuild_debug
 
 
 ## Integration Test
-* we build and test "network", "network_test", "mq", "cache", "mq_test_producer", "mq_test_consumer" modules comprehensively in this chapter
+* we build and test "network", "network_test", "mq", "cache", "mq_test_producer", and "mq_test_consumer" modules comprehensively in this chapter
 
 ### Overview
 
