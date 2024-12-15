@@ -371,7 +371,7 @@ make rebuild_debug
 
 * if you have any problem for redis++ such as compilation, link or run build your own redis++ shared library by referring to ./setting/database/redis/redis++/install_redis++.txt
 
-## Integration Test
+## Cache & Message Queue Test
 * we build and test "network", "network_test", "mq", "cache", "mq_test_producer", and "mq_test_consumer" modules comprehensively in this chapter
 * this test scenario aims to count client messages per client and message, and to save the counting results while ensuring data integrity and consistency
 
