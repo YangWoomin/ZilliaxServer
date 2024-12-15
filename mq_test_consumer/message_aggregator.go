@@ -29,7 +29,7 @@ func (ma MsgAggr) GetProdTopic() string {
 	return ""
 }
 
-func (ma MsgAggr) Process(fr *FetchResult) bool {
+func (ma MsgAggr) Process(fr *FetchResult, ig *bool) bool {
 
 	sugar := ma.sugar
 
@@ -66,17 +66,27 @@ return 0
 		return false
 	}
 
-	if res == 0 {
+	ret, ok := res.(int64)
+	if !ok {
+		sugar.Errorf("getting result from script failed, id : %d, cid : %s, sn : %s, res : %T",
+			ma.id, fr.cid, fr.sn, res)
+
+		*ig = true
+		return false
+	}
+
+	if ret == 0 {
 		// TODO: save this message to DLQ
 		sugar.Errorf("invalid script result, id : %d, cid : %s, sn : %s",
 			ma.id, fr.cid, fr.sn)
-	} else if res == 2 {
+		*ig = true
+	} else if ret == 2 {
 		sugar.Warnf("duplcated message occurred, id : %d, cid : %s, sn : %s",
 			ma.id, fr.cid, fr.sn)
+	} else {
+		sugar.Infof("executing script succeeded, id : %d, cid : %s, sn : %s, ret : %d",
+			ma.id, fr.cid, fr.sn, ret)
 	}
-
-	sugar.Infof("executing script succeeded, id : %d, cid : %s, sn : %s",
-		ma.id, fr.cid, fr.sn)
 
 	return true
 }

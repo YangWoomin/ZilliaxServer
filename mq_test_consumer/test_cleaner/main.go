@@ -17,8 +17,7 @@ func main() {
 	svr := flag.String("svr", "redis://default:bitnami@localhost", "redis server to connect without port")
 	port := flag.Int("port", 7000, "redis server start port")
 	cnt := flag.Int("cnt", 3, "redis server cnt")
-	key := flag.String("key", "consumer:*:msg_cnt", "key to scan data")
-	same := flag.Bool("same", true, "check all results are same")
+	key := flag.String("key", "*:*", "key to delete")
 
 	flag.Parse()
 
@@ -38,7 +37,7 @@ func main() {
 
 	config.Encoding = "console"
 
-	config.OutputPaths = []string{"stdout", "../log/mq_test_verifier.log"}
+	config.OutputPaths = []string{"stdout", "../log/mq_test_cleaner.log"}
 
 	logger, _ := config.Build()
 	defer logger.Sync()
@@ -46,9 +45,6 @@ func main() {
 
 	ctx := context.Background()
 
-	var first bool = true
-	var issame bool = true
-	var value string
 	var rows int = 0
 	for i := 0; i < *cnt; i++ {
 		p := *port + i
@@ -76,20 +72,8 @@ func main() {
 			}
 
 			for _, key := range keys {
-				val := rc.Get(ctx, key)
-				if first {
-					value = val.Val()
-					first = false
-				} else if val.Val() != value && *same {
-					sugar.Warnf("mismatched value, key : %s, value : %s, host : %s", key, value, ru.Host)
-					issame = false
-				}
-
-				if len(key) > 40 {
-					key = key[:40] + "..."
-				}
-
-				sugar.Infof("key : %s, value : %s", key, val.Val())
+				rc.Del(ctx, key)
+				sugar.Infof("deleting the key completed, key : %s", key)
 				rows++
 			}
 
@@ -100,11 +84,5 @@ func main() {
 		}
 	}
 
-	if *same && !issame {
-		sugar.Info("all results are not equal")
-	} else if *same {
-		sugar.Info("all results are equal")
-	}
-
-	sugar.Infof("test completed, rows : %d", rows)
+	sugar.Infof("deleting keys completed, rows : %d", rows)
 }

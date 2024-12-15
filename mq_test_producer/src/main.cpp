@@ -56,7 +56,7 @@ int main(int argc, char** argv)
     int32_t msgManagerWorkerCount = 2;
     int32_t msgManagerWorkerIntervalMs = 10;
     int32_t cacheWorkerCount = 2;
-    int32_t cacheStoredMsgSnTmpListTtlSec = 3000;
+    int32_t cacheStoredMsgSnTmpListTtlSec = 120;
     int32_t cacheStoredMsgSnTmpListMaxCount = 1000;
     int32_t cacheSendingMsgLoadCount = 100;
     int32_t mqPollerCount = 2;
@@ -138,7 +138,8 @@ int main(int argc, char** argv)
         mqPollingTimeoutMs,
         // config list
         {
-            {"metadata.broker.list", "true"},
+            {"enable.idempotence", "true"},
+            {"acks", "all"},
         }
     };
 

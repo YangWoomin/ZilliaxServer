@@ -62,7 +62,7 @@ void MsgWorker::HandleProducedMessage(MessageStatus status, Message* msg, const 
             client->_ms._missedSn = msg->_sn;
         }
     }
-    else // MESSAGESTATUS_PERSISTED or MESSAGESTATUS_POSSIBLY_PERSISTED
+    else if (MESSAGESTATUS_PERSISTED == status ||  MESSAGESTATUS_POSSIBLY_PERSISTED == status)
     {
         ZS_LOG_INFO(mq_test_producer, "message stored in mq producer, key : %s, sn : %llu",
             msg->_key.c_str(), msg->_sn);
@@ -70,6 +70,11 @@ void MsgWorker::HandleProducedMessage(MessageStatus status, Message* msg, const 
         // update stored msg sn
         std::lock_guard<std::mutex> lock(client->_mtx);
         client->_ms._storedMsgSn.push_back(msg->_sn);
+    }
+    else if (MESSAGESTATUS_MISSING_TEST == status)
+    {
+        ZS_LOG_WARN(mq_test_producer, "missing message test occurred in mq producer, key : %s, sn : %llu",
+            msg->_key.c_str(), msg->_sn);
     }
 
     delete msg;
@@ -140,15 +145,20 @@ void MsgWorker::handleClientMsgStatus()
             MsgSN sn = std::stoull(res);
             for (std::size_t i = 1; i < sendingMsgSn.size() && 0 < sn; ++i)
             {
-                if (true == produceMessage(clientId, sendingMsgSn[i], 
+                auto cid = clientId;
+                if (true == produceMessage(cid, sendingMsgSn[i], 
                     MsgHeaders{
                         {"sn", std::to_string(sn)},
-                        {"cid", clientId}
+                        {"cid", cid}
                     },
                     sn, client))
                 {
                     client->_ms._sendingMsgCount++;
                     sn++;
+                }
+                else
+                {
+                    break;
                 }
             }
         }
@@ -190,6 +200,9 @@ for i = stored_msg_sn_start_idx, stored_msg_sn_start_idx - 1 + stored_msg_sn_cnt
     local sn = tonumber(ARGV[i])
     redis.call("ZADD", stored_msg_sn_tmp_list_key, sn, sn)
 end
+if (stored_msg_sn_cnt > 0) then
+    redis.call("SET", stored_msg_sn_tmp_list_timer_key, 1, "EX", stored_msg_sn_tmp_list_ttl)
+end
 local stored_msg_sn = tonumber(redis.call("GET", stored_msg_sn_key) or '0')
 local stored_msg_sn_tmp_list = redis.call("ZRANGEBYSCORE", stored_msg_sn_tmp_list_key, "-inf", "+inf", "WITHSCORES")
 for i = 1, #stored_msg_sn_tmp_list, 2 do
@@ -197,7 +210,6 @@ for i = 1, #stored_msg_sn_tmp_list, 2 do
     if (sn == stored_msg_sn + 1) then
         stored_msg_sn = stored_msg_sn + 1
         redis.call("ZREM", stored_msg_sn_tmp_list_key, sn)
-        redis.call("SET", stored_msg_sn_tmp_list_timer_key, 1, "EX", stored_msg_sn_tmp_list_ttl)
     else
         break
     end
@@ -210,8 +222,11 @@ if (-1 == missed_sn) then
     reset(key, stored_msg_sn)
 elseif (0 < missed_sn) then
     -- missed message
+    local sending_msg_sn = tonumber(redis.call("GET", sending_msg_sn_key) or '0')
     if (stored_msg_sn >= missed_sn) then
         reset(key, missed_sn - 1)
+    elseif (sending_msg_sn >= missed_sn) then
+        redis.call("SET", sending_msg_sn_key, missed_sn - 1)
     end
 else 
     -- 0 means no missed messages

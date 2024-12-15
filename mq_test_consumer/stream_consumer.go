@@ -20,7 +20,7 @@ type StreamConsumer interface {
 	GetId() int
 	GetConsTopic() string
 	GetProdTopic() string
-	Process(fr *FetchResult) bool
+	Process(fr *FetchResult, ig *bool) bool
 }
 
 type Pendings map[int32]kafka.Offset
@@ -91,7 +91,8 @@ func Run(sc StreamConsumer, sugar *zap.SugaredLogger, ctx context.Context, wg *s
 			}
 
 			// process message
-			for !sc.Process(fr) {
+			ig := false
+			for !sc.Process(fr, &ig) && !ig {
 				// retry
 				time.Sleep(time.Duration(intv) * time.Millisecond)
 
@@ -114,7 +115,7 @@ func Run(sc StreamConsumer, sugar *zap.SugaredLogger, ctx context.Context, wg *s
 			}
 
 			// produce message
-			for !Produce(sc, sugar, c, p, fr) {
+			for !ig && !Produce(sc, sugar, c, p, fr) {
 				// retry
 				time.Sleep(time.Duration(intv) * time.Millisecond)
 

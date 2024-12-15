@@ -50,6 +50,8 @@ namespace mq
         MESSAGESTATUS_NOT_PERSISTED,
         MESSAGESTATUS_POSSIBLY_PERSISTED,
         MESSAGESTATUS_PERSISTED,
+
+        MESSAGESTATUS_MISSING_TEST,
     };
 
     struct MessageContext
