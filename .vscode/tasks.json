@@ -213,6 +213,39 @@
             },
             "group": "build"
         },
+        {
+            "type": "shell",
+            "label": "Build mq_test_consumer",
+            "command": "./build.sh",
+            "args": [
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/mq_test_consumer"
+            },
+            "group": "build"
+        },
+        {
+            "type": "shell",
+            "label": "Build mq_test_verifier",
+            "command": "./build.sh",
+            "args": [
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/mq_test_consumer/test_verifier"
+            },
+            "group": "build"
+        },
+        {
+            "type": "shell",
+            "label": "Build mq_test_cleaner",
+            "command": "./build.sh",
+            "args": [
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/mq_test_consumer/test_cleaner"
+            },
+            "group": "build"
+        },
 
         {
             "type": "shell",
@@ -248,6 +281,28 @@
             "dependsOn":[
                 "Rebuild network as Release",
                 "Rebuild network_test as Release"
+            ]
+        },
+        {
+            "type": "shell",
+            "label": "Rebuild network mq cache mq_test_producer as Debug",
+            "dependsOrder": "sequence",
+            "dependsOn":[
+                "Rebuild network as Debug",
+                "Rebuild mq as Debug",
+                "Rebuild cache as Debug",
+                "Rebuild mq test producer as Debug"
+            ]
+        },
+        {
+            "type": "shell",
+            "label": "Rebuild network mq cache mq_test_producer as Release",
+            "dependsOrder": "sequence",
+            "dependsOn":[
+                "Rebuild network as Release",
+                "Rebuild mq as Release",
+                "Rebuild cache as Release",
+                "Rebuild mq test producer as Release"
             ]
         },
     ]
