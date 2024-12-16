@@ -39,8 +39,24 @@ namespace common
         using Messenger = std::function<void(const char* /*category*/, const char* /*file*/, int /*line*/, LogLevel, const char* /*fmt*/, va_list /*args*/)>;
         static Messenger& GetMessenger()
         {
-            static Messenger messenger;
+            static Messenger messenger = nullptr;
             return messenger;
+        }
+
+        static void Flush()
+        {
+            Flusher& flusher = GetFlusher();
+            if (nullptr != flusher)
+            {
+                flusher();
+            }
+        }
+
+        using Flusher = std::function<void()>;
+        static Flusher& GetFlusher()
+        {
+            static Flusher flusher = nullptr;
+            return flusher;
         }
     };
 }
@@ -48,6 +64,7 @@ namespace common
 
 #define ZS_LOG_FATAL(category, fmt, ...) do {\
     zs::common::Logger::Write(#category, __FILE__, __LINE__, zs::common::LogLevel::LOGLEVEL_FATAL, fmt, ##__VA_ARGS__); \
+    zs::common::Logger::Flush(); \
     raise(SIGABRT); \
 } while(0)
 #define ZS_LOG_ERROR(category, fmt, ...)    zs::common::Logger::Write(#category, __FILE__, __LINE__, zs::common::LogLevel::LOGLEVEL_ERROR, fmt, ##__VA_ARGS__)

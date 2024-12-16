@@ -117,6 +117,14 @@ int main(int argc, char** argv)
     Logger::Messenger& origin = Logger::GetMessenger();
     origin = msgr;
 
+    Logger::Flusher flshr = [logger]() {
+        logger->flush();
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+    };
+    Logger::Flusher& flusher = Logger::GetFlusher();
+    flusher = flshr;
+
+
     ZS_LOG_INFO(mq_test_producer, "============ mq test producer start ============");
     
     CacheConfig cacheConfig = {
