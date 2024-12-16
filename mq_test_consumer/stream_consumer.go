@@ -193,7 +193,7 @@ func Fetch(sc StreamConsumer, sugar *zap.SugaredLogger, c *kafka.Consumer, intv 
 	} else if err.(kafka.Error).Code() == kafka.ErrTimedOut {
 		// nothing
 	} else {
-		sugar.Errorf("[consumer %d] fetch failed, err : %s", err.Error())
+		sugar.Errorf("[consumer %d] fetch failed, err : %s", sc.GetId(), err.Error())
 	}
 
 	return &FetchResult{nil, "", ""}
