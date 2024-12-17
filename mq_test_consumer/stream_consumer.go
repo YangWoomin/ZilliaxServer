@@ -24,6 +24,7 @@ type StreamConsumer interface {
 }
 
 type Pendings map[int32]kafka.Offset
+type Partitions map[int32]kafka.TopicPartition
 
 func Run(sc StreamConsumer, sugar *zap.SugaredLogger, ctx context.Context, wg *sync.WaitGroup, cc *kafka.ConfigMap, pc kafka.ConfigMap, intv, tmcnt int) {
 
@@ -49,13 +50,61 @@ func Run(sc StreamConsumer, sugar *zap.SugaredLogger, ctx context.Context, wg *s
 			defer cancel()
 
 			if err := p.AbortTransaction(ctx); err != nil {
-				sugar.Warnf("AbortTransaction failed, err : %s", err.Error())
+				sugar.Warnf("[consumer %d] AbortTransaction failed, err : %s",
+					sc.GetId(), err.Error())
 			}
 		}()
 	}
 
+	var cnt = 0
+	pts := make(Partitions)
+	pendings := make(Pendings)
+
+	// reference : https://github.com/confluentinc/confluent-kafka-go/blob/bb108e529f91/examples/consumer_rebalance_example/consumer_rebalance_example.go
+	rbc := func(cns *kafka.Consumer, event kafka.Event) error {
+		switch e := event.(type) {
+		case kafka.AssignedPartitions:
+			sugar.Infof("[consumer %d] Assigned Partitions: %v",
+				sc.GetId(), e.Partitions)
+			cns.Assign(e.Partitions)
+
+		case kafka.RevokedPartitions:
+			sugar.Infof("[consumer %d] Revoked Partitions: %v",
+				sc.GetId(), e.Partitions)
+
+			if cnt > 0 && p != nil {
+				ctx, cancel := context.WithTimeout(context.Background(), time.Duration(txtimeout)*time.Second)
+				defer cancel()
+
+				sugar.Infof("[consumer %d] transaction rollback because of rebalance, %v",
+					sc.GetId(), e.Partitions)
+
+				p.AbortTransaction(ctx)
+			}
+			pendings = make(Pendings)
+			cnt = 0
+
+			// remove the partitions to be unowned
+			for _, p := range e.Partitions {
+				delete(pts, p.Partition)
+			}
+
+			// rollback the owning partitions offset to consume again
+			for _, p := range pts {
+				err := cns.Seek(p, txtimeout*1000)
+				if err != nil && err.(kafka.Error).Code() != kafka.ErrNoOffset {
+					sugar.Panicf("[consumer %d] Seeking parttiona failed in rebalance, topic : %s, partition : %d",
+						sc.GetId(), *p.Topic, p.Partition)
+				}
+			}
+
+			pts = make(Partitions)
+		}
+		return nil
+	}
+
 	// subscribe consumer topic
-	err = c.SubscribeTopics([]string{sc.GetConsTopic()}, nil)
+	err = c.SubscribeTopics([]string{sc.GetConsTopic()}, rbc)
 	if err != nil {
 		sugar.Fatalf("subscribing topic failed, id : %d, topic : %s, err : %s",
 			sc.GetId(), sc.GetConsTopic(), err.Error())
@@ -65,8 +114,6 @@ func Run(sc StreamConsumer, sugar *zap.SugaredLogger, ctx context.Context, wg *s
 		sc.GetId(), sc.GetConsTopic())
 
 	var rcnt = 0
-	var cnt = 0
-	pendings := make(Pendings)
 
 	for {
 		select {
@@ -82,10 +129,11 @@ func Run(sc StreamConsumer, sugar *zap.SugaredLogger, ctx context.Context, wg *s
 					if !CommitTx(sc, sugar, c, p, pendings, txtimeout) {
 						sugar.Errorf("[consumer %d] cannot commit transaction, %v",
 							sc.GetId(), pendings)
-						return
+					} else {
+						pendings = make(Pendings)
+						pts = make(Partitions)
+						cnt = 0
 					}
-					pendings = make(Pendings)
-					cnt = 0
 				}
 				continue
 			}
@@ -133,15 +181,20 @@ func Run(sc StreamConsumer, sugar *zap.SugaredLogger, ctx context.Context, wg *s
 			}
 			cnt++
 
+			if pts[fr.msg.TopicPartition.Partition].Partition == 0 {
+				pts[fr.msg.TopicPartition.Partition] = fr.msg.TopicPartition
+			}
+
 			// commit transaction
 			if cnt%tmcnt == 0 {
 				if !CommitTx(sc, sugar, c, p, pendings, txtimeout) {
 					sugar.Errorf("[consumer %d] cannot commit transaction, cid : %s, sn : %s",
 						sc.GetId(), fr.cid, fr.sn)
-					return
+				} else {
+					pendings = make(Pendings)
+					pts = make(Partitions)
+					cnt = 0
 				}
-				pendings = make(Pendings)
-				cnt = 0
 			}
 		}
 	}
@@ -150,7 +203,7 @@ func Run(sc StreamConsumer, sugar *zap.SugaredLogger, ctx context.Context, wg *s
 func CreateProducer(sc StreamConsumer, sugar *zap.SugaredLogger, pc *kafka.ConfigMap, timeout int) *kafka.Producer {
 	if sc.GetProdTopic() != "" {
 		tid, _ := pc.Get("transactional.id", "")
-		ntid := fmt.Sprintf("%v", tid) + string(sc.GetId())
+		ntid := fmt.Sprintf("%v_%d", tid, sc.GetId())
 		pc.SetKey("transactional.id", ntid)
 
 		p, err := kafka.NewProducer(pc)
@@ -239,8 +292,8 @@ func Produce(sc StreamConsumer, sugar *zap.SugaredLogger, c *kafka.Consumer, p *
 		return false
 	}
 
-	sugar.Infof("[consumer %d] producing message succeeded, ptp : %s, cid : %s, sn : %s, offset : %d",
-		sc.GetId(), sc.GetProdTopic(), fr.cid, fr.sn, fr.msg.TopicPartition.Offset)
+	// sugar.Infof("[consumer %d] producing message succeeded, ptp : %s, cid : %s, sn : %s, offset : %d",
+	// 	sc.GetId(), sc.GetProdTopic(), fr.cid, fr.sn, fr.msg.TopicPartition.Offset)
 
 	return true
 }
@@ -293,7 +346,7 @@ func CommitTx(sc StreamConsumer, sugar *zap.SugaredLogger, c *kafka.Consumer, p 
 		return false
 	}
 
-	sugar.Infof("[consumer %d] commit succeeded, ps : %v",
-		sc.GetId(), ps)
+	// sugar.Infof("[consumer %d] commit succeeded, ps : %v",
+	// 	sc.GetId(), ps)
 	return true
 }

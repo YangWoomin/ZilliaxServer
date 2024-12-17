@@ -84,8 +84,8 @@ return 0
 		sugar.Warnf("duplcated message occurred, id : %d, cid : %s, sn : %s",
 			ma.id, fr.cid, fr.sn)
 	} else {
-		sugar.Infof("executing script succeeded, id : %d, cid : %s, sn : %s, ret : %d",
-			ma.id, fr.cid, fr.sn, ret)
+		// sugar.Infof("executing script succeeded, id : %d, cid : %s, sn : %s, ret : %d",
+		// 	ma.id, fr.cid, fr.sn, ret)
 	}
 
 	return true

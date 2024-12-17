@@ -29,6 +29,7 @@ func main() {
 	rsi := flag.String("rsi", "redis://default:bitnami@localhost:7000/", "redis server to connect")
 	tmcnt := flag.Int("tmcnt", 100, "transaction message count for bulk")
 	ttl := flag.Int("ttl", 3000, "duplicated message check ttl")
+	an := flag.Int("an", 1, "application number")
 
 	flag.Parse()
 
@@ -48,7 +49,7 @@ func main() {
 
 	config.Encoding = "console"
 
-	config.OutputPaths = []string{"stdout", fmt.Sprintf("../log/%s.log", *mode)}
+	config.OutputPaths = []string{"stdout", fmt.Sprintf("../log/%s-%d.log", *mode, *an)}
 
 	logger, _ := config.Build()
 	defer logger.Sync()

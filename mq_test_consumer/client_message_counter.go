@@ -87,8 +87,8 @@ return 0
 			cmc.id, fr.cid, fr.sn)
 		*ig = true
 	} else {
-		sugar.Infof("executing script succeeded, id : %d, cid : %s, sn : %s, ret : %d",
-			cmc.id, fr.cid, fr.sn, ret)
+		// sugar.Infof("executing script succeeded, id : %d, cid : %s, sn : %s, ret : %d",
+		// 	cmc.id, fr.cid, fr.sn, ret)
 	}
 
 	return true

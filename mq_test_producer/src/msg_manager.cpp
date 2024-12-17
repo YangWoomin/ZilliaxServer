@@ -185,8 +185,8 @@ void MsgManager::handleStoredMessage(ContextID cid, Keys&& keys, Args&& args, bo
 {
     if (success)
     {
-        ZS_LOG_INFO(mq_test_producer, "caching message succeeded, client : %s, cid : %llu, res : %d",
-            keys[0].c_str(), cid, res);
+        // ZS_LOG_INFO(mq_test_producer, "caching message succeeded, client : %s, cid : %llu, res : %d",
+        //     keys[0].c_str(), cid, res);
         
         sentCount++;
     }
