@@ -32,6 +32,7 @@ func Run(sc StreamConsumer, sugar *zap.SugaredLogger, ctx context.Context, wg *s
 
 	var maxRcnt int = 3000
 	var txtimeout int = 30 // 30 sec
+	var cmttimeout int = 2
 
 	// create consumer
 	c, err := kafka.NewConsumer(cc)
@@ -115,6 +116,8 @@ func Run(sc StreamConsumer, sugar *zap.SugaredLogger, ctx context.Context, wg *s
 
 	var rcnt = 0
 
+	var timer *time.Timer
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -125,7 +128,14 @@ func Run(sc StreamConsumer, sugar *zap.SugaredLogger, ctx context.Context, wg *s
 			// fetch message
 			fr := Fetch(sc, sugar, c, intv)
 			if fr.msg == nil {
-				if cnt > 0 {
+				if cnt == 0 {
+					continue
+				}
+				if timer == nil {
+					timer = time.NewTimer(time.Duration(cmttimeout) * time.Second)
+				}
+				select {
+				case <-timer.C:
 					if !CommitTx(sc, sugar, c, p, pendings, txtimeout) {
 						sugar.Errorf("[consumer %d] cannot commit transaction, %v",
 							sc.GetId(), pendings)
@@ -134,8 +144,17 @@ func Run(sc StreamConsumer, sugar *zap.SugaredLogger, ctx context.Context, wg *s
 						pts = make(Partitions)
 						cnt = 0
 					}
+					timer = nil
+				default:
+					continue
 				}
+
 				continue
+			}
+
+			if timer != nil {
+				timer.Stop()
+				timer = nil
 			}
 
 			// process message
@@ -346,7 +365,7 @@ func CommitTx(sc StreamConsumer, sugar *zap.SugaredLogger, c *kafka.Consumer, p 
 		return false
 	}
 
-	// sugar.Infof("[consumer %d] commit succeeded, ps : %v",
-	// 	sc.GetId(), ps)
+	sugar.Infof("[consumer %d] commit succeeded, ps : %v",
+		sc.GetId(), ps)
 	return true
 }

@@ -23,6 +23,7 @@ func main() {
 	ctp := flag.String("ctp", "", "consumer topic")
 	cnt := flag.Int("cnt", 3, "consumer count")
 	intv := flag.Int("intv", 10, "consumer polling interval(ms)")
+	fmb := flag.Int("fmb", 50000, "fetch.min.bytes for consumer")
 	ptp := flag.String("ptp", "", "producer topic")
 	tid := flag.String("tid", "", "transactional id prefix for producer")
 	mode := flag.String("mode", "cmc", "consumer mode [client message counter(cmc)|message aggregator(ma)]")
@@ -78,6 +79,7 @@ func main() {
 		"auto.offset.reset":  "earliest",
 		"enable.auto.commit": false,
 		"isolation.level":    "read_committed",
+		"fetch.min.bytes":    *fmb, // default: 50KB
 
 		"debug": "generic",
 	}
