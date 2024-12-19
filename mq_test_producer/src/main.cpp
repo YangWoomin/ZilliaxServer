@@ -27,7 +27,7 @@ int main(int argc, char** argv)
     // parse parameters
     cxxopts::Options options("mq_test_producer", "mq test producer option");
     options.add_options()
-        ("p,port", "server port to listen", cxxopts::value<int>()->default_value("3000"))
+        ("p,port", "server port to listen", cxxopts::value<int>()->default_value("6000"))
         ("b,broadcast", "broadcast or unicast echo mode in server", cxxopts::value<bool>()->default_value("false"))
         ("m,mq", "mq servers address delimited by comma", cxxopts::value<std::string>()->default_value("localhost:29092,localhost:39092,localhost:49092"))
         ("d,debug", "mq producer debug mode", cxxopts::value<std::string>()->default_value("generic"))

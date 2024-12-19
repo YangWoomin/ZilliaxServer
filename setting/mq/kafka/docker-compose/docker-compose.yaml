@@ -17,6 +17,8 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@controller-1:9093,2@controller-2:9093,3@controller-3:9093
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_LOG_DIRS: /var/lib/kafka/data
+    networks:
+      - zilliax-network
 
   controller-2:
     image: apache/kafka:3.7.0
@@ -32,6 +34,8 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@controller-1:9093,2@controller-2:9093,3@controller-3:9093
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_LOG_DIRS: /var/lib/kafka/data
+    networks:
+      - zilliax-network
 
   controller-3:
     image: apache/kafka:3.7.0
@@ -47,6 +51,8 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@controller-1:9093,2@controller-2:9093,3@controller-3:9093
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_LOG_DIRS: /var/lib/kafka/data
+    networks:
+      - zilliax-network
 
   broker-1:
     image: apache/kafka:3.7.0
@@ -70,6 +76,8 @@ services:
       - controller-1
       - controller-2
       - controller-3
+    networks:
+      - zilliax-network
 
   broker-2:
     image: apache/kafka:3.7.0
@@ -93,6 +101,8 @@ services:
       - controller-1
       - controller-2
       - controller-3
+    networks:
+      - zilliax-network
 
   broker-3:
     image: apache/kafka:3.7.0
@@ -116,6 +126,8 @@ services:
       - controller-1
       - controller-2
       - controller-3
+    networks:
+      - zilliax-network
 
 # reference : https://docs.conduktor.io/platform/get-started/installation/get-started/docker/
 
@@ -134,6 +146,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - zilliax-network
 
   conduktor-console:
     image: conduktor/conduktor-console:1.29.1
@@ -151,11 +165,37 @@ services:
     depends_on:
       postgresql:
         condition: service_healthy
+    networks:
+      - zilliax-network
       
   conduktor-monitoring:
     image: conduktor/conduktor-console-cortex:1.29.1
     environment:
       CDK_CONSOLE-URL: "http://conduktor-console:8080"
+    networks:
+      - zilliax-network
+
+# reference : https://hub.docker.com/r/danielqsj/kafka-exporter
+
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:v1.8.0
+    container_name: kafka-exporter
+    restart: always
+    ports:
+      - "9308:9308"
+    command:
+      - '--kafka.server=broker-1:19092'
+      - '--kafka.server=broker-2:19092'
+      - '--kafka.server=broker-3:19092'
+    depends_on:
+      - controller-1
+      - controller-2
+      - controller-3
+      - broker-1
+      - broker-2
+      - broker-3
+    networks:
+      - zilliax-network
 
 volumes:
   pg_data: {}
@@ -166,4 +206,7 @@ volumes:
   broker_1_data: {}
   broker_2_data: {}
   broker_3_data: {}
-    
+
+networks:
+  zilliax-network:
+    external: true

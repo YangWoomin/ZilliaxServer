@@ -1,0 +1,34 @@
+
+version: '3'
+
+services:
+  prometheus:
+    image: prom/prometheus:v3.0.1
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/prometheus/prometheus.yml:ro
+      - pm_data:/data
+    ports:
+      - 9090:9090
+    command:
+      - "--web.enable-lifecycle"
+    networks:
+      - zilliax-network
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: grafana
+    volumes:
+      - gf_data:/var/lib/grafana
+    networks:
+      - zilliax-network
+    ports:
+      - 3000:3000
+
+networks:
+  zilliax-network:
+    external: true
+
+volumes:
+  pm_data: {}
+  gf_data: {}
