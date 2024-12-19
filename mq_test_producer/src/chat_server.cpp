@@ -52,7 +52,7 @@ static void signalHandler(int signum)
 }
 #endif // defined(_WIN64_)
 
-void ChatServer(Logger::Messenger msgr, IPVer ipVer, Protocol protocol, int32_t port, bool isBroadcasting, OnClientConnected onClientConnected, OnClientClosed onClientClosed, OnMessageReceived onMessageReceived)
+void ChatServer(Logger::Messenger msgr, std::size_t workerCount, IPVer ipVer, Protocol protocol, int32_t port, bool isBroadcasting, OnClientConnected onClientConnected, OnClientClosed onClientClosed, OnMessageReceived onMessageReceived)
 {
 
 #if defined(_WIN64_)
@@ -76,7 +76,7 @@ void ChatServer(Logger::Messenger msgr, IPVer ipVer, Protocol protocol, int32_t 
         return;
     }
     
-    if (false == Network::Start())
+    if (false == Network::Start(workerCount))
     {
         ZS_LOG_ERROR(mq_test_producer, "Network::Start failed in ChatServer");
         return;

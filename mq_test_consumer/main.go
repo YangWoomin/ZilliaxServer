@@ -26,8 +26,9 @@ func main() {
 	fmb := flag.Int("fmb", 50000, "fetch.min.bytes for consumer")
 	ptp := flag.String("ptp", "", "producer topic")
 	tid := flag.String("tid", "", "transactional id prefix for producer")
+	ttm := flag.Int("ttm", 300000, "transaction.timeout.ms")
 	mode := flag.String("mode", "cmc", "consumer mode [client message counter(cmc)|message aggregator(ma)]")
-	rsi := flag.String("rsi", "redis://default:bitnami@localhost:7000/", "redis server to connect")
+	rsi := flag.String("rsi", "redis://default:bitnami@localhost:7010/", "redis server to connect")
 	tmcnt := flag.Int("tmcnt", 100, "transaction message count for bulk")
 	ttl := flag.Int("ttl", 3000, "duplicated message check ttl")
 	an := flag.Int("an", 1, "application number")
@@ -72,6 +73,10 @@ func main() {
 		sugar.Warn("no work for producer")
 	}
 
+	if *mode == "ma" && *rsi == "redis://default:bitnami@localhost:7010/" {
+		*rsi = "redis://default:bitnami@localhost:7020/"
+	}
+
 	// kafka
 	consCnf := kafka.ConfigMap{
 		"bootstrap.servers":  *mqs,
@@ -85,9 +90,10 @@ func main() {
 	}
 
 	prodCnf := kafka.ConfigMap{
-		"bootstrap.servers":  *mqs,
-		"transactional.id":   *tid, // producer id will be appended at start
-		"enable.idempotence": true,
+		"bootstrap.servers":      *mqs,
+		"transactional.id":       *tid, // producer id will be appended at start
+		"enable.idempotence":     true,
+		"transaction.timeout.ms": *ttm, // default 5min
 
 		"debug": "generic",
 	}

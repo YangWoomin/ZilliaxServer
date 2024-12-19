@@ -1,12 +1,13 @@
 
 #include    "msg_manager.h"
 #include    "msg_worker.h"
+#include    "msg_counter.h"
 
 using namespace zs::common;
 using namespace zs::cache;
 using namespace zs::mq;
 
-static std::atomic<uint64_t> sentCount {0};
+static std::atomic<uint64_t> totalSentCount {0};
 
 bool MsgManager::Initialize(Logger::Messenger msgr, int32_t workerCount, int32_t workerIntervalMs, CacheConfig&& cacheConfig, MQConfig&& mqConfig)
 {
@@ -93,6 +94,14 @@ bool MsgManager::Initialize(Logger::Messenger msgr, int32_t workerCount, int32_t
         _workers.push_back(worker);
     }
 
+    // counter
+    _counter = std::make_shared<MsgCounter>();
+    if (false == _counter->Start())
+    {
+        ZS_LOG_ERROR(mq_test_producer, "starting msg counter failed in msg manager");
+        return false;
+    }
+
     _run = true;
     _cacheConfig = std::move(cacheConfig);
     _mqConfig = std::move(mqConfig);
@@ -105,21 +114,25 @@ bool MsgManager::Initialize(Logger::Messenger msgr, int32_t workerCount, int32_t
 
 void MsgManager::Finalize()
 {
+    _run = false;
+
     for (auto& worker : _workers)
     {
         worker->Finalize();
     }
     _workers.clear();
 
+    _counter->Stop();
+    _counter->Join();
+    _counter.reset();
+
     _producer.reset();
 
     MQ::Finalize();
     Cache::Finalize();
 
-    _run = false;
-
     ZS_LOG_INFO(mq_test_producer, "msg manager finalized, total sent msg count : %llu",
-        sentCount.load());
+        totalSentCount.load());
 }
 
 void MsgManager::AddClient(const char* client)
@@ -144,6 +157,11 @@ bool MsgManager::StoreMessage(const char* client, const char* msg, std::size_t l
     if (false == _run)
     {
         return false;
+    }
+
+    if (nullptr != _counter)
+    {
+        _counter->IncreaseCount();
     }
 
     static const Script script = R"(
@@ -188,7 +206,7 @@ void MsgManager::handleStoredMessage(ContextID cid, Keys&& keys, Args&& args, bo
         // ZS_LOG_INFO(mq_test_producer, "caching message succeeded, client : %s, cid : %llu, res : %d",
         //     keys[0].c_str(), cid, res);
         
-        sentCount++;
+        totalSentCount++;
     }
     else
     {

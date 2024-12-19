@@ -58,6 +58,8 @@ bool Manager::Start(std::size_t& dispatcherWorkerCount)
         _dispatcherWorkers.push_back(worker);
     }
 
+    ZS_LOG_INFO(network, "network worker started, cnt : %lu", dispatcherWorkerCount);
+
     return true;
 }
 

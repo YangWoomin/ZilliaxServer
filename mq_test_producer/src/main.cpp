@@ -28,6 +28,7 @@ int main(int argc, char** argv)
     cxxopts::Options options("mq_test_producer", "mq test producer option");
     options.add_options()
         ("p,port", "server port to listen", cxxopts::value<int>()->default_value("6000"))
+        ("cnt", "the number of network worker count", cxxopts::value<uint32_t>()->default_value("0"))
         ("b,broadcast", "broadcast or unicast echo mode in server", cxxopts::value<bool>()->default_value("false"))
         ("m,mq", "mq servers address delimited by comma", cxxopts::value<std::string>()->default_value("localhost:29092,localhost:39092,localhost:49092"))
         ("d,debug", "mq producer debug mode", cxxopts::value<std::string>()->default_value("generic"))
@@ -45,6 +46,7 @@ int main(int argc, char** argv)
 
     // command line setting
     int32_t port = result["port"].as<int32_t>();
+    uint32_t cnt = result["cnt"].as<uint32_t>();
     bool isBroadcasting = result["broadcast"].as<bool>();
     std::string cacheAddr = result["cache"].as<std::string>();
     int32_t msgTtl = result["ttl"].as<int32_t>();
@@ -119,7 +121,6 @@ int main(int argc, char** argv)
 
     Logger::Flusher flshr = [logger]() {
         logger->flush();
-        std::this_thread::sleep_for(std::chrono::seconds(5));
     };
     Logger::Flusher& flusher = Logger::GetFlusher();
     flusher = flshr;
@@ -195,7 +196,7 @@ int main(int argc, char** argv)
         }
     };
 
-    ChatServer(msgr, IPVer::IP_V4, Protocol::TCP, port, isBroadcasting, onClientConnected, onClientClosed, onMessageReceived);
+    ChatServer(msgr, cnt, IPVer::IP_V4, Protocol::TCP, port, isBroadcasting, onClientConnected, onClientClosed, onMessageReceived);
 
     mm.reset();
 

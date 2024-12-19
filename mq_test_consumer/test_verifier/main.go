@@ -15,7 +15,7 @@ import (
 func main() {
 
 	svr := flag.String("svr", "redis://default:bitnami@localhost", "redis server to connect without port")
-	port := flag.Int("port", 7000, "redis server start port")
+	port := flag.Int("port", 7010, "redis server start port")
 	cnt := flag.Int("cnt", 3, "redis server cnt")
 	key := flag.String("key", "consumer:*:msg_cnt", "key to scan data")
 	same := flag.Bool("same", true, "check all results are same")

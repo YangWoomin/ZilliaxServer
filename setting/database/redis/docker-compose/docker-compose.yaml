@@ -4,6 +4,7 @@
 # reference : https://github.com/bitnami/containers/blob/main/bitnami/redis-cluster/docker-compose.yml
 
 services:
+  # cluster 1 for producer server
   redis-node-0:
     image: docker.io/bitnami/redis-cluster:7.4
     volumes:
@@ -85,6 +86,170 @@ services:
     ports:
       - 7005:7005
 
+  # cluster 2 for client message counter
+  redis-node-10:
+    image: docker.io/bitnami/redis-cluster:7.4
+    volumes:
+      - redis-cluster_data-10:/bitnami/redis/data
+    environment:
+      - 'REDIS_PASSWORD=bitnami'
+      - 'REDIS_PORT_NUMBER=7010'
+      - 'REDIS_CLUSTER_ANNOUNCE_IP=127.0.0.1'
+      - 'REDIS_NODES=redis-node-10:7010 redis-node-11:7011 redis-node-12:7012 redis-node-13:7013 redis-node-14:7014 redis-node-15:7015'
+    ports:
+      - 7010:7010
+
+  redis-node-11:
+    image: docker.io/bitnami/redis-cluster:7.4
+    volumes:
+      - redis-cluster_data-11:/bitnami/redis/data
+    environment:
+      - 'REDIS_PASSWORD=bitnami'
+      - 'REDIS_PORT_NUMBER=7011'
+      - 'REDIS_CLUSTER_ANNOUNCE_IP=127.0.0.1'
+      - 'REDIS_NODES=redis-node-10:7010 redis-node-11:7011 redis-node-12:7012 redis-node-13:7013 redis-node-14:7014 redis-node-15:7015'
+    ports:
+      - 7011:7011
+
+  redis-node-12:
+    image: docker.io/bitnami/redis-cluster:7.4
+    volumes:
+      - redis-cluster_data-12:/bitnami/redis/data
+    environment:
+      - 'REDIS_PASSWORD=bitnami'
+      - 'REDIS_PORT_NUMBER=7012'
+      - 'REDIS_CLUSTER_ANNOUNCE_IP=127.0.0.1'
+      - 'REDIS_NODES=redis-node-10:7010 redis-node-11:7011 redis-node-12:7012 redis-node-13:7013 redis-node-14:7014 redis-node-15:7015'
+    ports:
+      - 7012:7012
+
+  redis-node-13:
+    image: docker.io/bitnami/redis-cluster:7.4
+    volumes:
+      - redis-cluster_data-13:/bitnami/redis/data
+    environment:
+      - 'REDIS_PASSWORD=bitnami'
+      - 'REDIS_PORT_NUMBER=7013'
+      - 'REDIS_CLUSTER_ANNOUNCE_IP=127.0.0.1'
+      - 'REDIS_NODES=redis-node-10:7010 redis-node-11:7011 redis-node-12:7012 redis-node-13:7013 redis-node-14:7014 redis-node-15:7015'
+    ports:
+      - 7013:7013
+
+  redis-node-14:
+    image: docker.io/bitnami/redis-cluster:7.4
+    volumes:
+      - redis-cluster_data-14:/bitnami/redis/data
+    environment:
+      - 'REDIS_PASSWORD=bitnami'
+      - 'REDIS_PORT_NUMBER=7014'
+      - 'REDIS_CLUSTER_ANNOUNCE_IP=127.0.0.1'
+      - 'REDIS_NODES=redis-node-10:7010 redis-node-11:7011 redis-node-12:7012 redis-node-13:7013 redis-node-14:7014 redis-node-15:7015'
+    ports:
+      - 7014:7014
+
+  redis-node-15:
+    image: docker.io/bitnami/redis-cluster:7.4
+    volumes:
+      - redis-cluster_data-15:/bitnami/redis/data
+    depends_on:
+      - redis-node-10
+      - redis-node-11
+      - redis-node-12
+      - redis-node-13
+      - redis-node-14
+    environment:
+      - 'REDIS_PASSWORD=bitnami'
+      - 'REDISCLI_AUTH=bitnami'
+      - 'REDIS_CLUSTER_REPLICAS=1'
+      - 'REDIS_NODES=redis-node-10:7010 redis-node-11:7011 redis-node-12:7012 redis-node-13:7013 redis-node-14:7014 redis-node-15:7015'
+      - 'REDIS_CLUSTER_CREATOR=yes'
+      - 'REDIS_PORT_NUMBER=7015'
+      - 'REDIS_CLUSTER_ANNOUNCE_IP=127.0.0.1'
+    ports:
+      - 7015:7015
+
+  # cluster 3 for message aggregator
+  redis-node-20:
+    image: docker.io/bitnami/redis-cluster:7.4
+    volumes:
+      - redis-cluster_data-20:/bitnami/redis/data
+    environment:
+      - 'REDIS_PASSWORD=bitnami'
+      - 'REDIS_PORT_NUMBER=7020'
+      - 'REDIS_CLUSTER_ANNOUNCE_IP=127.0.0.1'
+      - 'REDIS_NODES=redis-node-20:7020 redis-node-21:7021 redis-node-22:7022 redis-node-23:7023 redis-node-24:7024 redis-node-25:7025'
+    ports:
+      - 7020:7020
+
+  redis-node-21:
+    image: docker.io/bitnami/redis-cluster:7.4
+    volumes:
+      - redis-cluster_data-21:/bitnami/redis/data
+    environment:
+      - 'REDIS_PASSWORD=bitnami'
+      - 'REDIS_PORT_NUMBER=7021'
+      - 'REDIS_CLUSTER_ANNOUNCE_IP=127.0.0.1'
+      - 'REDIS_NODES=redis-node-20:7020 redis-node-21:7021 redis-node-22:7022 redis-node-23:7023 redis-node-24:7024 redis-node-25:7025'
+    ports:
+      - 7021:7021
+
+  redis-node-22:
+    image: docker.io/bitnami/redis-cluster:7.4
+    volumes:
+      - redis-cluster_data-22:/bitnami/redis/data
+    environment:
+      - 'REDIS_PASSWORD=bitnami'
+      - 'REDIS_PORT_NUMBER=7022'
+      - 'REDIS_CLUSTER_ANNOUNCE_IP=127.0.0.1'
+      - 'REDIS_NODES=redis-node-20:7020 redis-node-21:7021 redis-node-22:7022 redis-node-23:7023 redis-node-24:7024 redis-node-25:7025'
+    ports:
+      - 7022:7022
+
+  redis-node-23:
+    image: docker.io/bitnami/redis-cluster:7.4
+    volumes:
+      - redis-cluster_data-23:/bitnami/redis/data
+    environment:
+      - 'REDIS_PASSWORD=bitnami'
+      - 'REDIS_PORT_NUMBER=7023'
+      - 'REDIS_CLUSTER_ANNOUNCE_IP=127.0.0.1'
+      - 'REDIS_NODES=redis-node-20:7020 redis-node-21:7021 redis-node-22:7022 redis-node-23:7023 redis-node-24:7024 redis-node-25:7025'
+    ports:
+      - 7023:7023
+
+  redis-node-24:
+    image: docker.io/bitnami/redis-cluster:7.4
+    volumes:
+      - redis-cluster_data-24:/bitnami/redis/data
+    environment:
+      - 'REDIS_PASSWORD=bitnami'
+      - 'REDIS_PORT_NUMBER=7024'
+      - 'REDIS_CLUSTER_ANNOUNCE_IP=127.0.0.1'
+      - 'REDIS_NODES=redis-node-20:7020 redis-node-21:7021 redis-node-22:7022 redis-node-23:7023 redis-node-24:7024 redis-node-25:7025'
+    ports:
+      - 7024:7024
+
+  redis-node-25:
+    image: docker.io/bitnami/redis-cluster:7.4
+    volumes:
+      - redis-cluster_data-25:/bitnami/redis/data
+    depends_on:
+      - redis-node-20
+      - redis-node-21
+      - redis-node-22
+      - redis-node-23
+      - redis-node-24
+    environment:
+      - 'REDIS_PASSWORD=bitnami'
+      - 'REDISCLI_AUTH=bitnami'
+      - 'REDIS_CLUSTER_REPLICAS=1'
+      - 'REDIS_NODES=redis-node-20:7020 redis-node-21:7021 redis-node-22:7022 redis-node-23:7023 redis-node-24:7024 redis-node-25:7025'
+      - 'REDIS_CLUSTER_CREATOR=yes'
+      - 'REDIS_PORT_NUMBER=7025'
+      - 'REDIS_CLUSTER_ANNOUNCE_IP=127.0.0.1'
+    ports:
+      - 7025:7025
+
 # reference : https://hub.docker.com/r/redis/redisinsight
 
   redis-insight:
@@ -100,6 +265,18 @@ services:
       - redis-node-3
       - redis-node-4
       - redis-node-5
+      - redis-node-10
+      - redis-node-11
+      - redis-node-12
+      - redis-node-13
+      - redis-node-14
+      - redis-node-15
+      - redis-node-20
+      - redis-node-21
+      - redis-node-22
+      - redis-node-23
+      - redis-node-24
+      - redis-node-25
 
 volumes:
   redis-cluster_data-0:
@@ -114,4 +291,31 @@ volumes:
     driver: local
   redis-cluster_data-5:
     driver: local
+
+  redis-cluster_data-10:
+    driver: local
+  redis-cluster_data-11:
+    driver: local
+  redis-cluster_data-12:
+    driver: local
+  redis-cluster_data-13:
+    driver: local
+  redis-cluster_data-14:
+    driver: local
+  redis-cluster_data-15:
+    driver: local
+
+  redis-cluster_data-20:
+    driver: local
+  redis-cluster_data-21:
+    driver: local
+  redis-cluster_data-22:
+    driver: local
+  redis-cluster_data-23:
+    driver: local
+  redis-cluster_data-24:
+    driver: local
+  redis-cluster_data-25:
+    driver: local
+
   redis-insight:

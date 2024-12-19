@@ -37,6 +37,9 @@ struct MQConfig
 class MsgWorker;
 using MsgWorkerSPtr = std::shared_ptr<MsgWorker>;
 
+class MsgCounter;
+using MsgCounterSPtr = std::shared_ptr<MsgCounter>;
+
 using MsgSN = uint64_t; // message sequence/serial number
 using MsgHeaders = std::unordered_map<std::string, std::string>;
 
@@ -60,6 +63,7 @@ private:
     MQConfig                        _mqConfig;
     std::vector<MsgWorkerSPtr>      _workers;
     ProducerSPtr                    _producer;
+    MsgCounterSPtr                  _counter;
 
     static void handleStoredMessage(ContextID cid, Keys&& keys, Args&& args, bool success, SimpleResult res);
 

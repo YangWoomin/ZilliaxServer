@@ -64,8 +64,8 @@ void MsgWorker::HandleProducedMessage(MessageStatus status, Message* msg, const 
     }
     else if (MESSAGESTATUS_PERSISTED == status ||  MESSAGESTATUS_POSSIBLY_PERSISTED == status)
     {
-        ZS_LOG_INFO(mq_test_producer, "message stored in mq producer, key : %s, sn : %llu",
-            msg->_key.c_str(), msg->_sn);
+        // ZS_LOG_INFO(mq_test_producer, "message stored in mq producer, key : %s, sn : %llu",
+        //     msg->_key.c_str(), msg->_sn);
 
         // update stored msg sn
         std::lock_guard<std::mutex> lock(client->_mtx);

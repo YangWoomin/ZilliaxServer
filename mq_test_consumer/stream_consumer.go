@@ -257,8 +257,8 @@ func Fetch(sc StreamConsumer, sugar *zap.SugaredLogger, c *kafka.Consumer, intv 
 			}
 		}
 
-		sugar.Infof("[consumer %d] topic : %s, timestamp : %s, cid : %s, sn : %s, msg : %s",
-			sc.GetId(), *msg.TopicPartition.Topic, msg.Timestamp.Format(time.RFC3339), cid, sn, string(msg.Value))
+		// sugar.Infof("[consumer %d] topic : %s, timestamp : %s, cid : %s, sn : %s, msg : %s",
+		// 	sc.GetId(), *msg.TopicPartition.Topic, msg.Timestamp.Format(time.RFC3339), cid, sn, string(msg.Value))
 
 		return &FetchResult{msg, sn, cid}
 
