@@ -16,7 +16,7 @@
 * [Cache](#Cache)
 
 ## Purpose
-* MMO (RPG) Game Server
+* MMO Game Server Framework
 
 ## Introduction
 ![zilliax](https://github.com/user-attachments/assets/ee2cae56-2a7d-4f2c-9895-6adb8c0a3f2b)
